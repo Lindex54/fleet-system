@@ -11,6 +11,8 @@ $vehicles = [
     ['reg' => 'UAJ 433X', 'make' => 'Ford', 'model' => 'Ford ranger', 'year' => '2009', 'type' => 'Pickup', 'department' => 'Estates', 'mileage' => '196002', 'insurance' => '-', 'repairs' => '-', 'status' => 'Active'],
     ['reg' => 'UBP 401F', 'make' => 'TOYOTA', 'model' => 'LAND CRUISER', 'year' => '2022', 'type' => 'Suv', 'department' => 'Vice Chancellor', 'mileage' => '200808', 'insurance' => '-', 'repairs' => '-', 'status' => 'Maintenance'],
 ];
+
+$hasVehicles = count($vehicles) > 0;
 ?>
 <main class="min-h-screen lg:pl-64">
     <div class="mx-auto max-w-[1320px] px-4 py-8 sm:px-6 lg:px-8">
@@ -41,7 +43,26 @@ $vehicles = [
             </label>
         </div>
 
-        <section class="overflow-hidden rounded-lg border border-fleet-line bg-fleet-surface shadow-fleet-card">
+        <section class="<?= $hasVehicles ? 'hidden' : 'flex'; ?> min-h-[420px] items-center justify-center">
+            <div class="text-center">
+                <div class="mx-auto flex h-16 w-16 items-center justify-center rounded-2xl bg-slate-200 text-fleet-muted">
+                    <svg class="h-8 w-8" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                        <path d="M19 17h2c.6 0 1-.4 1-1v-3c0-.9-.7-1.7-1.5-1.9L18.7 8c-.4-.6-1-.9-1.7-.9H7c-.7 0-1.3.3-1.7.9l-1.8 3.1C2.7 11.3 2 12.1 2 13v3c0 .6.4 1 1 1h2"></path>
+                        <circle cx="7" cy="17" r="2"></circle>
+                        <circle cx="17" cy="17" r="2"></circle>
+                        <path d="M5 11h14"></path>
+                    </svg>
+                </div>
+                <h2 class="mt-5 text-lg font-extrabold text-fleet-ink">No vehicles found</h2>
+                <p class="mt-2 text-sm text-fleet-muted">Add vehicles to build the university fleet registry.</p>
+                <button type="button" data-open-vehicle-modal class="mt-6 inline-flex h-10 items-center gap-2 rounded-lg bg-fleet-sidebar px-4 text-sm font-semibold text-white shadow-fleet-card hover:bg-fleet-sidebar-active">
+                    <span class="text-lg leading-none">+</span>
+                    <span>Add Vehicle</span>
+                </button>
+            </div>
+        </section>
+
+        <section class="<?= $hasVehicles ? 'block' : 'hidden'; ?> overflow-hidden rounded-lg border border-fleet-line bg-fleet-surface shadow-fleet-card">
             <div class="overflow-x-auto">
                 <table class="w-full min-w-[1180px] text-left text-sm" data-vehicle-table>
                     <thead class="bg-fleet-surface-muted text-fleet-muted">

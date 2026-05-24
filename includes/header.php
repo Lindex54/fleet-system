@@ -8,7 +8,8 @@ if ($documentRoot && $projectRoot && substr($projectRoot, 0, strlen($documentRoo
     $basePath = str_replace('\\', '/', substr($projectRoot, strlen($documentRoot)));
 }
 
-$assetPath = ($basePath ?: '') . '/assets/css/app.css';
+$assetVersion = file_exists($projectRoot . '/assets/css/app.css') ? filemtime($projectRoot . '/assets/css/app.css') : time();
+$assetPath = ($basePath ?: '') . '/assets/css/app.css?v=' . $assetVersion;
 $scriptPath = ($basePath ?: '') . '/assets/js/app.js';
 ?>
 <!DOCTYPE html>
