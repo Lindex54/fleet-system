@@ -1,15 +1,10 @@
 <?php
 // Static frontend page for vehicle service and repair history.
 $activePage = 'maintenance';
+require_once __DIR__ . '/../../includes/data.php';
+extract(fleetData('maintenance'));
 include __DIR__ . '/../../includes/header.php';
 include __DIR__ . '/../../includes/sidebar.php';
-
-$records = [
-    ['date' => '18/05/2026', 'vehicle' => 'UAJ 433X', 'type' => 'Repair', 'description' => 'Engine over haul Brakes Windscreen ...', 'provider' => '-', 'cost' => 4200000, 'status' => 'Completed'],
-];
-
-$hasRecords = count($records) > 0;
-$totalCost = array_sum(array_map(static fn ($record) => (int) $record['cost'], $records));
 ?>
 <main class="min-h-screen lg:pl-64">
     <div class="mx-auto max-w-[1320px] px-4 py-8 sm:px-6 lg:px-8">

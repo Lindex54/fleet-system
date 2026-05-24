@@ -1,16 +1,10 @@
 <?php
 // Static frontend page for garages, mechanics, and service partners.
 $activePage = 'providers';
+require_once __DIR__ . '/../../includes/data.php';
+extract(fleetData('service_providers'));
 include __DIR__ . '/../../includes/header.php';
 include __DIR__ . '/../../includes/sidebar.php';
-
-$providers = [
-    ['name' => 'Tororo Auto Garage', 'town' => 'Tororo', 'contact' => '+256 701 220 110', 'email' => 'service@tororoauto.ug', 'specialty' => 'General repairs', 'status' => 'Active'],
-    ['name' => 'Toyota Uganda Service Centre', 'town' => 'Kampala', 'contact' => '+256 414 339 000', 'email' => 'fleetservice@toyota.co.ug', 'specialty' => 'Toyota service', 'status' => 'Active'],
-    ['name' => 'Mbale Fleet Mechanics', 'town' => 'Mbale', 'contact' => '+256 772 431 980', 'email' => 'info@mbalefleet.ug', 'specialty' => 'Brakes and suspension', 'status' => 'Pending'],
-];
-
-$hasProviders = count($providers) > 0;
 ?>
 <main class="min-h-screen lg:pl-64">
     <div class="mx-auto max-w-[1320px] px-4 py-8 sm:px-6 lg:px-8">

@@ -1,16 +1,10 @@
 <?php
 // Static frontend page for university fleet driver records.
 $activePage = 'drivers';
+require_once __DIR__ . '/../../includes/data.php';
+extract(fleetData('drivers'));
 include __DIR__ . '/../../includes/header.php';
 include __DIR__ . '/../../includes/sidebar.php';
-
-$drivers = [
-    ['name' => 'Simali Habert', 'email' => 'simalihabert@gmail.com', 'phone' => '+256 772 123 456', 'license' => 'CM 78452', 'assigned' => 'UAJ 433X', 'status' => 'Active'],
-    ['name' => 'Moses Okello', 'email' => 'moses.okello@busitema.ac.ug', 'phone' => '+256 701 450 220', 'license' => 'CM 21984', 'assigned' => 'UBR 123C', 'status' => 'Active'],
-    ['name' => 'Grace Namuli', 'email' => 'grace.namuli@busitema.ac.ug', 'phone' => '+256 758 802 114', 'license' => 'CM 66310', 'assigned' => '-', 'status' => 'Inactive'],
-];
-
-$hasDrivers = count($drivers) > 0;
 ?>
 <main class="min-h-screen lg:pl-64">
     <div class="mx-auto max-w-[1320px] px-4 py-8 sm:px-6 lg:px-8">

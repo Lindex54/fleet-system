@@ -1,42 +1,10 @@
 <?php
 // Main dashboard entry point for the fleet management system.
 $activePage = 'dashboard';
+require_once __DIR__ . '/includes/data.php';
+extract(fleetData('dashboard'));
 include __DIR__ . '/includes/header.php';
 include __DIR__ . '/includes/sidebar.php';
-
-$metrics = [
-    ['label' => 'Total Vehicles', 'value' => '5', 'icon' => 'V'],
-    ['label' => 'Active Vehicles', 'value' => '5', 'icon' => 'V'],
-    ['label' => 'Registered Drivers', 'value' => '0', 'icon' => 'D'],
-    ['label' => 'Maintenance Cost', 'value' => 'UGX 4,200,000', 'icon' => 'M'],
-];
-
-$noticeCards = [
-    ['count' => '2 Vehicle(s)', 'label' => 'Currently under maintenance', 'tone' => 'info', 'icon' => '!'],
-    ['count' => '2 Log(s)', 'label' => 'Recent trip entries', 'tone' => 'info', 'icon' => 'L'],
-    ['count' => '0 Driver(s)', 'label' => 'Registered in the system', 'tone' => 'primary', 'icon' => 'D'],
-];
-
-$departments = [
-    ['name' => 'Unassigned', 'active' => 0, 'maintenance' => 1, 'grounded' => 0],
-    ['name' => 'DVD fa', 'active' => 1, 'maintenance' => 0, 'grounded' => 0],
-    ['name' => 'University Secretary', 'active' => 1, 'maintenance' => 0, 'grounded' => 0],
-    ['name' => 'Estates', 'active' => 1, 'maintenance' => 0, 'grounded' => 0],
-    ['name' => 'Vice Chancellor', 'active' => 0, 'maintenance' => 1, 'grounded' => 0],
-];
-
-$serviceDueAlerts = [
-    ['vehicle' => 'UBR 123C', 'type' => 'Routine Service', 'typeTone' => 'blue', 'model' => 'TOYOTA Land cruiser', 'department' => 'DVD fa', 'detail' => '852,436 km since last - every 4,000 km'],
-    ['vehicle' => 'UBR 123C', 'type' => 'Brake Service', 'typeTone' => 'purple', 'model' => 'TOYOTA Land cruiser', 'department' => 'DVD fa', 'detail' => '852,436 km since last - every 10,000 km'],
-    ['vehicle' => 'UBR 402Q', 'type' => 'Routine Service', 'typeTone' => 'blue', 'model' => 'TOYOTA HILLUX PICKUP', 'department' => 'University Secretary', 'detail' => '65,231 km since last - every 4,000 km'],
-    ['vehicle' => 'UBR 402Q', 'type' => 'Brake Service', 'typeTone' => 'purple', 'model' => 'TOYOTA HILLUX PICKUP', 'department' => 'University Secretary', 'detail' => '65,231 km since last - every 10,000 km'],
-    ['vehicle' => 'UAJ 433X', 'type' => 'Routine Service', 'typeTone' => 'blue', 'model' => 'TOYOTA PRADO', 'department' => 'Estates', 'detail' => '24,120 km since last - every 4,000 km'],
-];
-
-$vehicleLogs = [
-    ['date' => '17 May 2026', 'vehicle' => 'UAJ 433X', 'driver' => 'SIMALI HABERT', 'destination' => 'Mbale', 'status' => 'Pending'],
-    ['date' => '17 May 2026', 'vehicle' => 'UAJ 433X', 'driver' => 'SIMALI HABERT', 'destination' => 'Kampala', 'status' => 'Pending'],
-];
 ?>
 <main class="min-h-screen lg:pl-64">
     <div class="mx-auto max-w-[1320px] px-4 py-6 sm:px-6 lg:px-8">

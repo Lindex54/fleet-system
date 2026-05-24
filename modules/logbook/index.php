@@ -1,18 +1,10 @@
 <?php
 // Static frontend page for official vehicle movement log records.
 $activePage = 'logbook';
+require_once __DIR__ . '/../../includes/data.php';
+extract(fleetData('logbook'));
 include __DIR__ . '/../../includes/header.php';
 include __DIR__ . '/../../includes/sidebar.php';
-
-$logs = [
-    ['date' => '17/05/2026', 'vehicle' => 'UAJ 433X', 'driver' => 'SIMALI HABERT', 'from' => 'Kampala', 'to' => 'Mbale', 'purpose' => 'Elgon', 'odo_start' => '196002', 'odo_end' => '196298', 'km' => '296', 'fuel' => '22', 'cost' => 'UGX 132,000', 'remarks' => 'Ok'],
-    ['date' => '17/05/2026', 'vehicle' => 'UAJ 433X', 'driver' => 'SIMALI HABERT', 'from' => 'Busitema', 'to' => 'Kampala', 'purpose' => 'National council', 'odo_start' => '196002', 'odo_end' => '196312', 'km' => '310', 'fuel' => '20', 'cost' => 'UGX 125,600', 'remarks' => 'Ok'],
-];
-
-$hasLogs = count($logs) > 0;
-$totalKm = array_sum(array_map(static fn ($log) => (int) $log['km'], $logs));
-$totalFuel = array_sum(array_map(static fn ($log) => (int) $log['fuel'], $logs));
-$totalCost = 'UGX 257,600';
 ?>
 <main class="min-h-screen lg:pl-64">
     <div class="mx-auto max-w-[1320px] px-4 py-8 sm:px-6 lg:px-8">

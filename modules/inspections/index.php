@@ -1,16 +1,10 @@
 <?php
 // Static frontend page for pre-trip vehicle condition reports.
 $activePage = 'pre-inspection';
+require_once __DIR__ . '/../../includes/data.php';
+extract(fleetData('pre_inspection'));
 include __DIR__ . '/../../includes/header.php';
 include __DIR__ . '/../../includes/sidebar.php';
-
-$reports = [
-    ['invoice' => '234', 'date' => '16/05/2026', 'vehicle' => 'UBP 401F', 'make_model' => 'TOYOTA LAND CRUISER', 'inspector' => 'Simali', 'overall' => '-', 'defects' => 'None'],
-    ['invoice' => 'U2344', 'date' => '16/05/2026', 'vehicle' => 'UBP 401F', 'make_model' => 'TOYOTA LAND CRUISER', 'inspector' => 'Sh', 'overall' => 'Good', 'defects' => 'Cooling gfsf'],
-    ['invoice' => 'U2344', 'date' => '16/05/2026', 'vehicle' => 'UBP 401F', 'make_model' => 'TOYOTA LAND CRUISER', 'inspector' => 'Sh', 'overall' => 'Good', 'defects' => 'Cooling gfsf'],
-];
-
-$hasReports = count($reports) > 0;
 ?>
 <main class="min-h-screen lg:pl-64">
     <div class="mx-auto max-w-[1180px] px-4 py-8 sm:px-6 lg:px-8">

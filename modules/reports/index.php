@@ -1,15 +1,10 @@
 <?php
 // Static frontend page for fleet analytics and reporting.
 $activePage = 'reports';
+require_once __DIR__ . '/../../includes/data.php';
+extract(fleetData('reports'));
 include __DIR__ . '/../../includes/header.php';
 include __DIR__ . '/../../includes/sidebar.php';
-
-$summaryCards = [
-    ['label' => 'Total Maintenance Cost', 'value' => 'UGX 4,200,000', 'tone' => 'blue', 'icon' => 'W'],
-    ['label' => 'Total Fuel Cost', 'value' => 'UGX 257,600', 'tone' => 'amber', 'icon' => 'F'],
-    ['label' => 'Total Trips', 'value' => '2', 'tone' => 'green', 'icon' => 'T'],
-    ['label' => 'Total Distance', 'value' => '606 km', 'tone' => 'blue', 'icon' => 'D'],
-];
 ?>
 <main class="min-h-screen lg:pl-64">
     <div class="mx-auto max-w-[1180px] px-4 py-8 sm:px-6 lg:px-8">

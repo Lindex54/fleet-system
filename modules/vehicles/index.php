@@ -1,18 +1,10 @@
 <?php
 // Static frontend page for the fleet vehicle registry.
 $activePage = 'vehicles';
+require_once __DIR__ . '/../../includes/data.php';
+extract(fleetData('vehicles'));
 include __DIR__ . '/../../includes/header.php';
 include __DIR__ . '/../../includes/sidebar.php';
-
-$vehicles = [
-    ['reg' => 'UBD 456G', 'make' => 'Toyota', 'model' => 'Prado', 'year' => '2022', 'type' => 'Suv', 'department' => '-', 'mileage' => '0', 'insurance' => '-', 'repairs' => '-', 'status' => 'Maintenance'],
-    ['reg' => 'UBR 123C', 'make' => 'TOYOTA', 'model' => 'Land cruiser', 'year' => '2024', 'type' => 'Suv', 'department' => 'DVD fa', 'mileage' => '852436', 'insurance' => '-', 'repairs' => '-', 'status' => 'Active'],
-    ['reg' => 'UBR 402Q', 'make' => 'TOYOTA', 'model' => 'HILLUX PICKUP', 'year' => '2024', 'type' => 'Sedan', 'department' => 'University Secretary', 'mileage' => '65231', 'insurance' => '-', 'repairs' => '-', 'status' => 'Active'],
-    ['reg' => 'UAJ 433X', 'make' => 'Ford', 'model' => 'Ford ranger', 'year' => '2009', 'type' => 'Pickup', 'department' => 'Estates', 'mileage' => '196002', 'insurance' => '-', 'repairs' => '-', 'status' => 'Active'],
-    ['reg' => 'UBP 401F', 'make' => 'TOYOTA', 'model' => 'LAND CRUISER', 'year' => '2022', 'type' => 'Suv', 'department' => 'Vice Chancellor', 'mileage' => '200808', 'insurance' => '-', 'repairs' => '-', 'status' => 'Maintenance'],
-];
-
-$hasVehicles = count($vehicles) > 0;
 ?>
 <main class="min-h-screen lg:pl-64">
     <div class="mx-auto max-w-[1320px] px-4 py-8 sm:px-6 lg:px-8">

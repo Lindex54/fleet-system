@@ -1,16 +1,10 @@
 <?php
 // Static frontend page for post-inspection repair and payment authorisation reports.
 $activePage = 'post-inspection';
+require_once __DIR__ . '/../../includes/data.php';
+extract(fleetData('post_inspection'));
 include __DIR__ . '/../../includes/header.php';
 include __DIR__ . '/../../includes/sidebar.php';
-
-$reports = [
-    ['invoice' => 'I3455', 'date' => '16/05/2026', 'vehicle' => 'UBP 401F', 'make_model' => 'TOYOTA LAND CRUISER', 'inspector' => 'Sh', 'overall' => '-', 'post_invoice' => '-', 'repair_cost' => null],
-    ['invoice' => 'U1234', 'date' => '16/05/2026', 'vehicle' => 'UBP 401F', 'make_model' => 'TOYOTA LAND CRUISER', 'inspector' => 'Simali habert', 'overall' => '-', 'post_invoice' => '-', 'repair_cost' => 2563896],
-];
-
-$hasReports = count($reports) > 0;
-$totalRepairCost = array_sum(array_map(static fn ($report) => (int) ($report['repair_cost'] ?? 0), $reports));
 ?>
 <main class="min-h-screen lg:pl-64">
     <div class="mx-auto max-w-[1180px] px-4 py-8 sm:px-6 lg:px-8">
@@ -166,23 +160,7 @@ $totalRepairCost = array_sum(array_map(static fn ($report) => (int) ($report['re
                         <span>System</span>
                         <span>Condition</span>
                     </div>
-                    <?php
-                    $systems = [
-                        'Engine & Transmission',
-                        'Tyres & Wheels',
-                        'Braking System',
-                        'Lights (Head/Tail/Indicators)',
-                        'Body & Bodywork',
-                        'Fuel System',
-                        'Engine Oil',
-                        'Coolant / Radiator',
-                        'Battery & Electrical',
-                        'Windscreen & Wipers',
-                        'Mirrors',
-                        'Seatbelts & Safety',
-                    ];
-                    ?>
-                    <?php foreach ($systems as $system): ?>
+                    <?php foreach ($postInspectionSystems as $system): ?>
                         <div class="grid grid-cols-[1fr_2fr] items-center border-t border-fleet-line px-4 py-3 text-sm">
                             <span class="font-medium text-fleet-sidebar"><?= htmlspecialchars($system, ENT_QUOTES, 'UTF-8'); ?></span>
                             <div class="flex flex-wrap gap-2">

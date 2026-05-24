@@ -1,11 +1,10 @@
 <?php
 // Static frontend page for composing fleet communication emails.
 $activePage = 'communications';
+require_once __DIR__ . '/../../includes/data.php';
+extract(fleetData('communications'));
 include __DIR__ . '/../../includes/header.php';
 include __DIR__ . '/../../includes/sidebar.php';
-
-$drivers = [];
-$hasDriverEmails = count($drivers) > 0;
 ?>
 <main class="min-h-screen lg:pl-64">
     <div class="mx-auto max-w-[1320px] px-4 py-8 sm:px-6 lg:px-8">

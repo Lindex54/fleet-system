@@ -1,18 +1,10 @@
 <?php
 // Static frontend page for email communication archive.
 $activePage = 'history';
+require_once __DIR__ . '/../../includes/data.php';
+extract(fleetData('communication_history'));
 include __DIR__ . '/../../includes/header.php';
 include __DIR__ . '/../../includes/sidebar.php';
-
-$messages = [
-    ['datetime' => '18 May 2026, 16:31', 'subject' => 'Inspection', 'sender' => 'Simali Habert', 'drivers' => 1, 'officers' => 0, 'type' => 'Manual', 'message' => 'Inspection reminder sent to the assigned driver.'],
-    ['datetime' => '17 May 2026, 12:20', 'subject' => 'Ghhhjj', 'sender' => 'Simali Habert', 'drivers' => 1, 'officers' => 0, 'type' => 'Manual', 'message' => 'Vehicle log follow-up message.'],
-];
-
-$hasMessages = count($messages) > 0;
-$totalMessages = count($messages);
-$driverEmails = array_sum(array_column($messages, 'drivers'));
-$officerEmails = array_sum(array_column($messages, 'officers'));
 ?>
 <main class="min-h-screen lg:pl-64">
     <div class="mx-auto max-w-[1320px] px-4 py-8 sm:px-6 lg:px-8">
