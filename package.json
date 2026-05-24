@@ -1,0 +1,17 @@
+{
+  "name": "fleet-system",
+  "version": "1.0.0",
+  "description": "Fleet management system",
+  "scripts": {
+    "build:css": "tailwindcss -i ./assets/css/tailwind.css -o ./assets/css/app.css --minify",
+    "watch:css": "tailwindcss -i ./assets/css/tailwind.css -o ./assets/css/app.css --watch"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "devDependencies": {
+    "@tailwindcss/cli": "^4.3.0",
+    "tailwindcss": "^4.3.0"
+  }
+}
