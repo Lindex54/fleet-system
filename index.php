@@ -1,5 +1,6 @@
 <?php
 // Main dashboard entry point for the fleet management system.
+$activePage = 'dashboard';
 include __DIR__ . '/includes/header.php';
 include __DIR__ . '/includes/sidebar.php';
 

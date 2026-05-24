@@ -1,5 +1,176 @@
 <?php
-// Vehicles module placeholder page for managing fleet vehicle records.
+// Static frontend page for the fleet vehicle registry.
+$activePage = 'vehicles';
+include __DIR__ . '/../../includes/header.php';
+include __DIR__ . '/../../includes/sidebar.php';
 
-echo 'Vehicles module placeholder.';
+$vehicles = [
+    ['reg' => 'UBD 456G', 'make' => 'Toyota', 'model' => 'Prado', 'year' => '2022', 'type' => 'Suv', 'department' => '-', 'mileage' => '0', 'insurance' => '-', 'repairs' => '-', 'status' => 'Maintenance'],
+    ['reg' => 'UBR 123C', 'make' => 'TOYOTA', 'model' => 'Land cruiser', 'year' => '2024', 'type' => 'Suv', 'department' => 'DVD fa', 'mileage' => '852436', 'insurance' => '-', 'repairs' => '-', 'status' => 'Active'],
+    ['reg' => 'UBR 402Q', 'make' => 'TOYOTA', 'model' => 'HILLUX PICKUP', 'year' => '2024', 'type' => 'Sedan', 'department' => 'University Secretary', 'mileage' => '65231', 'insurance' => '-', 'repairs' => '-', 'status' => 'Active'],
+    ['reg' => 'UAJ 433X', 'make' => 'Ford', 'model' => 'Ford ranger', 'year' => '2009', 'type' => 'Pickup', 'department' => 'Estates', 'mileage' => '196002', 'insurance' => '-', 'repairs' => '-', 'status' => 'Active'],
+    ['reg' => 'UBP 401F', 'make' => 'TOYOTA', 'model' => 'LAND CRUISER', 'year' => '2022', 'type' => 'Suv', 'department' => 'Vice Chancellor', 'mileage' => '200808', 'insurance' => '-', 'repairs' => '-', 'status' => 'Maintenance'],
+];
+?>
+<main class="min-h-screen lg:pl-64">
+    <div class="mx-auto max-w-[1320px] px-4 py-8 sm:px-6 lg:px-8">
+        <div class="mb-7 flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+            <div>
+                <h1 class="text-2xl font-extrabold tracking-normal text-fleet-ink sm:text-3xl">Fleet Vehicles</h1>
+                <p class="mt-2 text-sm text-fleet-muted">University motor vehicle fleet registry - click any cell to edit</p>
+            </div>
+            <div class="flex flex-wrap items-center gap-3">
+                <button type="button" data-print-page class="inline-flex h-10 items-center gap-2 rounded-lg border border-fleet-line bg-fleet-surface px-4 text-sm font-semibold text-fleet-ink shadow-fleet-card hover:bg-fleet-surface-muted">
+                    <span class="text-base">P</span>
+                    <span>Print</span>
+                </button>
+                <button type="button" data-open-vehicle-modal class="inline-flex h-10 items-center gap-2 rounded-lg bg-fleet-sidebar px-4 text-sm font-semibold text-white shadow-fleet-card hover:bg-fleet-sidebar-active">
+                    <span class="text-lg leading-none">+</span>
+                    <span>Add Vehicle</span>
+                </button>
+                <button id="sidebar-toggle" class="inline-flex h-10 w-10 items-center justify-center rounded-lg border border-fleet-line bg-fleet-surface text-fleet-ink shadow-fleet-card lg:hidden" type="button" aria-label="Open navigation">
+                    <span class="text-xl leading-none">&#9776;</span>
+                </button>
+            </div>
+        </div>
 
+        <div class="mb-6 max-w-md">
+            <label class="relative block">
+                <span class="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-fleet-muted">Q</span>
+                <input id="vehicle-search" type="search" class="h-11 w-full rounded-lg border border-fleet-line bg-fleet-surface py-2 pl-11 pr-4 text-sm text-fleet-ink shadow-sm outline-none transition placeholder:text-fleet-muted focus:border-fleet-primary focus:ring-4 focus:ring-blue-100" placeholder="Search vehicles...">
+            </label>
+        </div>
+
+        <section class="overflow-hidden rounded-lg border border-fleet-line bg-fleet-surface shadow-fleet-card">
+            <div class="overflow-x-auto">
+                <table class="w-full min-w-[1180px] text-left text-sm" data-vehicle-table>
+                    <thead class="bg-fleet-surface-muted text-fleet-muted">
+                        <tr>
+                            <th class="px-5 py-4 font-semibold">Reg. No.</th>
+                            <th class="px-5 py-4 font-semibold">Make / Model</th>
+                            <th class="px-5 py-4 font-semibold">Year</th>
+                            <th class="px-5 py-4 font-semibold">Type</th>
+                            <th class="px-5 py-4 font-semibold">Department</th>
+                            <th class="px-5 py-4 font-semibold">Mileage (km)</th>
+                            <th class="px-5 py-4 font-semibold">Insurance Expiry</th>
+                            <th class="px-5 py-4 font-semibold">Repairs Done</th>
+                            <th class="px-5 py-4 font-semibold">Status</th>
+                            <th class="px-5 py-4 text-right font-semibold">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-fleet-line-soft">
+                        <?php foreach ($vehicles as $vehicle): ?>
+                            <tr class="vehicle-row hover:bg-fleet-surface-muted/70" data-search="<?= htmlspecialchars(strtolower(implode(' ', $vehicle)), ENT_QUOTES, 'UTF-8'); ?>">
+                                <td class="px-5 py-4 font-extrabold text-fleet-ink" contenteditable="true"><?= htmlspecialchars($vehicle['reg'], ENT_QUOTES, 'UTF-8'); ?></td>
+                                <td class="px-5 py-4 text-fleet-ink" contenteditable="true">
+                                    <span class="block"><?= htmlspecialchars($vehicle['make'], ENT_QUOTES, 'UTF-8'); ?></span>
+                                    <span class="mt-2 block"><?= htmlspecialchars($vehicle['model'], ENT_QUOTES, 'UTF-8'); ?></span>
+                                </td>
+                                <td class="px-5 py-4 text-fleet-ink" contenteditable="true"><?= htmlspecialchars($vehicle['year'], ENT_QUOTES, 'UTF-8'); ?></td>
+                                <td class="px-5 py-4">
+                                    <span class="rounded-lg bg-slate-200 px-3 py-1 text-xs font-medium text-slate-600" contenteditable="true"><?= htmlspecialchars($vehicle['type'], ENT_QUOTES, 'UTF-8'); ?></span>
+                                </td>
+                                <td class="px-5 py-4 text-fleet-ink" contenteditable="true"><?= htmlspecialchars($vehicle['department'], ENT_QUOTES, 'UTF-8'); ?></td>
+                                <td class="px-5 py-4 text-fleet-ink" contenteditable="true"><?= htmlspecialchars($vehicle['mileage'], ENT_QUOTES, 'UTF-8'); ?></td>
+                                <td class="px-5 py-4 text-fleet-muted" contenteditable="true"><?= htmlspecialchars($vehicle['insurance'], ENT_QUOTES, 'UTF-8'); ?></td>
+                                <td class="px-5 py-4 text-fleet-muted" contenteditable="true"><?= htmlspecialchars($vehicle['repairs'], ENT_QUOTES, 'UTF-8'); ?></td>
+                                <td class="px-5 py-4">
+                                    <?php if ($vehicle['status'] === 'Active'): ?>
+                                        <span class="rounded-lg border border-green-200 bg-fleet-success-soft px-3 py-1 text-xs font-semibold text-fleet-success">Active</span>
+                                    <?php else: ?>
+                                        <span class="rounded-lg border border-orange-200 bg-fleet-warning-soft px-3 py-1 text-xs font-semibold text-fleet-warning-strong">Maintenance</span>
+                                    <?php endif; ?>
+                                </td>
+                                <td class="px-5 py-4">
+                                    <div class="flex justify-end gap-3">
+                                        <button type="button" class="text-fleet-sidebar hover:text-fleet-primary" aria-label="Edit <?= htmlspecialchars($vehicle['reg'], ENT_QUOTES, 'UTF-8'); ?>">Edit</button>
+                                        <button type="button" class="text-fleet-danger hover:text-fleet-danger-strong" aria-label="Delete <?= htmlspecialchars($vehicle['reg'], ENT_QUOTES, 'UTF-8'); ?>">Del</button>
+                                    </div>
+                                </td>
+                            </tr>
+                        <?php endforeach; ?>
+                    </tbody>
+                </table>
+            </div>
+        </section>
+    </div>
+
+    <div id="vehicle-modal" class="fixed inset-0 z-50 hidden items-center justify-center bg-black/75 px-4 py-6" aria-hidden="true">
+        <div class="w-full max-w-2xl rounded-lg border border-fleet-line bg-fleet-surface shadow-2xl" role="dialog" aria-modal="true" aria-labelledby="vehicle-modal-title">
+            <form class="p-6" action="#" method="post">
+                <div class="mb-5 flex items-center justify-between gap-4">
+                    <h2 id="vehicle-modal-title" class="text-xl font-extrabold text-fleet-ink">Add New Vehicle</h2>
+                    <button type="button" data-close-vehicle-modal class="flex h-8 w-8 items-center justify-center rounded-lg text-2xl leading-none text-fleet-muted hover:bg-fleet-surface-muted hover:text-fleet-ink" aria-label="Close add vehicle form">&times;</button>
+                </div>
+
+                <div class="grid gap-5 md:grid-cols-2">
+                    <label class="block">
+                        <span class="mb-2 block text-sm font-semibold text-fleet-ink">Registration Number *</span>
+                        <input name="registration_number" type="text" required autofocus class="vehicle-form-control" placeholder="e.g. UAX 123A">
+                    </label>
+
+                    <label class="block">
+                        <span class="mb-2 block text-sm font-semibold text-fleet-ink">Make *</span>
+                        <input name="make" type="text" required class="vehicle-form-control" placeholder="e.g. Toyota">
+                    </label>
+
+                    <label class="block">
+                        <span class="mb-2 block text-sm font-semibold text-fleet-ink">Model *</span>
+                        <input name="model" type="text" required class="vehicle-form-control" placeholder="e.g. Land Cruiser">
+                    </label>
+
+                    <label class="block">
+                        <span class="mb-2 block text-sm font-semibold text-fleet-ink">Year</span>
+                        <input name="year" type="number" min="1980" max="2035" class="vehicle-form-control" placeholder="e.g. 2020">
+                    </label>
+
+                    <label class="block">
+                        <span class="mb-2 block text-sm font-semibold text-fleet-ink">Vehicle Type</span>
+                        <select name="vehicle_type" class="vehicle-form-control">
+                            <option value="sedan">sedan</option>
+                            <option value="suv">suv</option>
+                            <option value="pickup">pickup</option>
+                            <option value="truck">truck</option>
+                            <option value="van">van</option>
+                        </select>
+                    </label>
+
+                    <label class="block">
+                        <span class="mb-2 block text-sm font-semibold text-fleet-ink">Fuel Type</span>
+                        <select name="fuel_type" class="vehicle-form-control">
+                            <option value="diesel">diesel</option>
+                            <option value="petrol">petrol</option>
+                            <option value="hybrid">hybrid</option>
+                            <option value="electric">electric</option>
+                        </select>
+                    </label>
+
+                    <label class="block">
+                        <span class="mb-2 block text-sm font-semibold text-fleet-ink">Department</span>
+                        <input name="department" type="text" class="vehicle-form-control" placeholder="e.g. Transport">
+                    </label>
+
+                    <label class="block">
+                        <span class="mb-2 block text-sm font-semibold text-fleet-ink">Current Mileage (km)</span>
+                        <input name="current_mileage" type="number" min="0" class="vehicle-form-control" value="0">
+                    </label>
+
+                    <label class="block md:col-span-1">
+                        <span class="mb-2 block text-sm font-semibold text-fleet-ink">Status</span>
+                        <select name="status" class="vehicle-form-control">
+                            <option value="active">Active</option>
+                            <option value="maintenance">Maintenance</option>
+                            <option value="grounded">Grounded</option>
+                        </select>
+                    </label>
+                </div>
+
+                <div class="mt-6 flex justify-end gap-3">
+                    <button type="button" data-close-vehicle-modal class="h-10 rounded-lg border border-fleet-line bg-fleet-surface px-4 text-sm font-semibold text-fleet-ink shadow-sm hover:bg-fleet-surface-muted">Cancel</button>
+                    <button type="submit" class="h-10 rounded-lg bg-fleet-sidebar px-4 text-sm font-semibold text-white shadow-sm hover:bg-fleet-sidebar-active">Add Vehicle</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</main>
+<?php include __DIR__ . '/../../includes/footer.php'; ?>
