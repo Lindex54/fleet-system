@@ -9,10 +9,10 @@ $navItems = [
     ['key' => 'maintenance', 'label' => 'Maintenance', 'href' => ($basePath ?: '') . '/modules/maintenance/index.php', 'icon' => 'wrench'],
     ['key' => 'reports', 'label' => 'Reports', 'href' => ($basePath ?: '') . '/modules/reports/index.php', 'icon' => 'file'],
     ['key' => 'pre-inspection', 'label' => 'Pre-Inspection Report', 'href' => ($basePath ?: '') . '/modules/inspections/index.php', 'icon' => 'clipboard-list'],
-    ['key' => 'post-inspection', 'label' => 'Post-Inspection Report', 'href' => '#', 'icon' => 'clipboard-check'],
-    ['key' => 'providers', 'label' => 'Service Providers', 'href' => '#', 'icon' => 'building'],
-    ['key' => 'communications', 'label' => 'Communications', 'href' => '#', 'icon' => 'message'],
-    ['key' => 'history', 'label' => 'Comm. History', 'href' => '#', 'icon' => 'history'],
+    ['key' => 'post-inspection', 'label' => 'Post-Inspection Report', 'href' => ($basePath ?: '') . '/modules/post-inspection/index.php', 'icon' => 'clipboard-check'],
+    ['key' => 'providers', 'label' => 'Service Providers', 'href' => ($basePath ?: '') . '/modules/service-providers/index.php', 'icon' => 'building'],
+    ['key' => 'communications', 'label' => 'Communications', 'href' => ($basePath ?: '') . '/modules/communications/index.php', 'icon' => 'message'],
+    ['key' => 'history', 'label' => 'Comm. History', 'href' => ($basePath ?: '') . '/modules/communication-history/index.php', 'icon' => 'history'],
     ['key' => 'estates', 'label' => 'Estates & Works', 'href' => ($basePath ?: '') . '/modules/estates/index.php', 'icon' => 'hard-hat'],
 ];
 

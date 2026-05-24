@@ -24,7 +24,7 @@ $hasDrivers = count($drivers) > 0;
                     <span class="text-base">P</span>
                     <span>Print</span>
                 </button>
-                <button type="button" class="inline-flex h-10 items-center gap-2 rounded-lg bg-fleet-sidebar px-4 text-sm font-semibold text-white shadow-fleet-card hover:bg-fleet-sidebar-active">
+                <button type="button" data-open-driver-modal class="inline-flex h-10 items-center gap-2 rounded-lg bg-fleet-sidebar px-4 text-sm font-semibold text-white shadow-fleet-card hover:bg-fleet-sidebar-active">
                     <span class="text-lg leading-none">+</span>
                     <span>Add Driver</span>
                 </button>
@@ -53,7 +53,7 @@ $hasDrivers = count($drivers) > 0;
                 </div>
                 <h2 class="mt-5 text-lg font-extrabold text-fleet-ink">No drivers found</h2>
                 <p class="mt-2 text-sm text-fleet-muted">Add drivers to manage your fleet personnel.</p>
-                <button type="button" class="mt-6 inline-flex h-10 items-center gap-2 rounded-lg bg-fleet-sidebar px-4 text-sm font-semibold text-white shadow-fleet-card hover:bg-fleet-sidebar-active">
+                <button type="button" data-open-driver-modal class="mt-6 inline-flex h-10 items-center gap-2 rounded-lg bg-fleet-sidebar px-4 text-sm font-semibold text-white shadow-fleet-card hover:bg-fleet-sidebar-active">
                     <span class="text-lg leading-none">+</span>
                     <span>Add Driver</span>
                 </button>
@@ -109,6 +109,84 @@ $hasDrivers = count($drivers) > 0;
                 </table>
             </div>
         </section>
+    </div>
+
+    <div id="driver-modal" class="fixed inset-0 z-50 hidden items-center justify-center bg-black/75 px-4 py-6" aria-hidden="true">
+        <div class="dashboard-scroll max-h-[calc(100vh-2.5rem)] w-full max-w-[520px] overflow-y-auto rounded-lg border border-fleet-line bg-fleet-surface shadow-2xl" role="dialog" aria-modal="true" aria-labelledby="driver-modal-title">
+            <form class="p-6" action="#" method="post">
+                <div class="mb-5 flex items-center justify-between gap-4">
+                    <h2 id="driver-modal-title" class="text-xl font-extrabold text-fleet-ink">Add New Driver</h2>
+                    <button type="button" data-close-driver-modal class="flex h-8 w-8 items-center justify-center rounded-lg text-2xl leading-none text-fleet-muted hover:bg-fleet-surface-muted hover:text-fleet-ink" aria-label="Close add driver form">&times;</button>
+                </div>
+
+                <div class="grid gap-5 md:grid-cols-2">
+                    <label class="block">
+                        <span class="mb-2 block text-sm font-semibold text-fleet-ink">Full Name *</span>
+                        <input name="full_name" type="text" required autofocus class="vehicle-form-control" placeholder="John Doe">
+                    </label>
+
+                    <label class="block">
+                        <span class="mb-2 block text-sm font-semibold text-fleet-ink">Employee ID</span>
+                        <input name="employee_id" type="text" class="vehicle-form-control" placeholder="EMP-001">
+                    </label>
+
+                    <label class="block">
+                        <span class="mb-2 block text-sm font-semibold text-fleet-ink">Phone</span>
+                        <input name="phone" type="tel" class="vehicle-form-control" placeholder="+256 700 000000">
+                    </label>
+
+                    <label class="block">
+                        <span class="mb-2 block text-sm font-semibold text-fleet-ink">Email</span>
+                        <input name="email" type="email" class="vehicle-form-control">
+                    </label>
+
+                    <label class="block">
+                        <span class="mb-2 block text-sm font-semibold text-fleet-ink">License Number *</span>
+                        <input name="license_number" type="text" required class="vehicle-form-control">
+                    </label>
+
+                    <label class="block">
+                        <span class="mb-2 block text-sm font-semibold text-fleet-ink">License Class(es)</span>
+                        <input name="license_classes" type="text" class="vehicle-form-control" value="B">
+                        <span class="mt-2 block text-xs text-fleet-muted">Separate multiple classes with commas</span>
+                    </label>
+
+                    <label class="block">
+                        <span class="mb-2 block text-sm font-semibold text-fleet-ink">License Expiry</span>
+                        <input name="license_expiry" type="date" class="vehicle-form-control">
+                    </label>
+
+                    <label class="block">
+                        <span class="mb-2 block text-sm font-semibold text-fleet-ink">Department</span>
+                        <input name="department" type="text" class="vehicle-form-control" placeholder="Transport">
+                    </label>
+
+                    <label class="block">
+                        <span class="mb-2 block text-sm font-semibold text-fleet-ink">Assigned Vehicle Reg.</span>
+                        <input name="assigned_vehicle" type="text" class="vehicle-form-control" placeholder="e.g. UAX 123A">
+                    </label>
+
+                    <label class="block">
+                        <span class="mb-2 block text-sm font-semibold text-fleet-ink">App User Email (for login)</span>
+                        <input name="app_user_email" type="email" class="vehicle-form-control" placeholder="driver@busitema.ac.ug">
+                    </label>
+
+                    <label class="block md:col-span-1">
+                        <span class="mb-2 block text-sm font-semibold text-fleet-ink">Status</span>
+                        <select name="status" class="vehicle-form-control">
+                            <option value="active">Active</option>
+                            <option value="inactive">Inactive</option>
+                            <option value="suspended">Suspended</option>
+                        </select>
+                    </label>
+                </div>
+
+                <div class="mt-6 flex justify-end gap-3">
+                    <button type="button" data-close-driver-modal class="h-10 rounded-lg border border-fleet-line bg-fleet-surface px-4 text-sm font-semibold text-fleet-ink shadow-sm hover:bg-fleet-surface-muted">Cancel</button>
+                    <button type="submit" class="h-10 rounded-lg bg-fleet-sidebar px-4 text-sm font-semibold text-white shadow-sm hover:bg-fleet-sidebar-active">Add Driver</button>
+                </div>
+            </form>
+        </div>
     </div>
 </main>
 <?php include __DIR__ . '/../../includes/footer.php'; ?>

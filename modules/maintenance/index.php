@@ -23,7 +23,7 @@ $totalCost = array_sum(array_map(static fn ($record) => (int) $record['cost'], $
                     <span class="text-base">P</span>
                     <span>Print</span>
                 </button>
-                <button type="button" class="inline-flex h-10 items-center gap-2 rounded-lg bg-fleet-sidebar px-4 text-sm font-semibold text-white shadow-fleet-card hover:bg-fleet-sidebar-active">
+                <button type="button" data-open-maintenance-modal class="inline-flex h-10 items-center gap-2 rounded-lg bg-fleet-sidebar px-4 text-sm font-semibold text-white shadow-fleet-card hover:bg-fleet-sidebar-active">
                     <span class="text-lg leading-none">+</span>
                     <span>New Record</span>
                 </button>
@@ -60,7 +60,7 @@ $totalCost = array_sum(array_map(static fn ($record) => (int) $record['cost'], $
                 </div>
                 <h2 class="mt-5 text-lg font-extrabold text-fleet-ink">No maintenance records found</h2>
                 <p class="mt-2 text-sm text-fleet-muted">Create records to track repairs, service history, and costs.</p>
-                <button type="button" class="mt-6 inline-flex h-10 items-center gap-2 rounded-lg bg-fleet-sidebar px-4 text-sm font-semibold text-white shadow-fleet-card hover:bg-fleet-sidebar-active">
+                <button type="button" data-open-maintenance-modal class="mt-6 inline-flex h-10 items-center gap-2 rounded-lg bg-fleet-sidebar px-4 text-sm font-semibold text-white shadow-fleet-card hover:bg-fleet-sidebar-active">
                     <span class="text-lg leading-none">+</span>
                     <span>New Record</span>
                 </button>
@@ -106,6 +106,109 @@ $totalCost = array_sum(array_map(static fn ($record) => (int) $record['cost'], $
                 </table>
             </div>
         </section>
+    </div>
+
+    <div id="maintenance-modal" class="fixed inset-0 z-50 hidden items-center justify-center bg-black/75 px-4 py-6" aria-hidden="true">
+        <div class="dashboard-scroll max-h-[calc(100vh-2.5rem)] w-full max-w-2xl overflow-y-auto rounded-lg border border-fleet-line bg-fleet-surface shadow-2xl" role="dialog" aria-modal="true" aria-labelledby="maintenance-modal-title">
+            <form class="p-6" action="#" method="post">
+                <div class="mb-5 flex items-center justify-between gap-4">
+                    <h2 id="maintenance-modal-title" class="text-xl font-extrabold text-fleet-ink">New Maintenance Record</h2>
+                    <button type="button" data-close-maintenance-modal class="flex h-8 w-8 items-center justify-center rounded-lg text-2xl leading-none text-fleet-muted hover:bg-fleet-surface-muted hover:text-fleet-ink" aria-label="Close maintenance record form">&times;</button>
+                </div>
+
+                <div class="grid gap-5 md:grid-cols-2">
+                    <label class="block">
+                        <span class="mb-2 block text-sm font-semibold text-fleet-ink">Vehicle *</span>
+                        <select name="vehicle" required autofocus class="vehicle-form-control">
+                            <option value="">Select vehicle</option>
+                            <option value="UAJ 433X">UAJ 433X</option>
+                            <option value="UBR 123C">UBR 123C</option>
+                            <option value="UBR 402Q">UBR 402Q</option>
+                            <option value="UBP 401F">UBP 401F</option>
+                        </select>
+                    </label>
+
+                    <label class="block">
+                        <span class="mb-2 block text-sm font-semibold text-fleet-ink">Maintenance Type *</span>
+                        <select name="maintenance_type" required class="vehicle-form-control">
+                            <option value="repair">repair</option>
+                            <option value="routine service">routine service</option>
+                            <option value="inspection">inspection</option>
+                            <option value="brake service">brake service</option>
+                        </select>
+                    </label>
+
+                    <label class="block">
+                        <span class="mb-2 block text-sm font-semibold text-fleet-ink">Date Reported *</span>
+                        <input name="date_reported" type="date" required class="vehicle-form-control" value="2026-05-24">
+                    </label>
+
+                    <label class="block">
+                        <span class="mb-2 block text-sm font-semibold text-fleet-ink">Date Completed</span>
+                        <input name="date_completed" type="date" class="vehicle-form-control">
+                    </label>
+
+                    <label class="block md:col-span-2">
+                        <span class="mb-2 block text-sm font-semibold text-fleet-ink">Description *</span>
+                        <textarea name="description" required class="vehicle-form-control min-h-16 resize-y py-3" placeholder="Describe the issue and work done"></textarea>
+                    </label>
+
+                    <label class="block">
+                        <span class="mb-2 block text-sm font-semibold text-fleet-ink">Service Provider</span>
+                        <select name="service_provider" class="vehicle-form-control">
+                            <option value="">Select provider</option>
+                            <option value="Busitema Workshop">Busitema Workshop</option>
+                            <option value="Toyota Uganda">Toyota Uganda</option>
+                            <option value="Independent Garage">Independent Garage</option>
+                        </select>
+                    </label>
+
+                    <label class="block">
+                        <span class="mb-2 block text-sm font-semibold text-fleet-ink">Parts Replaced</span>
+                        <input name="parts_replaced" type="text" class="vehicle-form-control" placeholder="e.g. brake pads, oil filter">
+                    </label>
+
+                    <label class="block">
+                        <span class="mb-2 block text-sm font-semibold text-fleet-ink">Total Cost (UGX)</span>
+                        <input name="total_cost" type="number" min="0" class="vehicle-form-control">
+                    </label>
+
+                    <label class="block">
+                        <span class="mb-2 block text-sm font-semibold text-fleet-ink">Mileage at Service</span>
+                        <input name="mileage_at_service" type="number" min="0" class="vehicle-form-control">
+                    </label>
+
+                    <label class="block">
+                        <span class="mb-2 block text-sm font-semibold text-fleet-ink">Invoice Number</span>
+                        <input name="invoice_number" type="text" class="vehicle-form-control">
+                    </label>
+
+                    <label class="block">
+                        <span class="mb-2 block text-sm font-semibold text-fleet-ink">Approved By</span>
+                        <input name="approved_by" type="text" class="vehicle-form-control">
+                    </label>
+
+                    <label class="block md:col-span-1">
+                        <span class="mb-2 block text-sm font-semibold text-fleet-ink">Status</span>
+                        <select name="status" class="vehicle-form-control">
+                            <option value="reported">Reported</option>
+                            <option value="in progress">In Progress</option>
+                            <option value="completed">Completed</option>
+                        </select>
+                    </label>
+
+                    <label class="block md:col-span-2">
+                        <span class="mb-2 block text-sm font-semibold text-fleet-ink">Remarks</span>
+                        <input name="remarks" type="text" class="vehicle-form-control">
+                    </label>
+                </div>
+
+                <div class="mt-6 flex justify-end gap-3">
+                    <button type="button" data-close-maintenance-modal class="h-10 rounded-lg border border-fleet-line bg-fleet-surface px-4 text-sm font-semibold text-fleet-ink shadow-sm hover:bg-fleet-surface-muted">Cancel</button>
+                    <button type="submit" class="h-10 rounded-lg bg-fleet-sidebar px-4 text-sm font-semibold text-white shadow-sm hover:bg-fleet-sidebar-active">Create Record</button>
+                </div>
+            </form>
+        </div>
     </div>
 </main>
 <?php include __DIR__ . '/../../includes/footer.php'; ?>
