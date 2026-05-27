@@ -3,7 +3,7 @@
 // The sidebar template reads this list and applies the active style based on $activePage.
 
 $navItems = [
-    ['key' => 'dashboard', 'label' => 'Dashboard', 'href' => ($basePath ?: '') . '/index.php', 'icon' => 'dashboard'],
+    ['key' => 'dashboard', 'label' => 'Dashboard', 'href' => ($basePath ?: '') . '/modules/dashboard/index.php', 'icon' => 'dashboard'],
     ['key' => 'vehicles', 'label' => 'Vehicles', 'href' => ($basePath ?: '') . '/modules/vehicles/index.php', 'icon' => 'car'],
     ['key' => 'logbook', 'label' => 'Vehicle Log Book', 'href' => ($basePath ?: '') . '/modules/logbook/index.php', 'icon' => 'book'],
     ['key' => 'drivers', 'label' => 'Drivers', 'href' => ($basePath ?: '') . '/modules/drivers/index.php', 'icon' => 'users'],
