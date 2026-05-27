@@ -1,2 +1,9 @@
 node_modules/
 npm-debug.log*
+.chrome-export-profile/
+fleet_system_data_flow_diagram.svg
+fleet_system_data_flow_diagram.png
+fleet_system_data_flow_diagram_simple.svg
+fleet_system_data_flow_diagram_simple.png
+fleet_system_erd.svg
+fleet_system_erd.png
