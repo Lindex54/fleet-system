@@ -316,6 +316,45 @@ vehicleModal?.addEventListener('click', (event) => {
   }
 });
 
+if (vehicleModal?.dataset.openOnLoad === 'true') {
+  // When the server returns the page with the modal already open, keep body scroll locked.
+  document.body.classList.add('overflow-hidden');
+}
+
+const flashNotice = document.querySelector('[data-flash-notice]');
+const dismissFlashButton = document.querySelector('[data-dismiss-flash]');
+const flashProgress = document.querySelector('[data-flash-progress]');
+let flashNoticeTimerId;
+
+function dismissFlashNotice() {
+  if (!flashNotice) {
+    return;
+  }
+
+  flashNotice.classList.add('translate-y-2', 'opacity-0');
+
+  window.clearTimeout(flashNoticeTimerId);
+  window.setTimeout(() => {
+    flashNotice.remove();
+  }, 500);
+}
+
+if (flashNotice) {
+  // The notice stays visible briefly, then fades away so the page stays clean.
+  flashNotice.classList.add('opacity-100', 'translate-y-0');
+
+  if (flashProgress) {
+    flashProgress.style.transition = 'transform 5s linear';
+    window.setTimeout(() => {
+      flashProgress.style.transform = 'scaleX(0)';
+    }, 50);
+  }
+
+  flashNoticeTimerId = window.setTimeout(dismissFlashNotice, 5000);
+}
+
+dismissFlashButton?.addEventListener('click', dismissFlashNotice);
+
 document.addEventListener('keydown', (event) => {
   if (event.key === 'Escape' && vehicleModal && !vehicleModal.classList.contains('hidden')) {
     setVehicleModalOpen(false);
@@ -352,6 +391,11 @@ logbookModal?.addEventListener('click', (event) => {
     setLogbookModalOpen(false);
   }
 });
+
+if (logbookModal?.dataset.openOnLoad === 'true') {
+  // When the server returns the page with the logbook modal already open, preserve scroll lock.
+  document.body.classList.add('overflow-hidden');
+}
 
 document.addEventListener('keydown', (event) => {
   if (event.key === 'Escape' && logbookModal && !logbookModal.classList.contains('hidden')) {

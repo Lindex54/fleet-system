@@ -1,8 +1,9 @@
 <?php
-// Static frontend page for the fleet vehicle registry.
+// Vehicle registry page backed by the vehicle handler and database.
 $activePage = 'vehicles';
-require_once __DIR__ . '/../../includes/data.php';
-extract(fleetData('vehicles'));
+require_once __DIR__ . '/../../handlers/vehicle.php';
+// Pull both the current vehicle rows and any flash UI state from the handler.
+extract(vehicleFetchPageData());
 include __DIR__ . '/../../includes/header.php';
 include __DIR__ . '/../../includes/sidebar.php';
 ?>
@@ -27,6 +28,47 @@ include __DIR__ . '/../../includes/sidebar.php';
                 </button>
             </div>
         </div>
+
+        <?php if (!empty($vehicleNotification)): ?>
+            <?php $isSuccessNotice = ($vehicleNotification['type'] ?? '') === 'success'; ?>
+            <!-- Clear feedback after add-vehicle attempts, whether success or validation/database failure. -->
+            <section
+                data-flash-notice
+                class="mb-6 overflow-hidden rounded-2xl border shadow-lg transition duration-500 <?= $isSuccessNotice ? 'border-emerald-200 bg-gradient-to-r from-emerald-50 via-white to-lime-50 text-emerald-950 shadow-emerald-100/80' : 'border-rose-200 bg-gradient-to-r from-rose-50 via-white to-amber-50 text-rose-950 shadow-rose-100/80'; ?>"
+            >
+                <div class="flex items-start gap-4 px-5 py-4 sm:px-6">
+                    <div class="mt-0.5 flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl text-sm font-extrabold shadow-sm <?= $isSuccessNotice ? 'bg-emerald-600 text-white ring-4 ring-emerald-100' : 'bg-rose-600 text-white ring-4 ring-rose-100'; ?>">
+                        <?= $isSuccessNotice ? 'OK' : '!'; ?>
+                    </div>
+                    <div class="min-w-0 flex-1">
+                        <div class="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                            <div>
+                                <h2 class="text-sm font-extrabold uppercase tracking-[0.18em]">
+                                    <?= htmlspecialchars($vehicleNotification['title'] ?? 'Vehicle update', ENT_QUOTES, 'UTF-8'); ?>
+                                </h2>
+                                <p class="mt-1 text-sm leading-6 sm:text-[15px]">
+                                    <?= htmlspecialchars($vehicleNotification['message'] ?? '', ENT_QUOTES, 'UTF-8'); ?>
+                                </p>
+                            </div>
+                            <button
+                                type="button"
+                                data-dismiss-flash
+                                class="inline-flex h-9 w-9 items-center justify-center self-start rounded-full border text-lg font-bold transition hover:scale-105 <?= $isSuccessNotice ? 'border-emerald-200 bg-white/80 text-emerald-700 hover:bg-emerald-100' : 'border-rose-200 bg-white/80 text-rose-700 hover:bg-rose-100'; ?>"
+                                aria-label="Dismiss notification"
+                            >
+                                x
+                            </button>
+                        </div>
+                        <div class="mt-4 h-1.5 overflow-hidden rounded-full <?= $isSuccessNotice ? 'bg-emerald-100' : 'bg-rose-100'; ?>">
+                            <div
+                                data-flash-progress
+                                class="h-full w-full origin-left rounded-full <?= $isSuccessNotice ? 'bg-emerald-500' : 'bg-rose-500'; ?>"
+                            ></div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+        <?php endif; ?>
 
         <div class="mb-6 max-w-md">
             <label class="relative block">
@@ -108,9 +150,15 @@ include __DIR__ . '/../../includes/sidebar.php';
         </section>
     </div>
 
-    <div id="vehicle-modal" class="fixed inset-0 z-50 hidden items-center justify-center bg-black/75 px-4 py-6" aria-hidden="true">
+    <div
+        id="vehicle-modal"
+        class="fixed inset-0 z-50 <?= $shouldOpenVehicleModal ? 'flex' : 'hidden'; ?> items-center justify-center bg-black/75 px-4 py-6"
+        aria-hidden="<?= $shouldOpenVehicleModal ? 'false' : 'true'; ?>"
+        data-open-on-load="<?= $shouldOpenVehicleModal ? 'true' : 'false'; ?>"
+    >
         <div class="w-full max-w-2xl rounded-lg border border-fleet-line bg-fleet-surface shadow-2xl" role="dialog" aria-modal="true" aria-labelledby="vehicle-modal-title">
-            <form class="p-6" action="#" method="post">
+            <!-- Failed submissions reopen this modal and refill the fields from flash form data. -->
+            <form class="p-6" action="<?= htmlspecialchars($vehicleFormAction, ENT_QUOTES, 'UTF-8'); ?>" method="post">
                 <div class="mb-5 flex items-center justify-between gap-4">
                     <h2 id="vehicle-modal-title" class="text-xl font-extrabold text-fleet-ink">Add New Vehicle</h2>
                     <button type="button" data-close-vehicle-modal class="flex h-8 w-8 items-center justify-center rounded-lg text-2xl leading-none text-fleet-muted hover:bg-fleet-surface-muted hover:text-fleet-ink" aria-label="Close add vehicle form">&times;</button>
@@ -119,61 +167,66 @@ include __DIR__ . '/../../includes/sidebar.php';
                 <div class="grid gap-5 md:grid-cols-2">
                     <label class="block">
                         <span class="mb-2 block text-sm font-semibold text-fleet-ink">Registration Number *</span>
-                        <input name="registration_number" type="text" required autofocus class="vehicle-form-control" placeholder="e.g. UAX 123A">
+                        <input name="registration_number" type="text" required autofocus class="vehicle-form-control" placeholder="e.g. UAX 123A" value="<?= htmlspecialchars($vehicleFormData['registration_number'] ?? '', ENT_QUOTES, 'UTF-8'); ?>">
                     </label>
 
                     <label class="block">
                         <span class="mb-2 block text-sm font-semibold text-fleet-ink">Make *</span>
-                        <input name="make" type="text" required class="vehicle-form-control" placeholder="e.g. Toyota">
+                        <input name="make" type="text" required class="vehicle-form-control" placeholder="e.g. Toyota" value="<?= htmlspecialchars($vehicleFormData['make'] ?? '', ENT_QUOTES, 'UTF-8'); ?>">
                     </label>
 
                     <label class="block">
                         <span class="mb-2 block text-sm font-semibold text-fleet-ink">Model *</span>
-                        <input name="model" type="text" required class="vehicle-form-control" placeholder="e.g. Land Cruiser">
+                        <input name="model" type="text" required class="vehicle-form-control" placeholder="e.g. Land Cruiser" value="<?= htmlspecialchars($vehicleFormData['model'] ?? '', ENT_QUOTES, 'UTF-8'); ?>">
                     </label>
 
                     <label class="block">
                         <span class="mb-2 block text-sm font-semibold text-fleet-ink">Year</span>
-                        <input name="year" type="number" min="1980" max="2035" class="vehicle-form-control" placeholder="e.g. 2020">
+                        <input name="year" type="number" min="1980" max="2035" class="vehicle-form-control" placeholder="e.g. 2020" value="<?= htmlspecialchars($vehicleFormData['year'] ?? '', ENT_QUOTES, 'UTF-8'); ?>">
                     </label>
 
                     <label class="block">
                         <span class="mb-2 block text-sm font-semibold text-fleet-ink">Vehicle Type</span>
                         <select name="vehicle_type" class="vehicle-form-control">
-                            <option value="sedan">sedan</option>
-                            <option value="suv">suv</option>
-                            <option value="pickup">pickup</option>
-                            <option value="truck">truck</option>
-                            <option value="van">van</option>
+                            <option value="sedan" <?= (($vehicleFormData['vehicle_type'] ?? 'sedan') === 'sedan') ? 'selected' : ''; ?>>sedan</option>
+                            <option value="suv" <?= (($vehicleFormData['vehicle_type'] ?? '') === 'suv') ? 'selected' : ''; ?>>suv</option>
+                            <option value="pickup" <?= (($vehicleFormData['vehicle_type'] ?? '') === 'pickup') ? 'selected' : ''; ?>>pickup</option>
+                            <option value="truck" <?= (($vehicleFormData['vehicle_type'] ?? '') === 'truck') ? 'selected' : ''; ?>>truck</option>
+                            <option value="van" <?= (($vehicleFormData['vehicle_type'] ?? '') === 'van') ? 'selected' : ''; ?>>van</option>
+                            <option value="bus" <?= (($vehicleFormData['vehicle_type'] ?? '') === 'bus') ? 'selected' : ''; ?>>bus</option>
+                            <option value="motorcycle" <?= (($vehicleFormData['vehicle_type'] ?? '') === 'motorcycle') ? 'selected' : ''; ?>>motorcycle</option>
+                            <option value="other" <?= (($vehicleFormData['vehicle_type'] ?? '') === 'other') ? 'selected' : ''; ?>>other</option>
                         </select>
                     </label>
 
                     <label class="block">
                         <span class="mb-2 block text-sm font-semibold text-fleet-ink">Fuel Type</span>
                         <select name="fuel_type" class="vehicle-form-control">
-                            <option value="diesel">diesel</option>
-                            <option value="petrol">petrol</option>
-                            <option value="hybrid">hybrid</option>
-                            <option value="electric">electric</option>
+                            <option value="diesel" <?= (($vehicleFormData['fuel_type'] ?? 'diesel') === 'diesel') ? 'selected' : ''; ?>>diesel</option>
+                            <option value="petrol" <?= (($vehicleFormData['fuel_type'] ?? '') === 'petrol') ? 'selected' : ''; ?>>petrol</option>
+                            <option value="hybrid" <?= (($vehicleFormData['fuel_type'] ?? '') === 'hybrid') ? 'selected' : ''; ?>>hybrid</option>
+                            <option value="electric" <?= (($vehicleFormData['fuel_type'] ?? '') === 'electric') ? 'selected' : ''; ?>>electric</option>
+                            <option value="other" <?= (($vehicleFormData['fuel_type'] ?? '') === 'other') ? 'selected' : ''; ?>>other</option>
                         </select>
                     </label>
 
                     <label class="block">
                         <span class="mb-2 block text-sm font-semibold text-fleet-ink">Department</span>
-                        <input name="department" type="text" class="vehicle-form-control" placeholder="e.g. Transport">
+                        <input name="department" type="text" class="vehicle-form-control" placeholder="e.g. Transport" value="<?= htmlspecialchars($vehicleFormData['department'] ?? '', ENT_QUOTES, 'UTF-8'); ?>">
                     </label>
 
                     <label class="block">
                         <span class="mb-2 block text-sm font-semibold text-fleet-ink">Current Mileage (km)</span>
-                        <input name="current_mileage" type="number" min="0" class="vehicle-form-control" value="0">
+                        <input name="current_mileage" type="number" min="0" class="vehicle-form-control" value="<?= htmlspecialchars($vehicleFormData['current_mileage'] ?? '0', ENT_QUOTES, 'UTF-8'); ?>">
                     </label>
 
                     <label class="block md:col-span-1">
                         <span class="mb-2 block text-sm font-semibold text-fleet-ink">Status</span>
                         <select name="status" class="vehicle-form-control">
-                            <option value="active">Active</option>
-                            <option value="maintenance">Maintenance</option>
-                            <option value="grounded">Grounded</option>
+                            <option value="active" <?= (($vehicleFormData['status'] ?? 'active') === 'active') ? 'selected' : ''; ?>>Active</option>
+                            <option value="maintenance" <?= (($vehicleFormData['status'] ?? '') === 'maintenance') ? 'selected' : ''; ?>>Maintenance</option>
+                            <option value="grounded" <?= (($vehicleFormData['status'] ?? '') === 'grounded') ? 'selected' : ''; ?>>Grounded</option>
+                            <option value="disposed" <?= (($vehicleFormData['status'] ?? '') === 'disposed') ? 'selected' : ''; ?>>Disposed</option>
                         </select>
                     </label>
                 </div>

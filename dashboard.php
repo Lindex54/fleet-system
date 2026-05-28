@@ -1,10 +1,10 @@
 <?php
 // Main dashboard entry point for the fleet management system.
 $activePage = 'dashboard';
-require_once __DIR__ . '/../../includes/data.php';
+require_once __DIR__ . '/includes/data.php';
 extract(fleetData('dashboard'));
-include __DIR__ . '/../../includes/header.php';
-include __DIR__ . '/../../includes/sidebar.php';
+include __DIR__ . '/includes/header.php';
+include __DIR__ . '/includes/sidebar.php';
 ?>
 <main class="min-h-screen lg:pl-64">
     <div class="mx-auto max-w-[1320px] px-4 py-6 sm:px-6 lg:px-8">
@@ -214,4 +214,4 @@ include __DIR__ . '/../../includes/sidebar.php';
         </section>
     </div>
 </main>
-<?php include __DIR__ . '/../../includes/footer.php'; ?>
+<?php include __DIR__ . '/includes/footer.php'; ?>

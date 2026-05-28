@@ -5,7 +5,7 @@ $activePage = 'home';
 include __DIR__ . '/includes/header.php';
 
 $loginUrl = ($basePath ?: '') . '/login.php';
-$dashboardUrl = ($basePath ?: '') . '/modules/dashboard/index.php';
+$dashboardUrl = ($basePath ?: '') . '/dashboard.php';
 ?>
 <main class="min-h-screen bg-fleet-canvas">
     <header class="border-b border-fleet-line bg-fleet-surface">
