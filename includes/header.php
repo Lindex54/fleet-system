@@ -11,6 +11,7 @@ if ($documentRoot && $projectRoot && substr($projectRoot, 0, strlen($documentRoo
 $assetVersion = file_exists($projectRoot . '/assets/css/app.css') ? filemtime($projectRoot . '/assets/css/app.css') : time();
 $assetPath = ($basePath ?: '') . '/assets/css/app.css?v=' . $assetVersion;
 $scriptPath = ($basePath ?: '') . '/assets/js/app.js';
+$moduleScriptPath = ($basePath ?: '') . '/assets/js/module-modals.js';
 ?>
 <!DOCTYPE html>
 <html lang="en">
