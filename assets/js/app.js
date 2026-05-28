@@ -261,18 +261,16 @@ updateCommunicationRecipientState();
 const vehicleModal = document.querySelector('#vehicle-modal');
 const openVehicleModalButtons = document.querySelectorAll('[data-open-vehicle-modal]');
 const closeVehicleModalButtons = document.querySelectorAll('[data-close-vehicle-modal]');
-const postInspectionModal = document.querySelector('#post-inspection-modal');
-const openPostInspectionModalButtons = document.querySelectorAll('[data-open-post-inspection-modal]');
-const closePostInspectionModalButtons = document.querySelectorAll('[data-close-post-inspection-modal]');
-const providerModal = document.querySelector('#provider-modal');
-const openProviderModalButtons = document.querySelectorAll('[data-open-provider-modal]');
-const closeProviderModalButtons = document.querySelectorAll('[data-close-provider-modal]');
 const estateViewModal = document.querySelector('#estate-view-modal');
 const openEstateViewModalButtons = document.querySelectorAll('[data-open-estate-view-modal]');
 const closeEstateViewModalButtons = document.querySelectorAll('[data-close-estate-view-modal]');
 const estateEditModal = document.querySelector('#estate-edit-modal');
 const openEstateEditModalButtons = document.querySelectorAll('[data-open-estate-edit-modal]');
 const closeEstateEditModalButtons = document.querySelectorAll('[data-close-estate-edit-modal]');
+const openEstateDeleteButtons = document.querySelectorAll('[data-open-estate-delete]');
+const estateDeleteModal = document.querySelector('#estate-delete-modal');
+const cancelEstateDeleteButton = document.querySelector('[data-cancel-estate-delete]');
+const confirmEstateDeleteButton = document.querySelector('[data-confirm-estate-delete]');
 const estateEditProgress = document.querySelector('[data-estate-edit-progress]');
 const estateEditProgressLabel = document.querySelector('[data-estate-edit-progress-label]');
 const estateNewModal = document.querySelector('#estate-new-modal');
@@ -366,84 +364,6 @@ dismissFlashButton?.addEventListener('click', dismissFlashNotice);
 document.addEventListener('keydown', (event) => {
   if (event.key === 'Escape' && vehicleModal && !vehicleModal.classList.contains('hidden')) {
     setVehicleModalOpen(false);
-  }
-});
-
-// Post-inspection modal behavior
-// Opens or closes the post-inspection modal and keeps focus/scroll state in sync.
-function setPostInspectionModalOpen(isOpen) {
-  if (!postInspectionModal) {
-    return;
-  }
-
-  postInspectionModal.classList.toggle('hidden', !isOpen);
-  postInspectionModal.classList.toggle('flex', isOpen);
-  postInspectionModal.setAttribute('aria-hidden', String(!isOpen));
-  document.body.classList.toggle('overflow-hidden', isOpen);
-
-  if (isOpen) {
-    postInspectionModal.querySelector('input, select, textarea, button')?.focus();
-  } else {
-    openPostInspectionModalButtons[0]?.focus();
-  }
-}
-
-openPostInspectionModalButtons.forEach((button) => {
-  button.addEventListener('click', () => setPostInspectionModalOpen(true));
-});
-
-closePostInspectionModalButtons.forEach((button) => {
-  button.addEventListener('click', () => setPostInspectionModalOpen(false));
-});
-
-postInspectionModal?.addEventListener('click', (event) => {
-  if (event.target === postInspectionModal) {
-    setPostInspectionModalOpen(false);
-  }
-});
-
-document.addEventListener('keydown', (event) => {
-  if (event.key === 'Escape' && postInspectionModal && !postInspectionModal.classList.contains('hidden')) {
-    setPostInspectionModalOpen(false);
-  }
-});
-
-// Provider modal behavior
-// Opens or closes the provider modal and keeps focus/scroll state in sync.
-function setProviderModalOpen(isOpen) {
-  if (!providerModal) {
-    return;
-  }
-
-  providerModal.classList.toggle('hidden', !isOpen);
-  providerModal.classList.toggle('flex', isOpen);
-  providerModal.setAttribute('aria-hidden', String(!isOpen));
-  document.body.classList.toggle('overflow-hidden', isOpen);
-
-  if (isOpen) {
-    providerModal.querySelector('input, select, textarea, button')?.focus();
-  } else {
-    openProviderModalButtons[0]?.focus();
-  }
-}
-
-openProviderModalButtons.forEach((button) => {
-  button.addEventListener('click', () => setProviderModalOpen(true));
-});
-
-closeProviderModalButtons.forEach((button) => {
-  button.addEventListener('click', () => setProviderModalOpen(false));
-});
-
-providerModal?.addEventListener('click', (event) => {
-  if (event.target === providerModal) {
-    setProviderModalOpen(false);
-  }
-});
-
-document.addEventListener('keydown', (event) => {
-  if (event.key === 'Escape' && providerModal && !providerModal.classList.contains('hidden')) {
-    setProviderModalOpen(false);
   }
 });
 
@@ -589,10 +509,10 @@ function populateEstateEditModal(projectCard) {
   setEstateInput('[data-estate-edit-location]', projectCard.dataset.location);
   setEstateInput('[data-estate-edit-status]', projectCard.dataset.status);
   setEstateInput('[data-estate-edit-priority]', projectCard.dataset.priority);
-  setEstateInput('[data-estate-edit-start]', projectCard.dataset.start);
-  setEstateInput('[data-estate-edit-deadline]', projectCard.dataset.deadline);
-  setEstateInput('[data-estate-edit-budget]', stripCurrency(projectCard.dataset.budget));
-  setEstateInput('[data-estate-edit-spent]', stripCurrency(projectCard.dataset.spent));
+  setEstateInput('[data-estate-edit-start]', projectCard.dataset.startRaw || projectCard.dataset.start);
+  setEstateInput('[data-estate-edit-deadline]', projectCard.dataset.deadlineRaw || projectCard.dataset.deadline);
+  setEstateInput('[data-estate-edit-budget]', projectCard.dataset.budgetRaw || stripCurrency(projectCard.dataset.budget));
+  setEstateInput('[data-estate-edit-spent]', projectCard.dataset.spentRaw || stripCurrency(projectCard.dataset.spent));
   setEstateInput('[data-estate-edit-progress]', progress);
   setEstateInput('[data-estate-edit-contractor]', projectCard.dataset.contractor);
   setEstateInput('[data-estate-edit-contractor-contact]', projectCard.dataset.contractorContact);
@@ -602,6 +522,24 @@ function populateEstateEditModal(projectCard) {
 
   if (estateEditProgressLabel) {
     estateEditProgressLabel.textContent = progress;
+  }
+}
+
+let pendingEstateDeleteForm = null;
+
+// Opens or closes the custom estate delete confirmation modal.
+function setEstateDeleteModalOpen(isOpen, form = null) {
+  if (!estateDeleteModal) {
+    return;
+  }
+
+  pendingEstateDeleteForm = isOpen ? form : null;
+  estateDeleteModal.classList.toggle('is-open', isOpen);
+  estateDeleteModal.setAttribute('aria-hidden', String(!isOpen));
+  document.body.classList.toggle('overflow-hidden', isOpen);
+
+  if (isOpen) {
+    confirmEstateDeleteButton?.focus();
   }
 }
 
@@ -643,11 +581,26 @@ estateEditModal?.addEventListener('click', (event) => {
   }
 });
 
+openEstateDeleteButtons.forEach((button) => {
+  button.addEventListener('click', (event) => {
+    event.preventDefault();
+    const form = button.closest('form');
+
+    if (form) {
+      setEstateDeleteModalOpen(true, form);
+    }
+  });
+});
+
 estateEditProgress?.addEventListener('input', (event) => {
   if (estateEditProgressLabel) {
     estateEditProgressLabel.textContent = event.target.value;
   }
 });
+
+if (estateEditModal?.dataset.openOnLoad === 'true') {
+  document.body.classList.add('overflow-hidden');
+}
 
 document.addEventListener('keydown', (event) => {
   if (event.key === 'Escape' && estateEditModal && !estateEditModal.classList.contains('hidden')) {
@@ -693,8 +646,37 @@ estateNewProgress?.addEventListener('input', (event) => {
   }
 });
 
+if (estateNewModal?.dataset.openOnLoad === 'true') {
+  document.body.classList.add('overflow-hidden');
+}
+
+confirmEstateDeleteButton?.addEventListener('click', () => {
+  if (!pendingEstateDeleteForm) {
+    setEstateDeleteModalOpen(false);
+    return;
+  }
+
+  const form = pendingEstateDeleteForm;
+  setEstateDeleteModalOpen(false);
+  form.submit();
+});
+
+cancelEstateDeleteButton?.addEventListener('click', () => {
+  setEstateDeleteModalOpen(false);
+});
+
+estateDeleteModal?.addEventListener('click', (event) => {
+  if (event.target === estateDeleteModal) {
+    setEstateDeleteModalOpen(false);
+  }
+});
+
 document.addEventListener('keydown', (event) => {
   if (event.key === 'Escape' && estateNewModal && !estateNewModal.classList.contains('hidden')) {
     setEstateNewModalOpen(false);
+  }
+
+  if (event.key === 'Escape' && estateDeleteModal && estateDeleteModal.classList.contains('is-open')) {
+    setEstateDeleteModalOpen(false);
   }
 });

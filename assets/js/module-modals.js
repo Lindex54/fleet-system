@@ -1,4 +1,4 @@
-// Module modal references for pre-inspection, logbook, drivers, and maintenance pages
+// Module modal references for pre-inspection, post-inspection, providers, logbook, drivers, and maintenance pages
 const preInspectionModal = document.querySelector('#pre-inspection-modal');
 const openPreInspectionModalButtons = document.querySelectorAll('[data-open-pre-inspection-modal]');
 const closePreInspectionModalButtons = document.querySelectorAll('[data-close-pre-inspection-modal]');
@@ -15,6 +15,34 @@ const preInspectionItemTemplate = document.querySelector('#pre-inspection-item-t
 const preInspectionDeleteModal = document.querySelector('#pre-inspection-delete-modal');
 const cancelPreInspectionDeleteButton = document.querySelector('[data-cancel-pre-inspection-delete]');
 const confirmPreInspectionDeleteButton = document.querySelector('[data-confirm-pre-inspection-delete]');
+
+const postInspectionModal = document.querySelector('#post-inspection-modal');
+const openPostInspectionModalButtons = document.querySelectorAll('[data-open-post-inspection-modal]');
+const closePostInspectionModalButtons = document.querySelectorAll('[data-close-post-inspection-modal]');
+const editPostInspectionEntryButtons = document.querySelectorAll('[data-edit-post-inspection-entry]');
+const openPostInspectionDeleteButtons = document.querySelectorAll('[data-open-post-inspection-delete]');
+const postInspectionActionField = document.querySelector('[data-post-inspection-action-field]');
+const postInspectionReportIdField = document.querySelector('[data-post-inspection-report-id-field]');
+const postInspectionModalTitle = document.querySelector('[data-post-inspection-modal-title]');
+const postInspectionSubmitButton = document.querySelector('[data-post-inspection-submit-button]');
+const postInspectionForm = document.querySelector('[data-post-inspection-form]');
+const postInspectionDeleteModal = document.querySelector('#post-inspection-delete-modal');
+const cancelPostInspectionDeleteButton = document.querySelector('[data-cancel-post-inspection-delete]');
+const confirmPostInspectionDeleteButton = document.querySelector('[data-confirm-post-inspection-delete]');
+
+const providerModal = document.querySelector('#provider-modal');
+const openProviderModalButtons = document.querySelectorAll('[data-open-provider-modal]');
+const closeProviderModalButtons = document.querySelectorAll('[data-close-provider-modal]');
+const editProviderEntryButtons = document.querySelectorAll('[data-edit-provider-entry]');
+const openProviderDeleteButtons = document.querySelectorAll('[data-open-provider-delete]');
+const providerActionField = document.querySelector('[data-provider-action-field]');
+const providerIdField = document.querySelector('[data-provider-id-field]');
+const providerModalTitle = document.querySelector('[data-provider-modal-title]');
+const providerSubmitButton = document.querySelector('[data-provider-submit-button]');
+const providerForm = document.querySelector('[data-provider-form]');
+const providerDeleteModal = document.querySelector('#provider-delete-modal');
+const cancelProviderDeleteButton = document.querySelector('[data-cancel-provider-delete]');
+const confirmProviderDeleteButton = document.querySelector('[data-confirm-provider-delete]');
 
 const logbookModal = document.querySelector('#logbook-modal');
 const openLogbookModalButtons = document.querySelectorAll('[data-open-logbook-modal]');
@@ -323,6 +351,386 @@ document.addEventListener('keydown', (event) => {
 
   if (event.key === 'Escape' && preInspectionDeleteModal && preInspectionDeleteModal.classList.contains('is-open')) {
     setPreInspectionDeleteModalOpen(false);
+  }
+});
+
+// Opens or closes the post-inspection modal and keeps focus/scroll state in sync.
+function setPostInspectionModalOpen(isOpen) {
+  if (!postInspectionModal) {
+    return;
+  }
+
+  postInspectionModal.classList.toggle('hidden', !isOpen);
+  postInspectionModal.classList.toggle('flex', isOpen);
+  postInspectionModal.setAttribute('aria-hidden', String(!isOpen));
+  document.body.classList.toggle('overflow-hidden', isOpen);
+
+  if (isOpen) {
+    postInspectionModal.querySelector('input, select, textarea, button')?.focus();
+  } else {
+    openPostInspectionModalButtons[0]?.focus();
+  }
+}
+
+// Switches the shared post-inspection modal between create mode and edit mode.
+function setPostInspectionFormMode(mode) {
+  if (postInspectionActionField) {
+    postInspectionActionField.value = mode === 'update' ? 'update' : 'create';
+  }
+
+  if (postInspectionModalTitle) {
+    postInspectionModalTitle.textContent = mode === 'update' ? 'Edit Post-Inspection Report' : 'New Post-Inspection Report';
+  }
+
+  if (postInspectionSubmitButton) {
+    postInspectionSubmitButton.textContent = mode === 'update' ? 'Save Changes' : 'Save Report';
+  }
+}
+
+// Writes a value into a single field inside the post-inspection modal if it exists.
+function setPostInspectionFieldValue(selector, value) {
+  const field = postInspectionModal?.querySelector(selector);
+
+  if (field) {
+    field.value = value;
+  }
+}
+
+// Applies saved system condition and remarks back into the post-inspection checklist.
+function applyPostInspectionSystemChecks(systemChecks = []) {
+  if (!postInspectionModal) {
+    return;
+  }
+
+  const checksByName = new Map();
+
+  systemChecks.forEach((check) => {
+    if (check?.system_name) {
+      checksByName.set(check.system_name, check);
+    }
+  });
+
+  const hiddenSystemFields = postInspectionModal.querySelectorAll('input[name="system_name[]"]');
+  hiddenSystemFields.forEach((field, index) => {
+    const check = checksByName.get(field.value) || {};
+    const statusField = postInspectionModal.querySelector(`input[name="system_status[${index}]"][value="${check.condition_status || ''}"]`);
+    const remarkField = postInspectionModal.querySelectorAll('input[name="system_remarks[]"]')[index];
+
+    postInspectionModal.querySelectorAll(`input[name="system_status[${index}]"]`).forEach((radio) => {
+      radio.checked = false;
+    });
+
+    if (statusField) {
+      statusField.checked = true;
+    }
+
+    if (remarkField) {
+      remarkField.value = check.remarks || '';
+    }
+  });
+}
+
+// Resets the shared post-inspection modal back to a clean create state.
+function resetPostInspectionFormForCreate() {
+  postInspectionForm?.reset();
+
+  if (postInspectionReportIdField) {
+    postInspectionReportIdField.value = '';
+  }
+
+  setPostInspectionFormMode('create');
+  setPostInspectionFieldValue('input[name="inspection_date"]', new Date().toISOString().slice(0, 10));
+  setPostInspectionFieldValue('input[name="amount_spent"]', '0');
+  setPostInspectionFieldValue('textarea[name="recommendation"]', 'This is to request you authorise payment to the above service provider...');
+  applyPostInspectionSystemChecks([]);
+}
+
+// Reads the clicked post-inspection row and pre-fills the shared modal for editing.
+function populatePostInspectionEditForm(button) {
+  const row = button.closest('.post-inspection-row');
+  if (!row) {
+    return;
+  }
+
+  setPostInspectionFormMode('update');
+
+  if (postInspectionReportIdField) {
+    postInspectionReportIdField.value = row.dataset.reportId || '';
+  }
+
+  setPostInspectionFieldValue('input[name="invoice_number"]', row.dataset.invoiceNumber || '');
+  setPostInspectionFieldValue('input[name="post_invoice"]', row.dataset.postInvoiceNumber || '');
+  setPostInspectionFieldValue('input[name="inspection_date"]', row.dataset.inspectionDate || '');
+  setPostInspectionFieldValue('input[name="inspector_name"]', row.dataset.inspectorName || '');
+  setPostInspectionFieldValue('input[name="inspector_title"]', row.dataset.inspectorTitle || '');
+  setPostInspectionFieldValue('select[name="vehicle"]', row.dataset.vehicleId || '');
+  setPostInspectionFieldValue('input[name="mileage"]', row.dataset.mileage || '');
+  setPostInspectionFieldValue('select[name="overall_status"]', row.dataset.overallStatus || '');
+  setPostInspectionFieldValue('textarea[name="works_done"]', row.dataset.worksDone || '');
+  setPostInspectionFieldValue('input[name="amount_spent"]', row.dataset.repairCost || '0');
+  setPostInspectionFieldValue('select[name="service_provider"]', row.dataset.serviceProviderId || '');
+  setPostInspectionFieldValue('textarea[name="recommendation"]', row.dataset.recommendation || '');
+
+  let systemChecks = [];
+
+  try {
+    systemChecks = JSON.parse(row.dataset.systemChecks || '[]');
+  } catch (error) {
+    systemChecks = [];
+  }
+
+  applyPostInspectionSystemChecks(Array.isArray(systemChecks) ? systemChecks : []);
+}
+
+let pendingPostInspectionDeleteForm = null;
+
+// Opens or closes the custom post-inspection delete confirmation modal.
+function setPostInspectionDeleteModalOpen(isOpen, form = null) {
+  if (!postInspectionDeleteModal) {
+    return;
+  }
+
+  pendingPostInspectionDeleteForm = isOpen ? form : null;
+  postInspectionDeleteModal.classList.toggle('is-open', isOpen);
+  postInspectionDeleteModal.setAttribute('aria-hidden', String(!isOpen));
+  document.body.classList.toggle('overflow-hidden', isOpen);
+
+  if (isOpen) {
+    confirmPostInspectionDeleteButton?.focus();
+  }
+}
+
+openPostInspectionModalButtons.forEach((button) => {
+  button.addEventListener('click', () => {
+    resetPostInspectionFormForCreate();
+    setPostInspectionModalOpen(true);
+  });
+});
+
+editPostInspectionEntryButtons.forEach((button) => {
+  button.addEventListener('click', () => {
+    populatePostInspectionEditForm(button);
+    setPostInspectionModalOpen(true);
+  });
+});
+
+openPostInspectionDeleteButtons.forEach((button) => {
+  button.addEventListener('click', (event) => {
+    event.preventDefault();
+    const form = button.closest('form');
+
+    if (form) {
+      setPostInspectionDeleteModalOpen(true, form);
+    }
+  });
+});
+
+closePostInspectionModalButtons.forEach((button) => {
+  button.addEventListener('click', () => setPostInspectionModalOpen(false));
+});
+
+postInspectionModal?.addEventListener('click', (event) => {
+  if (event.target === postInspectionModal) {
+    setPostInspectionModalOpen(false);
+  }
+});
+
+if (postInspectionModal?.dataset.openOnLoad === 'true') {
+  document.body.classList.add('overflow-hidden');
+}
+
+confirmPostInspectionDeleteButton?.addEventListener('click', () => {
+  if (!pendingPostInspectionDeleteForm) {
+    setPostInspectionDeleteModalOpen(false);
+    return;
+  }
+
+  const form = pendingPostInspectionDeleteForm;
+  setPostInspectionDeleteModalOpen(false);
+  form.submit();
+});
+
+cancelPostInspectionDeleteButton?.addEventListener('click', () => {
+  setPostInspectionDeleteModalOpen(false);
+});
+
+postInspectionDeleteModal?.addEventListener('click', (event) => {
+  if (event.target === postInspectionDeleteModal) {
+    setPostInspectionDeleteModalOpen(false);
+  }
+});
+
+document.addEventListener('keydown', (event) => {
+  if (event.key === 'Escape' && postInspectionModal && !postInspectionModal.classList.contains('hidden')) {
+    setPostInspectionModalOpen(false);
+  }
+
+  if (event.key === 'Escape' && postInspectionDeleteModal && postInspectionDeleteModal.classList.contains('is-open')) {
+    setPostInspectionDeleteModalOpen(false);
+  }
+});
+
+// Opens or closes the provider modal and keeps focus/scroll state in sync.
+function setProviderModalOpen(isOpen) {
+  if (!providerModal) {
+    return;
+  }
+
+  providerModal.classList.toggle('hidden', !isOpen);
+  providerModal.classList.toggle('flex', isOpen);
+  providerModal.setAttribute('aria-hidden', String(!isOpen));
+  document.body.classList.toggle('overflow-hidden', isOpen);
+
+  if (isOpen) {
+    providerModal.querySelector('input, select, button')?.focus();
+  } else {
+    openProviderModalButtons[0]?.focus();
+  }
+}
+
+// Switches the shared provider modal between create mode and edit mode.
+function setProviderFormMode(mode) {
+  if (providerActionField) {
+    providerActionField.value = mode === 'update' ? 'update' : 'create';
+  }
+
+  if (providerModalTitle) {
+    providerModalTitle.textContent = mode === 'update' ? 'Edit Service Provider' : 'Add Service Provider';
+  }
+
+  if (providerSubmitButton) {
+    providerSubmitButton.textContent = mode === 'update' ? 'Save Changes' : 'Add Provider';
+  }
+}
+
+// Writes a value into a single field inside the provider modal if it exists.
+function setProviderFieldValue(selector, value) {
+  const field = providerModal?.querySelector(selector);
+
+  if (field) {
+    field.value = value;
+  }
+}
+
+// Resets the shared provider modal back to a clean create state.
+function resetProviderFormForCreate() {
+  providerForm?.reset();
+
+  if (providerIdField) {
+    providerIdField.value = '';
+  }
+
+  setProviderFormMode('create');
+  setProviderFieldValue('select[name="status"]', 'active');
+}
+
+// Reads the clicked provider card and pre-fills the shared modal for editing.
+function populateProviderEditForm(button) {
+  const card = button.closest('.provider-card');
+  if (!card) {
+    return;
+  }
+
+  setProviderFormMode('update');
+
+  if (providerIdField) {
+    providerIdField.value = card.dataset.providerId || '';
+  }
+
+  setProviderFieldValue('input[name="name"]', card.dataset.name || '');
+  setProviderFieldValue('input[name="contact_person"]', card.dataset.contactPerson || '');
+  setProviderFieldValue('input[name="phone"]', card.dataset.phone || '');
+  setProviderFieldValue('input[name="email"]', card.dataset.email || '');
+  setProviderFieldValue('input[name="town"]', card.dataset.town || '');
+  setProviderFieldValue('input[name="specialty"]', card.dataset.specialty || '');
+  setProviderFieldValue('select[name="status"]', card.dataset.status || 'active');
+}
+
+let pendingProviderDeleteForm = null;
+
+// Opens or closes the custom provider delete confirmation modal.
+function setProviderDeleteModalOpen(isOpen, form = null) {
+  if (!providerDeleteModal) {
+    return;
+  }
+
+  pendingProviderDeleteForm = isOpen ? form : null;
+  providerDeleteModal.classList.toggle('is-open', isOpen);
+  providerDeleteModal.setAttribute('aria-hidden', String(!isOpen));
+  document.body.classList.toggle('overflow-hidden', isOpen);
+
+  if (isOpen) {
+    confirmProviderDeleteButton?.focus();
+  }
+}
+
+openProviderModalButtons.forEach((button) => {
+  button.addEventListener('click', () => {
+    resetProviderFormForCreate();
+    setProviderModalOpen(true);
+  });
+});
+
+editProviderEntryButtons.forEach((button) => {
+  button.addEventListener('click', () => {
+    populateProviderEditForm(button);
+    setProviderModalOpen(true);
+  });
+});
+
+openProviderDeleteButtons.forEach((button) => {
+  button.addEventListener('click', (event) => {
+    event.preventDefault();
+    const form = button.closest('form');
+
+    if (form) {
+      setProviderDeleteModalOpen(true, form);
+    }
+  });
+});
+
+closeProviderModalButtons.forEach((button) => {
+  button.addEventListener('click', () => setProviderModalOpen(false));
+});
+
+providerModal?.addEventListener('click', (event) => {
+  if (event.target === providerModal) {
+    setProviderModalOpen(false);
+  }
+});
+
+if (providerModal?.dataset.openOnLoad === 'true') {
+  document.body.classList.add('overflow-hidden');
+}
+
+confirmProviderDeleteButton?.addEventListener('click', () => {
+  if (!pendingProviderDeleteForm) {
+    setProviderDeleteModalOpen(false);
+    return;
+  }
+
+  const form = pendingProviderDeleteForm;
+  setProviderDeleteModalOpen(false);
+  form.submit();
+});
+
+cancelProviderDeleteButton?.addEventListener('click', () => {
+  setProviderDeleteModalOpen(false);
+});
+
+providerDeleteModal?.addEventListener('click', (event) => {
+  if (event.target === providerDeleteModal) {
+    setProviderDeleteModalOpen(false);
+  }
+});
+
+document.addEventListener('keydown', (event) => {
+  if (event.key === 'Escape' && providerModal && !providerModal.classList.contains('hidden')) {
+    setProviderModalOpen(false);
+  }
+
+  if (event.key === 'Escape' && providerDeleteModal && providerDeleteModal.classList.contains('is-open')) {
+    setProviderDeleteModalOpen(false);
   }
 });
 

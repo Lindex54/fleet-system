@@ -4,8 +4,23 @@ declare(strict_types=1);
 
 require_once __DIR__ . '/../config/database.php';
 
-// Pre-inspection constants used by validation and display helpers.
+// Inspection constants used by validation and display helpers.
 const PRE_INSPECTION_ALLOWED_STATUSES = ['good', 'fair', 'faulty', 'needs_repair'];
+const POST_INSPECTION_ALLOWED_STATUSES = ['good', 'fair', 'faulty', 'completed'];
+const POST_INSPECTION_SYSTEMS = [
+    'Engine & Transmission',
+    'Tyres & Wheels',
+    'Braking System',
+    'Lights (Head/Tail/Indicators)',
+    'Body & Bodywork',
+    'Fuel System',
+    'Engine Oil',
+    'Coolant / Radiator',
+    'Battery & Electrical',
+    'Windscreen & Wipers',
+    'Mirrors',
+    'Seatbelts & Safety',
+];
 
 // Starts the session used for pre-inspection flash notifications if it is not already active.
 function inspectionStartSession(): void
@@ -21,6 +36,12 @@ function inspectionPageUrl(): string
     return '/fleet-system/modules/inspections/index.php';
 }
 
+// Returns the post-inspection page URL used after redirects.
+function postInspectionPageUrl(): string
+{
+    return '/fleet-system/modules/post-inspection/index.php';
+}
+
 // Returns the POST endpoint URL for pre-inspection form submissions.
 function inspectionHandlerUrl(): string
 {
@@ -34,6 +55,13 @@ function inspectionSetFlash(array $payload): void
     $_SESSION['pre_inspection_flash'] = $payload;
 }
 
+// Stores one-time post-inspection feedback in session flash state.
+function postInspectionSetFlash(array $payload): void
+{
+    inspectionStartSession();
+    $_SESSION['post_inspection_flash'] = $payload;
+}
+
 // Pulls and clears one-time pre-inspection feedback from session flash state.
 function inspectionPullFlash(): ?array
 {
@@ -45,6 +73,21 @@ function inspectionPullFlash(): ?array
 
     $flash = $_SESSION['pre_inspection_flash'];
     unset($_SESSION['pre_inspection_flash']);
+
+    return $flash;
+}
+
+// Pulls and clears one-time post-inspection feedback from session flash state.
+function postInspectionPullFlash(): ?array
+{
+    inspectionStartSession();
+
+    if (!isset($_SESSION['post_inspection_flash']) || !is_array($_SESSION['post_inspection_flash'])) {
+        return null;
+    }
+
+    $flash = $_SESSION['post_inspection_flash'];
+    unset($_SESSION['post_inspection_flash']);
 
     return $flash;
 }
@@ -82,6 +125,19 @@ function inspectionFetchVehicleOptions(PDO $pdo): array
         FROM vehicles
         WHERE status <> 'disposed'
         ORDER BY registration_no ASC"
+    );
+
+    return $statement->fetchAll();
+}
+
+// Loads current service provider options for the post-inspection modal dropdown.
+function postInspectionFetchProviderOptions(PDO $pdo): array
+{
+    $statement = $pdo->query(
+        "SELECT id, name
+        FROM service_providers
+        WHERE status <> 'inactive'
+        ORDER BY name ASC"
     );
 
     return $statement->fetchAll();
@@ -265,6 +321,141 @@ function inspectionBuildItemRowsFromFormData(array $formData): array
     return $rows;
 }
 
+// Loads post-inspection rows, dropdown options, system checks, and flash state for the page.
+function postInspectionFetchPageData(): array
+{
+    $flash = postInspectionPullFlash();
+    $notification = $flash['notification'] ?? null;
+    $formData = $flash['form_data'] ?? [];
+    $openModal = (bool) ($flash['open_modal'] ?? false);
+    $formMode = $flash['form_mode'] ?? 'create';
+
+    if (!isset($formData['system_name']) || !is_array($formData['system_name']) || $formData['system_name'] === []) {
+        $formData['system_name'] = POST_INSPECTION_SYSTEMS;
+    }
+
+    $reports = [];
+    $vehicleOptions = [];
+    $providerOptions = [];
+    $totalRepairCost = 0.0;
+
+    try {
+        $pdo = fleetDb();
+        $vehicleOptions = inspectionFetchVehicleOptions($pdo);
+        $providerOptions = postInspectionFetchProviderOptions($pdo);
+        $statement = $pdo->query(
+            "SELECT
+                i.id,
+                i.vehicle_id,
+                i.service_provider_id,
+                i.invoice_number,
+                i.post_invoice_number,
+                i.inspection_date,
+                i.inspector_name,
+                i.inspector_title,
+                i.mileage,
+                i.overall_status,
+                i.works_done,
+                i.repair_cost,
+                i.recommendation,
+                v.registration_no,
+                v.make,
+                v.model,
+                sp.name AS provider_name
+            FROM inspections i
+            INNER JOIN vehicles v ON v.id = i.vehicle_id
+            LEFT JOIN service_providers sp ON sp.id = i.service_provider_id
+            WHERE i.inspection_type = 'post'
+            ORDER BY i.inspection_date DESC, i.id DESC"
+        );
+
+        $rows = $statement->fetchAll();
+        $reportIds = array_map(static fn (array $row): int => (int) $row['id'], $rows);
+        $systemChecksByInspection = postInspectionFetchSystemChecksByInspection($pdo, $reportIds);
+
+        foreach ($rows as $row) {
+            $reportId = (int) $row['id'];
+            $repairCost = (float) ($row['repair_cost'] ?? 0);
+            $reports[] = [
+                'id' => $reportId,
+                'vehicle_id' => (int) $row['vehicle_id'],
+                'service_provider_id' => $row['service_provider_id'] !== null ? (int) $row['service_provider_id'] : null,
+                'invoice_raw' => $row['invoice_number'] ?? '',
+                'post_invoice_raw' => $row['post_invoice_number'] ?? '',
+                'date_raw' => $row['inspection_date'],
+                'inspector_raw' => $row['inspector_name'],
+                'inspector_title_raw' => $row['inspector_title'] ?? '',
+                'mileage_raw' => $row['mileage'] !== null ? (string) $row['mileage'] : '',
+                'overall_raw' => $row['overall_status'] ?? '',
+                'works_done_raw' => $row['works_done'] ?? '',
+                'repair_cost_raw' => (string) $repairCost,
+                'recommendation_raw' => $row['recommendation'] ?? '',
+                'system_checks_json' => json_encode($systemChecksByInspection[$reportId] ?? [], JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_TAG | JSON_HEX_QUOT) ?: '[]',
+                'invoice' => $row['invoice_number'] ?: '-',
+                'date' => inspectionFormatDate($row['inspection_date']),
+                'vehicle' => $row['registration_no'],
+                'make_model' => trim($row['make'] . ' ' . $row['model']),
+                'inspector' => $row['inspector_name'],
+                'overall' => inspectionNormalizeStatus($row['overall_status']),
+                'post_invoice' => $row['post_invoice_number'] ?: '-',
+                'repair_cost' => $repairCost,
+                'provider_name' => $row['provider_name'] ?: '',
+            ];
+            $totalRepairCost += $repairCost;
+        }
+    } catch (Throwable $exception) {
+        $notification = [
+            'type' => 'error',
+            'title' => 'Unable to load post-inspection reports',
+            'message' => 'The post-inspection reports could not be loaded from the database right now.',
+        ];
+    }
+
+    return [
+        'reports' => $reports,
+        'hasReports' => count($reports) > 0,
+        'totalRepairCost' => $totalRepairCost,
+        'postInspectionNotification' => $notification,
+        'postInspectionFormData' => $formData,
+        'shouldOpenPostInspectionModal' => $openModal,
+        'postInspectionFormMode' => $formMode,
+        'postInspectionFormAction' => inspectionHandlerUrl(),
+        'postInspectionVehicleOptions' => $vehicleOptions,
+        'postInspectionProviderOptions' => $providerOptions,
+        'postInspectionSystems' => POST_INSPECTION_SYSTEMS,
+    ];
+}
+
+// Loads saved post-inspection system checks grouped by their parent inspection id.
+function postInspectionFetchSystemChecksByInspection(PDO $pdo, array $inspectionIds): array
+{
+    if ($inspectionIds === []) {
+        return [];
+    }
+
+    $placeholders = implode(',', array_fill(0, count($inspectionIds), '?'));
+    $statement = $pdo->prepare(
+        "SELECT inspection_id, system_name, condition_status, remarks
+        FROM post_inspection_system_checks
+        WHERE inspection_id IN ($placeholders)
+        ORDER BY id ASC"
+    );
+    $statement->execute($inspectionIds);
+
+    $checksByInspection = [];
+
+    foreach ($statement->fetchAll() as $row) {
+        $inspectionId = (int) $row['inspection_id'];
+        $checksByInspection[$inspectionId][] = [
+            'system_name' => $row['system_name'],
+            'condition_status' => $row['condition_status'],
+            'remarks' => $row['remarks'] ?? '',
+        ];
+    }
+
+    return $checksByInspection;
+}
+
 // Collects and trims raw POST values from the pre-inspection form.
 function inspectionBuildFormDataFromPost(): array
 {
@@ -295,6 +486,29 @@ function inspectionBuildFormDataFromPost(): array
     ];
 }
 
+// Collects and trims raw POST values from the post-inspection form.
+function postInspectionBuildFormDataFromPost(): array
+{
+    return [
+        'report_id' => trim((string) ($_POST['report_id'] ?? '')),
+        'invoice_number' => trim((string) ($_POST['invoice_number'] ?? '')),
+        'inspection_date' => trim((string) ($_POST['inspection_date'] ?? '')),
+        'inspector_name' => trim((string) ($_POST['inspector_name'] ?? '')),
+        'inspector_title' => trim((string) ($_POST['inspector_title'] ?? '')),
+        'vehicle' => trim((string) ($_POST['vehicle'] ?? '')),
+        'mileage' => trim((string) ($_POST['mileage'] ?? '')),
+        'overall_status' => strtolower(trim((string) ($_POST['overall_status'] ?? ''))),
+        'works_done' => trim((string) ($_POST['works_done'] ?? '')),
+        'post_invoice' => trim((string) ($_POST['post_invoice'] ?? '')),
+        'amount_spent' => trim((string) ($_POST['amount_spent'] ?? '')),
+        'service_provider' => trim((string) ($_POST['service_provider'] ?? '')),
+        'recommendation' => trim((string) ($_POST['recommendation'] ?? '')),
+        'system_name' => array_map(static fn ($value): string => trim((string) $value), is_array($_POST['system_name'] ?? null) ? $_POST['system_name'] : []),
+        'system_status' => array_map(static fn ($value): string => strtolower(trim((string) $value)), is_array($_POST['system_status'] ?? null) ? $_POST['system_status'] : []),
+        'system_remarks' => array_map(static fn ($value): string => trim((string) $value), is_array($_POST['system_remarks'] ?? null) ? $_POST['system_remarks'] : []),
+    ];
+}
+
 // Validates and normalizes posted inspection item rows before saving them.
 function inspectionNormalizeItems(array $formData): array
 {
@@ -322,6 +536,71 @@ function inspectionNormalizeItems(array $formData): array
     }
 
     return $items;
+}
+
+// Rebuilds posted post-inspection system rows into aligned rows for modal rendering.
+function postInspectionBuildSystemRowsFromFormData(array $formData): array
+{
+    $names = isset($formData['system_name']) && is_array($formData['system_name']) ? $formData['system_name'] : [];
+    $statuses = isset($formData['system_status']) && is_array($formData['system_status']) ? $formData['system_status'] : [];
+    $remarks = isset($formData['system_remarks']) && is_array($formData['system_remarks']) ? $formData['system_remarks'] : [];
+    $rowCount = max(count($names), count($statuses), count($remarks));
+    $rows = [];
+
+    if ($rowCount === 0) {
+        foreach (POST_INSPECTION_SYSTEMS as $systemName) {
+            $rows[] = [
+                'system_name' => $systemName,
+                'condition_status' => '',
+                'remarks' => '',
+            ];
+        }
+
+        return $rows;
+    }
+
+    for ($index = 0; $index < $rowCount; $index++) {
+        $rows[] = [
+            'system_name' => trim((string) ($names[$index] ?? '')),
+            'condition_status' => strtolower(trim((string) ($statuses[$index] ?? ''))),
+            'remarks' => trim((string) ($remarks[$index] ?? '')),
+        ];
+    }
+
+    return $rows;
+}
+
+// Validates and normalizes posted post-inspection system checks before saving them.
+function postInspectionNormalizeSystemChecks(array $formData): array
+{
+    $rows = postInspectionBuildSystemRowsFromFormData($formData);
+    $checks = [];
+
+    foreach ($rows as $row) {
+        $systemName = trim($row['system_name']);
+        $status = trim($row['condition_status']);
+        $remarks = trim($row['remarks']);
+
+        if ($systemName === '') {
+            continue;
+        }
+
+        if ($remarks !== '' && $status === '') {
+            throw new RuntimeException('Please choose a condition for every system check that has remarks.');
+        }
+
+        if ($status !== '' && !in_array($status, ['good', 'fair', 'faulty'], true)) {
+            throw new RuntimeException('Please select valid system condition values.');
+        }
+
+        $checks[] = [
+            'system_name' => $systemName,
+            'condition_status' => $status === '' ? null : $status,
+            'remarks' => $remarks === '' ? null : $remarks,
+        ];
+    }
+
+    return $checks;
 }
 
 // Validates and normalizes submitted pre-inspection form values.
@@ -374,6 +653,69 @@ function inspectionValidateFormData(array $formData): array
     ];
 }
 
+// Validates and normalizes submitted post-inspection form values.
+function postInspectionValidateFormData(array $formData): array
+{
+    if ($formData['invoice_number'] === '' || $formData['inspection_date'] === '' || $formData['inspector_name'] === '' || $formData['vehicle'] === '') {
+        throw new RuntimeException('Invoice number, inspection date, inspector name, and vehicle are required.');
+    }
+
+    $vehicleId = filter_var($formData['vehicle'], FILTER_VALIDATE_INT, ['options' => ['min_range' => 1]]);
+    if ($vehicleId === false) {
+        throw new RuntimeException('Please select a valid vehicle.');
+    }
+
+    $inspectionDate = DateTimeImmutable::createFromFormat('Y-m-d', $formData['inspection_date']);
+    $dateErrors = DateTimeImmutable::getLastErrors();
+    if (!$inspectionDate || ($dateErrors['warning_count'] ?? 0) > 0 || ($dateErrors['error_count'] ?? 0) > 0) {
+        throw new RuntimeException('Please enter a valid inspection date.');
+    }
+
+    $mileage = null;
+    if ($formData['mileage'] !== '') {
+        $mileage = filter_var($formData['mileage'], FILTER_VALIDATE_INT, ['options' => ['min_range' => 0]]);
+        if ($mileage === false) {
+            throw new RuntimeException('Please enter a valid mileage.');
+        }
+    }
+
+    $repairCost = 0.0;
+    if ($formData['amount_spent'] !== '') {
+        $repairCost = filter_var($formData['amount_spent'], FILTER_VALIDATE_FLOAT);
+        if ($repairCost === false || $repairCost < 0) {
+            throw new RuntimeException('Please enter a valid repair cost.');
+        }
+    }
+
+    $serviceProviderId = null;
+    if ($formData['service_provider'] !== '') {
+        $serviceProviderId = filter_var($formData['service_provider'], FILTER_VALIDATE_INT, ['options' => ['min_range' => 1]]);
+        if ($serviceProviderId === false) {
+            throw new RuntimeException('Please select a valid service provider.');
+        }
+    }
+
+    if ($formData['overall_status'] !== '' && !in_array($formData['overall_status'], POST_INSPECTION_ALLOWED_STATUSES, true)) {
+        throw new RuntimeException('Please select a valid overall status.');
+    }
+
+    return [
+        'vehicle_id' => (int) $vehicleId,
+        'invoice_number' => $formData['invoice_number'],
+        'inspection_date' => $inspectionDate->format('Y-m-d'),
+        'inspector_name' => $formData['inspector_name'],
+        'inspector_title' => $formData['inspector_title'] === '' ? null : $formData['inspector_title'],
+        'mileage' => $mileage === null ? null : (int) $mileage,
+        'overall_status' => $formData['overall_status'] === '' ? null : $formData['overall_status'],
+        'works_done' => $formData['works_done'] === '' ? null : $formData['works_done'],
+        'post_invoice_number' => $formData['post_invoice'] === '' ? null : $formData['post_invoice'],
+        'repair_cost' => (float) $repairCost,
+        'service_provider_id' => $serviceProviderId === null ? null : (int) $serviceProviderId,
+        'recommendation' => $formData['recommendation'] === '' ? null : $formData['recommendation'],
+        'system_checks' => postInspectionNormalizeSystemChecks($formData),
+    ];
+}
+
 // Confirms the selected vehicle still exists before saving the inspection.
 function inspectionAssertForeignKeysExist(PDO $pdo, int $vehicleId): void
 {
@@ -382,6 +724,21 @@ function inspectionAssertForeignKeysExist(PDO $pdo, int $vehicleId): void
 
     if ((int) $vehicleExists->fetchColumn() === 0) {
         throw new RuntimeException('The selected vehicle no longer exists.');
+    }
+}
+
+// Confirms the selected service provider still exists before saving the post-inspection report.
+function postInspectionAssertForeignKeysExist(PDO $pdo, int $vehicleId, ?int $serviceProviderId): void
+{
+    inspectionAssertForeignKeysExist($pdo, $vehicleId);
+
+    if ($serviceProviderId !== null) {
+        $providerExists = $pdo->prepare('SELECT COUNT(*) FROM service_providers WHERE id = :id');
+        $providerExists->execute(['id' => $serviceProviderId]);
+
+        if ((int) $providerExists->fetchColumn() === 0) {
+            throw new RuntimeException('The selected service provider no longer exists.');
+        }
     }
 }
 
@@ -405,6 +762,34 @@ function inspectionSaveItems(PDO $pdo, int $inspectionId, array $items): void
         $statement->bindValue(':inspection_point', $item['inspection_point']);
         $statement->bindValue(':findings', $item['findings'], $item['findings'] === null ? PDO::PARAM_NULL : PDO::PARAM_STR);
         $statement->bindValue(':action_point', $item['action_point'], $item['action_point'] === null ? PDO::PARAM_NULL : PDO::PARAM_STR);
+        $statement->execute();
+    }
+}
+
+// Persists the post-inspection system checklist for one parent report.
+function postInspectionSaveSystemChecks(PDO $pdo, int $inspectionId, array $systemChecks): void
+{
+    $pdo->prepare('DELETE FROM post_inspection_system_checks WHERE inspection_id = :inspection_id')
+        ->execute(['inspection_id' => $inspectionId]);
+
+    if ($systemChecks === []) {
+        return;
+    }
+
+    $statement = $pdo->prepare(
+        'INSERT INTO post_inspection_system_checks (inspection_id, system_name, condition_status, remarks)
+        VALUES (:inspection_id, :system_name, :condition_status, :remarks)'
+    );
+
+    foreach ($systemChecks as $check) {
+        if ($check['condition_status'] === null && $check['remarks'] === null) {
+            continue;
+        }
+
+        $statement->bindValue(':inspection_id', $inspectionId, PDO::PARAM_INT);
+        $statement->bindValue(':system_name', $check['system_name']);
+        $statement->bindValue(':condition_status', $check['condition_status'], $check['condition_status'] === null ? PDO::PARAM_NULL : PDO::PARAM_STR);
+        $statement->bindValue(':remarks', $check['remarks'], $check['remarks'] === null ? PDO::PARAM_NULL : PDO::PARAM_STR);
         $statement->execute();
     }
 }
@@ -615,7 +1000,201 @@ function inspectionHandleDelete(): void
     exit;
 }
 
-// Dispatches incoming pre-inspection POST requests by action type.
+// Handles both create and update requests for post-inspection reports.
+function postInspectionHandleCreateOrUpdate(string $action): void
+{
+    $formData = postInspectionBuildFormDataFromPost();
+
+    try {
+        $validated = postInspectionValidateFormData($formData);
+        $pdo = fleetDb();
+        postInspectionAssertForeignKeysExist($pdo, $validated['vehicle_id'], $validated['service_provider_id']);
+        $pdo->beginTransaction();
+
+        if ($action === 'update') {
+            $reportId = filter_var($formData['report_id'], FILTER_VALIDATE_INT, ['options' => ['min_range' => 1]]);
+            if ($reportId === false) {
+                throw new RuntimeException('The selected post-inspection report could not be identified.');
+            }
+
+            $exists = $pdo->prepare("SELECT COUNT(*) FROM inspections WHERE id = :id AND inspection_type = 'post'");
+            $exists->execute(['id' => $reportId]);
+            if ((int) $exists->fetchColumn() === 0) {
+                throw new RuntimeException('The selected post-inspection report no longer exists.');
+            }
+
+            // Updates keep the same report row while replacing the latest editable values.
+            $statement = $pdo->prepare(
+                "UPDATE inspections SET
+                    vehicle_id = :vehicle_id,
+                    service_provider_id = :service_provider_id,
+                    invoice_number = :invoice_number,
+                    post_invoice_number = :post_invoice_number,
+                    inspection_date = :inspection_date,
+                    inspector_name = :inspector_name,
+                    inspector_title = :inspector_title,
+                    mileage = :mileage,
+                    overall_status = :overall_status,
+                    works_done = :works_done,
+                    repair_cost = :repair_cost,
+                    recommendation = :recommendation
+                WHERE id = :report_id AND inspection_type = 'post'"
+            );
+            $statement->bindValue(':report_id', (int) $reportId, PDO::PARAM_INT);
+        } else {
+            // New post-inspection reports are inserted first, then their system checks are attached.
+            $statement = $pdo->prepare(
+                "INSERT INTO inspections (
+                    vehicle_id,
+                    service_provider_id,
+                    inspection_type,
+                    invoice_number,
+                    post_invoice_number,
+                    inspection_date,
+                    inspector_name,
+                    inspector_title,
+                    mileage,
+                    overall_status,
+                    works_done,
+                    repair_cost,
+                    recommendation
+                ) VALUES (
+                    :vehicle_id,
+                    :service_provider_id,
+                    'post',
+                    :invoice_number,
+                    :post_invoice_number,
+                    :inspection_date,
+                    :inspector_name,
+                    :inspector_title,
+                    :mileage,
+                    :overall_status,
+                    :works_done,
+                    :repair_cost,
+                    :recommendation
+                )"
+            );
+        }
+
+        $statement->bindValue(':vehicle_id', $validated['vehicle_id'], PDO::PARAM_INT);
+        $statement->bindValue(':service_provider_id', $validated['service_provider_id'], $validated['service_provider_id'] === null ? PDO::PARAM_NULL : PDO::PARAM_INT);
+        $statement->bindValue(':invoice_number', $validated['invoice_number']);
+        $statement->bindValue(':post_invoice_number', $validated['post_invoice_number'], $validated['post_invoice_number'] === null ? PDO::PARAM_NULL : PDO::PARAM_STR);
+        $statement->bindValue(':inspection_date', $validated['inspection_date']);
+        $statement->bindValue(':inspector_name', $validated['inspector_name']);
+        $statement->bindValue(':inspector_title', $validated['inspector_title'], $validated['inspector_title'] === null ? PDO::PARAM_NULL : PDO::PARAM_STR);
+        $statement->bindValue(':mileage', $validated['mileage'], $validated['mileage'] === null ? PDO::PARAM_NULL : PDO::PARAM_INT);
+        $statement->bindValue(':overall_status', $validated['overall_status'], $validated['overall_status'] === null ? PDO::PARAM_NULL : PDO::PARAM_STR);
+        $statement->bindValue(':works_done', $validated['works_done'], $validated['works_done'] === null ? PDO::PARAM_NULL : PDO::PARAM_STR);
+        $statement->bindValue(':repair_cost', $validated['repair_cost'], PDO::PARAM_STR);
+        $statement->bindValue(':recommendation', $validated['recommendation'], $validated['recommendation'] === null ? PDO::PARAM_NULL : PDO::PARAM_STR);
+        $statement->execute();
+
+        $inspectionId = $action === 'update' ? (int) $reportId : (int) $pdo->lastInsertId();
+        postInspectionSaveSystemChecks($pdo, $inspectionId, $validated['system_checks']);
+        $pdo->commit();
+
+        postInspectionSetFlash([
+            'notification' => [
+                'type' => 'success',
+                'title' => $action === 'update' ? 'Post-inspection report updated successfully' : 'Post-inspection report added successfully',
+                'message' => $action === 'update'
+                    ? 'The post-inspection report has been updated successfully.'
+                    : 'The post-inspection report has been saved successfully.',
+            ],
+        ]);
+    } catch (RuntimeException $exception) {
+        if (isset($pdo) && $pdo instanceof PDO && $pdo->inTransaction()) {
+            $pdo->rollBack();
+        }
+
+        postInspectionSetFlash([
+            'notification' => [
+                'type' => 'error',
+                'title' => $action === 'update' ? 'Post-inspection report was not updated' : 'Post-inspection report was not added',
+                'message' => $exception->getMessage(),
+            ],
+            'form_data' => $formData,
+            'open_modal' => true,
+            'form_mode' => $action,
+        ]);
+    } catch (Throwable $exception) {
+        if (isset($pdo) && $pdo instanceof PDO && $pdo->inTransaction()) {
+            $pdo->rollBack();
+        }
+
+        postInspectionSetFlash([
+            'notification' => [
+                'type' => 'error',
+                'title' => $action === 'update' ? 'Post-inspection report was not updated' : 'Post-inspection report was not added',
+                'message' => $action === 'update'
+                    ? 'A system error occurred while updating the post-inspection report.'
+                    : 'A system error occurred while saving the post-inspection report.',
+            ],
+            'form_data' => $formData,
+            'open_modal' => true,
+            'form_mode' => $action,
+        ]);
+    }
+
+    header('Location: ' . postInspectionPageUrl());
+    exit;
+}
+
+// Handles delete requests for post-inspection reports.
+function postInspectionHandleDelete(): void
+{
+    $reportId = filter_var((string) ($_POST['report_id'] ?? ''), FILTER_VALIDATE_INT, ['options' => ['min_range' => 1]]);
+    if ($reportId === false) {
+        postInspectionSetFlash([
+            'notification' => [
+                'type' => 'error',
+                'title' => 'Post-inspection report was not deleted',
+                'message' => 'The selected post-inspection report could not be identified.',
+            ],
+        ]);
+        header('Location: ' . postInspectionPageUrl());
+        exit;
+    }
+
+    try {
+        $statement = fleetDb()->prepare("DELETE FROM inspections WHERE id = :id AND inspection_type = 'post'");
+        $statement->execute(['id' => $reportId]);
+
+        if ($statement->rowCount() === 0) {
+            throw new RuntimeException('The selected post-inspection report no longer exists.');
+        }
+
+        postInspectionSetFlash([
+            'notification' => [
+                'type' => 'success',
+                'title' => 'Post-inspection report deleted successfully',
+                'message' => 'The selected post-inspection report has been removed.',
+            ],
+        ]);
+    } catch (RuntimeException $exception) {
+        postInspectionSetFlash([
+            'notification' => [
+                'type' => 'error',
+                'title' => 'Post-inspection report was not deleted',
+                'message' => $exception->getMessage(),
+            ],
+        ]);
+    } catch (Throwable $exception) {
+        postInspectionSetFlash([
+            'notification' => [
+                'type' => 'error',
+                'title' => 'Post-inspection report was not deleted',
+                'message' => 'A system error occurred while deleting the post-inspection report.',
+            ],
+        ]);
+    }
+
+    header('Location: ' . postInspectionPageUrl());
+    exit;
+}
+
+// Dispatches incoming inspection POST requests by scope and action type.
 function inspectionHandleRequest(): void
 {
     if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
@@ -623,7 +1202,20 @@ function inspectionHandleRequest(): void
         exit;
     }
 
+    $scope = trim((string) ($_POST['inspection_scope'] ?? 'pre'));
     $action = trim((string) ($_POST['inspection_action'] ?? 'create'));
+
+    if ($scope === 'post') {
+        if ($action === 'delete') {
+            postInspectionHandleDelete();
+        }
+
+        if ($action === 'update') {
+            postInspectionHandleCreateOrUpdate('update');
+        }
+
+        postInspectionHandleCreateOrUpdate('create');
+    }
 
     if ($action === 'delete') {
         inspectionHandleDelete();
