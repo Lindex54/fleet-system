@@ -31,38 +31,40 @@ include __DIR__ . '/../../includes/sidebar.php';
 
         <?php if (!empty($vehicleNotification)): ?>
             <?php $isSuccessNotice = ($vehicleNotification['type'] ?? '') === 'success'; ?>
-            <!-- Clear feedback after add-vehicle attempts, whether success or validation/database failure. -->
+            <!-- Prominent popup toast so success/error feedback is immediately noticeable. -->
             <section
                 data-flash-notice
-                class="mb-6 overflow-hidden rounded-2xl border shadow-lg transition duration-500 <?= $isSuccessNotice ? 'border-emerald-200 bg-gradient-to-r from-emerald-50 via-white to-lime-50 text-emerald-950 shadow-emerald-100/80' : 'border-rose-200 bg-gradient-to-r from-rose-50 via-white to-amber-50 text-rose-950 shadow-rose-100/80'; ?>"
+                data-flash-type="<?= $isSuccessNotice ? 'success' : 'error'; ?>"
+                class="pointer-events-none fixed left-1/2 top-8 z-[70] hidden w-[min(92vw,34rem)] -translate-x-1/2 overflow-hidden rounded-2xl border bg-white shadow-2xl transition duration-500 <?= $isSuccessNotice ? 'border-green-200 text-green-900' : 'border-red-200 text-red-900'; ?>"
             >
-                <div class="flex items-start gap-4 px-5 py-4 sm:px-6">
-                    <div class="mt-0.5 flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl text-sm font-extrabold shadow-sm <?= $isSuccessNotice ? 'bg-emerald-600 text-white ring-4 ring-emerald-100' : 'bg-rose-600 text-white ring-4 ring-rose-100'; ?>">
+                <div class="absolute inset-x-0 top-0 h-1.5 <?= $isSuccessNotice ? 'bg-green-500' : 'bg-red-500'; ?>"></div>
+                <div class="flex items-center gap-4 px-5 py-4 sm:px-6">
+                    <div class="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl text-sm font-extrabold shadow-lg <?= $isSuccessNotice ? 'bg-green-600 text-white shadow-green-200' : 'bg-red-600 text-white shadow-red-200'; ?>">
                         <?= $isSuccessNotice ? 'OK' : '!'; ?>
                     </div>
                     <div class="min-w-0 flex-1">
-                        <div class="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                        <div class="flex items-start justify-between gap-3">
                             <div>
                                 <h2 class="text-sm font-extrabold uppercase tracking-[0.18em]">
                                     <?= htmlspecialchars($vehicleNotification['title'] ?? 'Vehicle update', ENT_QUOTES, 'UTF-8'); ?>
                                 </h2>
-                                <p class="mt-1 text-sm leading-6 sm:text-[15px]">
+                                <p class="mt-1 text-sm leading-6 text-fleet-ink">
                                     <?= htmlspecialchars($vehicleNotification['message'] ?? '', ENT_QUOTES, 'UTF-8'); ?>
                                 </p>
                             </div>
                             <button
                                 type="button"
                                 data-dismiss-flash
-                                class="inline-flex h-9 w-9 items-center justify-center self-start rounded-full border text-lg font-bold transition hover:scale-105 <?= $isSuccessNotice ? 'border-emerald-200 bg-white/80 text-emerald-700 hover:bg-emerald-100' : 'border-rose-200 bg-white/80 text-rose-700 hover:bg-rose-100'; ?>"
+                                class="pointer-events-auto inline-flex h-9 w-9 items-center justify-center rounded-full border text-base font-bold transition <?= $isSuccessNotice ? 'border-green-200 bg-green-50 text-green-700 hover:bg-green-100' : 'border-red-200 bg-red-50 text-red-700 hover:bg-red-100'; ?>"
                                 aria-label="Dismiss notification"
                             >
                                 x
                             </button>
                         </div>
-                        <div class="mt-4 h-1.5 overflow-hidden rounded-full <?= $isSuccessNotice ? 'bg-emerald-100' : 'bg-rose-100'; ?>">
+                        <div class="mt-3 h-1.5 overflow-hidden rounded-full <?= $isSuccessNotice ? 'bg-green-100' : 'bg-red-100'; ?>">
                             <div
                                 data-flash-progress
-                                class="h-full w-full origin-left rounded-full <?= $isSuccessNotice ? 'bg-emerald-500' : 'bg-rose-500'; ?>"
+                                class="h-full w-full origin-left rounded-full <?= $isSuccessNotice ? 'bg-green-600' : 'bg-red-600'; ?>"
                             ></div>
                         </div>
                     </div>

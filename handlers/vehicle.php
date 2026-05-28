@@ -4,10 +4,12 @@ declare(strict_types=1);
 
 require_once __DIR__ . '/../config/database.php';
 
+// Vehicle constants and lightweight page/session helpers
 const VEHICLE_ALLOWED_TYPES = ['sedan', 'suv', 'pickup', 'truck', 'van', 'bus', 'motorcycle', 'other'];
 const VEHICLE_ALLOWED_FUELS = ['petrol', 'diesel', 'hybrid', 'electric', 'other'];
 const VEHICLE_ALLOWED_STATUSES = ['active', 'maintenance', 'grounded', 'disposed'];
 
+// Starts the session used for flash notifications if it is not already active.
 function vehicleStartSession(): void
 {
     // Flash notifications for form submissions are stored in session state.
@@ -16,16 +18,19 @@ function vehicleStartSession(): void
     }
 }
 
+// Returns the vehicles page URL used after redirects.
 function vehiclePageUrl(): string
 {
     return '/fleet-system/modules/vehicles/index.php';
 }
 
+// Returns the POST endpoint URL for vehicle form submissions.
 function vehicleHandlerUrl(): string
 {
     return '/fleet-system/handlers/vehicle.php';
 }
 
+// Stores one-time vehicle feedback in session flash state.
 function vehicleSetFlash(array $payload): void
 {
     // Save one-time UI feedback for the next page load after redirect.
@@ -33,6 +38,7 @@ function vehicleSetFlash(array $payload): void
     $_SESSION['vehicle_flash'] = $payload;
 }
 
+// Pulls and clears one-time vehicle feedback from session flash state.
 function vehiclePullFlash(): ?array
 {
     vehicleStartSession();
@@ -48,6 +54,7 @@ function vehiclePullFlash(): ?array
     return $flash;
 }
 
+// Converts database status values into table-friendly labels.
 function vehicleNormalizeStatus(string $status): string
 {
     return match ($status) {
@@ -59,11 +66,14 @@ function vehicleNormalizeStatus(string $status): string
     };
 }
 
+// Formats stored vehicle type values for display.
 function vehicleNormalizeType(string $type): string
 {
     return ucfirst($type);
 }
 
+// Department helper used by create flow
+// Finds a department by name or creates it when a new one is typed in the form.
 function vehicleFindOrCreateDepartmentId(PDO $pdo, string $departmentName): ?int
 {
     $departmentName = trim($departmentName);
@@ -90,6 +100,8 @@ function vehicleFindOrCreateDepartmentId(PDO $pdo, string $departmentName): ?int
     return (int) $pdo->lastInsertId();
 }
 
+// Page data loader for the vehicle table and add modal
+// Loads vehicle rows plus flash state for the vehicles page.
 function vehicleFetchPageData(): array
 {
     // The page reads any flash notice first, then loads the freshest vehicle list from MySQL.
@@ -152,6 +164,8 @@ function vehicleFetchPageData(): array
     ];
 }
 
+// POST handler for adding vehicles
+// Validates and stores a newly submitted vehicle record.
 function vehicleHandleCreate(): void
 {
     if ($_SERVER['REQUEST_METHOD'] !== 'POST') {

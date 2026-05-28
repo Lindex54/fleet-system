@@ -36,51 +36,46 @@ include __DIR__ . '/../../includes/sidebar.php';
 
         <?php if (!empty($logbookNotification)): ?>
             <?php $isSuccessNotice = ($logbookNotification['type'] ?? '') === 'success'; ?>
-            <!-- Clear feedback for logbook saves, styled to stand out and then auto-dismiss in app.js. -->
+            <!-- Prominent popup toast so success/error feedback is immediately noticeable. -->
             <section
                 data-flash-notice
-                class="mb-6 overflow-hidden rounded-2xl border shadow-lg transition duration-500 <?= $isSuccessNotice ? 'border-emerald-200 bg-gradient-to-r from-emerald-50 via-white to-lime-50 text-emerald-950 shadow-emerald-100/80' : 'border-rose-200 bg-gradient-to-r from-rose-50 via-white to-amber-50 text-rose-950 shadow-rose-100/80'; ?>"
+                data-flash-type="<?= $isSuccessNotice ? 'success' : 'error'; ?>"
+                class="pointer-events-none fixed left-1/2 top-8 z-[70] hidden w-[min(92vw,34rem)] -translate-x-1/2 overflow-hidden rounded-2xl border bg-white shadow-2xl transition duration-500 <?= $isSuccessNotice ? 'border-green-200 text-green-900' : 'border-red-200 text-red-900'; ?>"
             >
-                <div class="flex items-start gap-4 px-5 py-4 sm:px-6">
-                    <div class="mt-0.5 flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl text-sm font-extrabold shadow-sm <?= $isSuccessNotice ? 'bg-emerald-600 text-white ring-4 ring-emerald-100' : 'bg-rose-600 text-white ring-4 ring-rose-100'; ?>">
+                <div class="absolute inset-x-0 top-0 h-1.5 <?= $isSuccessNotice ? 'bg-green-500' : 'bg-red-500'; ?>"></div>
+                <div class="flex items-center gap-4 px-5 py-4 sm:px-6">
+                    <div class="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl text-sm font-extrabold shadow-lg <?= $isSuccessNotice ? 'bg-green-600 text-white shadow-green-200' : 'bg-red-600 text-white shadow-red-200'; ?>">
                         <?= $isSuccessNotice ? 'OK' : '!'; ?>
                     </div>
                     <div class="min-w-0 flex-1">
-                        <div class="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                        <div class="flex items-start justify-between gap-3">
                             <div>
                                 <h2 class="text-sm font-extrabold uppercase tracking-[0.18em]">
                                     <?= htmlspecialchars($logbookNotification['title'] ?? 'Logbook update', ENT_QUOTES, 'UTF-8'); ?>
                                 </h2>
-                                <p class="mt-1 text-sm leading-6 sm:text-[15px]">
+                                <p class="mt-1 text-sm leading-6 text-fleet-ink">
                                     <?= htmlspecialchars($logbookNotification['message'] ?? '', ENT_QUOTES, 'UTF-8'); ?>
                                 </p>
                             </div>
                             <button
                                 type="button"
                                 data-dismiss-flash
-                                class="inline-flex h-9 w-9 items-center justify-center self-start rounded-full border text-lg font-bold transition hover:scale-105 <?= $isSuccessNotice ? 'border-emerald-200 bg-white/80 text-emerald-700 hover:bg-emerald-100' : 'border-rose-200 bg-white/80 text-rose-700 hover:bg-rose-100'; ?>"
+                                class="pointer-events-auto inline-flex h-9 w-9 items-center justify-center rounded-full border text-base font-bold transition <?= $isSuccessNotice ? 'border-green-200 bg-green-50 text-green-700 hover:bg-green-100' : 'border-red-200 bg-red-50 text-red-700 hover:bg-red-100'; ?>"
                                 aria-label="Dismiss notification"
                             >
                                 x
                             </button>
                         </div>
-                        <div class="mt-4 h-1.5 overflow-hidden rounded-full <?= $isSuccessNotice ? 'bg-emerald-100' : 'bg-rose-100'; ?>">
+                        <div class="mt-3 h-1.5 overflow-hidden rounded-full <?= $isSuccessNotice ? 'bg-green-100' : 'bg-red-100'; ?>">
                             <div
                                 data-flash-progress
-                                class="h-full w-full origin-left rounded-full <?= $isSuccessNotice ? 'bg-emerald-500' : 'bg-rose-500'; ?>"
+                                class="h-full w-full origin-left rounded-full <?= $isSuccessNotice ? 'bg-green-600' : 'bg-red-600'; ?>"
                             ></div>
                         </div>
                     </div>
                 </div>
             </section>
         <?php endif; ?>
-
-        <div class="mb-6 max-w-md">
-            <label class="relative block">
-                <span class="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-fleet-muted">Q</span>
-                <input id="logbook-search" type="search" class="h-11 w-full rounded-lg border border-fleet-line bg-fleet-surface py-2 pl-11 pr-4 text-sm text-fleet-ink shadow-sm outline-none transition placeholder:text-fleet-muted focus:border-fleet-primary focus:ring-4 focus:ring-blue-100" placeholder="Search logs...">
-            </label>
-        </div>
 
         <section class="<?= $hasLogs ? 'hidden' : 'flex'; ?> min-h-[420px] items-center justify-center">
             <div class="text-center">
@@ -100,6 +95,13 @@ include __DIR__ . '/../../includes/sidebar.php';
         </section>
 
         <section class="<?= $hasLogs ? 'block' : 'hidden'; ?> overflow-hidden rounded-lg border border-fleet-line bg-fleet-surface shadow-fleet-card">
+            <div class="border-b border-fleet-line-soft px-4 py-4 sm:px-5">
+                <!-- Search appears only when there are actual log rows to filter. -->
+                <label class="relative block max-w-md">
+                    <span class="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-fleet-muted">Q</span>
+                    <input id="logbook-search" type="search" class="h-11 w-full rounded-lg border border-fleet-line bg-fleet-surface py-2 pl-11 pr-4 text-sm text-fleet-ink shadow-sm outline-none transition placeholder:text-fleet-muted focus:border-fleet-primary focus:ring-4 focus:ring-blue-100" placeholder="Search logs...">
+                </label>
+            </div>
             <div class="overflow-x-auto">
                 <table class="w-full min-w-[1280px] border-collapse text-left text-sm" data-logbook-table>
                     <thead class="bg-fleet-surface-muted text-fleet-muted">
@@ -122,7 +124,24 @@ include __DIR__ . '/../../includes/sidebar.php';
                     </thead>
                     <tbody>
                         <?php foreach ($logs as $index => $log): ?>
-                            <tr class="logbook-row hover:bg-fleet-surface-muted/70" data-search="<?= htmlspecialchars(strtolower(implode(' ', $log)), ENT_QUOTES, 'UTF-8'); ?>">
+                            <tr
+                                class="logbook-row hover:bg-fleet-surface-muted/70"
+                                data-search="<?= htmlspecialchars(strtolower(implode(' ', $log)), ENT_QUOTES, 'UTF-8'); ?>"
+                                data-entry-id="<?= htmlspecialchars((string) ($log['id'] ?? ''), ENT_QUOTES, 'UTF-8'); ?>"
+                                data-vehicle-id="<?= htmlspecialchars((string) ($log['vehicle_id'] ?? ''), ENT_QUOTES, 'UTF-8'); ?>"
+                                data-driver-id="<?= htmlspecialchars((string) ($log['driver_id'] ?? ''), ENT_QUOTES, 'UTF-8'); ?>"
+                                data-date="<?= htmlspecialchars($log['date'], ENT_QUOTES, 'UTF-8'); ?>"
+                                data-vehicle="<?= htmlspecialchars($log['vehicle'], ENT_QUOTES, 'UTF-8'); ?>"
+                                data-driver="<?= htmlspecialchars($log['driver'], ENT_QUOTES, 'UTF-8'); ?>"
+                                data-from="<?= htmlspecialchars($log['from'], ENT_QUOTES, 'UTF-8'); ?>"
+                                data-to="<?= htmlspecialchars($log['to'], ENT_QUOTES, 'UTF-8'); ?>"
+                                data-purpose="<?= htmlspecialchars($log['purpose'], ENT_QUOTES, 'UTF-8'); ?>"
+                                data-odo-start="<?= htmlspecialchars((string) $log['odo_start'], ENT_QUOTES, 'UTF-8'); ?>"
+                                data-odo-end="<?= htmlspecialchars((string) $log['odo_end'], ENT_QUOTES, 'UTF-8'); ?>"
+                                data-fuel="<?= htmlspecialchars((string) $log['fuel'], ENT_QUOTES, 'UTF-8'); ?>"
+                                data-cost="<?= htmlspecialchars((string) $log['cost'], ENT_QUOTES, 'UTF-8'); ?>"
+                                data-remarks="<?= htmlspecialchars($log['remarks'], ENT_QUOTES, 'UTF-8'); ?>"
+                            >
                                 <td class="border border-fleet-line px-3 py-4 text-fleet-muted"><?= $index + 1; ?></td>
                                 <td class="border border-fleet-line px-3 py-4 text-fleet-ink" contenteditable="true"><?= htmlspecialchars($log['date'], ENT_QUOTES, 'UTF-8'); ?></td>
                                 <td class="border border-fleet-line px-3 py-4 font-extrabold text-fleet-ink" contenteditable="true"><?= htmlspecialchars($log['vehicle'], ENT_QUOTES, 'UTF-8'); ?></td>
@@ -138,8 +157,13 @@ include __DIR__ . '/../../includes/sidebar.php';
                                 <td class="border border-fleet-line px-3 py-4 text-fleet-muted" contenteditable="true"><?= htmlspecialchars($log['remarks'], ENT_QUOTES, 'UTF-8'); ?></td>
                                 <td class="border border-fleet-line px-3 py-4">
                                     <div class="flex justify-end gap-3">
-                                        <button type="button" class="text-fleet-sidebar hover:text-fleet-primary" aria-label="Edit log <?= $index + 1; ?>">Edit</button>
-                                        <button type="button" class="text-fleet-danger hover:text-fleet-danger-strong" aria-label="Delete log <?= $index + 1; ?>">Del</button>
+                                        <button type="button" data-edit-logbook-entry class="text-fleet-sidebar hover:text-fleet-primary" aria-label="Edit log <?= $index + 1; ?>">Edit</button>
+                                        <form action="<?= htmlspecialchars($logbookFormAction, ENT_QUOTES, 'UTF-8'); ?>" method="post" data-delete-logbook-form>
+                                            <!-- Delete uses a small dedicated POST form so it remains explicit and safe. -->
+                                            <input type="hidden" name="logbook_action" value="delete">
+                                            <input type="hidden" name="entry_id" value="<?= htmlspecialchars((string) ($log['id'] ?? ''), ENT_QUOTES, 'UTF-8'); ?>">
+                                            <button type="submit" data-open-logbook-delete class="text-fleet-danger hover:text-fleet-danger-strong" aria-label="Delete log <?= $index + 1; ?>">Del</button>
+                                        </form>
                                     </div>
                                 </td>
                             </tr>
@@ -168,9 +192,11 @@ include __DIR__ . '/../../includes/sidebar.php';
         <div class="dashboard-scroll max-h-[calc(100vh-2.5rem)] w-full max-w-2xl overflow-y-auto rounded-lg border border-fleet-line bg-fleet-surface shadow-2xl" style="max-width: 680px;" role="dialog" aria-modal="true" aria-labelledby="logbook-modal-title">
             <!-- Failed submissions reopen this modal and keep previously entered values in place. -->
             <form class="p-5" action="<?= htmlspecialchars($logbookFormAction, ENT_QUOTES, 'UTF-8'); ?>" method="post">
+                <input type="hidden" name="logbook_action" value="<?= $logbookFormMode === 'update' ? 'update' : 'create'; ?>" data-logbook-action-field>
+                <input type="hidden" name="entry_id" value="<?= htmlspecialchars($logbookFormData['entry_id'] ?? '', ENT_QUOTES, 'UTF-8'); ?>" data-logbook-entry-id-field>
                 <div class="mb-4 flex items-start justify-between gap-4">
                     <div>
-                        <h2 id="logbook-modal-title" class="text-lg font-extrabold text-fleet-ink">New Vehicle Log Entry</h2>
+                        <h2 id="logbook-modal-title" class="text-lg font-extrabold text-fleet-ink" data-logbook-modal-title><?= $logbookFormMode === 'update' ? 'Edit Vehicle Log Entry' : 'New Vehicle Log Entry'; ?></h2>
                         <p class="mt-1 text-xs text-fleet-muted">Busitema University - Official Motor Vehicle Log</p>
                     </div>
                     <button type="button" data-close-logbook-modal class="flex h-8 w-8 items-center justify-center rounded-lg text-2xl leading-none text-fleet-muted hover:bg-fleet-surface-muted hover:text-fleet-ink" aria-label="Close log entry form">&times;</button>
@@ -256,9 +282,37 @@ include __DIR__ . '/../../includes/sidebar.php';
 
                 <div class="mt-5 flex justify-end gap-3">
                     <button type="button" data-close-logbook-modal class="h-10 rounded-lg border border-fleet-line bg-fleet-surface px-4 text-sm font-semibold text-fleet-ink shadow-sm hover:bg-fleet-surface-muted">Cancel</button>
-                    <button type="submit" class="h-10 rounded-lg bg-fleet-sidebar px-4 text-sm font-semibold text-white shadow-sm hover:bg-fleet-sidebar-active">Create Log Entry</button>
+                    <button type="submit" class="h-10 rounded-lg bg-fleet-sidebar px-4 text-sm font-semibold text-white shadow-sm hover:bg-fleet-sidebar-active" data-logbook-submit-button><?= $logbookFormMode === 'update' ? 'Save Changes' : 'Create Log Entry'; ?></button>
                 </div>
             </form>
+        </div>
+    </div>
+
+    <div id="logbook-delete-modal" class="logbook-delete-overlay" aria-hidden="true">
+        <div class="logbook-delete-card" role="dialog" aria-modal="true" aria-labelledby="logbook-delete-modal-title">
+            <div class="logbook-delete-header">
+                <div class="flex items-center gap-4">
+                    <div class="logbook-delete-icon">!</div>
+                    <div>
+                        <p class="logbook-delete-eyebrow">Delete Confirmation</p>
+                        <h2 id="logbook-delete-modal-title" class="logbook-delete-title">Remove log entry?</h2>
+                    </div>
+                </div>
+            </div>
+            <div class="logbook-delete-body">
+                <!-- This custom confirmation modal replaces the browser popup for a cleaner app-like delete flow. -->
+                <p class="logbook-delete-copy">
+                    This logbook entry will be removed from the official records. This action cannot be undone.
+                </p>
+                <div class="logbook-delete-actions">
+                    <button type="button" data-cancel-logbook-delete class="logbook-delete-button logbook-delete-button-secondary">
+                        Keep Entry
+                    </button>
+                    <button type="button" data-confirm-logbook-delete class="logbook-delete-button logbook-delete-button-danger">
+                        Delete Entry
+                    </button>
+                </div>
+            </div>
         </div>
     </div>
 </main>
