@@ -89,13 +89,16 @@ include __DIR__ . '/../../includes/sidebar.php';
             </div>
         </section>
 
-        <section class="<?= $hasProviders ? 'grid' : 'hidden'; ?> gap-4 md:grid-cols-2 xl:grid-cols-3" data-provider-list>
-            <div class="mb-8 max-w-md md:col-span-2 xl:col-span-3">
+        <section class="<?= $hasProviders ? 'block' : 'hidden'; ?> mb-8">
+            <div class="max-w-md">
                 <label class="relative block">
                     <span class="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-fleet-muted">Q</span>
                     <input id="provider-search" type="search" class="h-11 w-full rounded-lg border border-fleet-line bg-fleet-surface py-2 pl-11 pr-4 text-sm text-fleet-ink shadow-sm outline-none transition placeholder:text-fleet-muted focus:border-fleet-primary focus:ring-4 focus:ring-blue-100" placeholder="Search by name, town or contact...">
                 </label>
             </div>
+        </section>
+
+        <section class="<?= $hasProviders ? 'grid' : 'hidden'; ?> gap-4 md:grid-cols-2 xl:grid-cols-3" data-provider-list>
 
             <?php foreach ($providers as $provider): ?>
                 <article
