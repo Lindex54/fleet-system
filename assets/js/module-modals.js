@@ -52,6 +52,7 @@ const logbookActionField = document.querySelector('[data-logbook-action-field]')
 const logbookEntryIdField = document.querySelector('[data-logbook-entry-id-field]');
 const logbookModalTitle = document.querySelector('[data-logbook-modal-title]');
 const logbookSubmitButton = document.querySelector('[data-logbook-submit-button]');
+const logbookVehicleSelect = document.querySelector('[data-logbook-vehicle-select]');
 const openLogbookDeleteButtons = document.querySelectorAll('[data-open-logbook-delete]');
 const logbookDeleteModal = document.querySelector('#logbook-delete-modal');
 const cancelLogbookDeleteButton = document.querySelector('[data-cancel-logbook-delete]');
@@ -794,6 +795,42 @@ function setLogbookFieldValue(selector, value) {
   }
 }
 
+// Uses the vehicle's stored mileage as the next trip's starting reading during create flow.
+function syncLogbookOdometerStartFromVehicle(force = false) {
+  if (!logbookModal || !logbookVehicleSelect || logbookActionField?.value === 'update') {
+    return;
+  }
+
+  const startField = logbookModal.querySelector('input[name="odometer_start"]');
+  const selectedOption = logbookVehicleSelect.selectedOptions[0];
+
+  if (!startField || !selectedOption) {
+    return;
+  }
+
+  if (!force && startField.value.trim() !== '') {
+    return;
+  }
+
+  startField.value = selectedOption.dataset.currentMileage || '';
+}
+
+// Clears the shared logbook modal and restores create defaults before a new trip is entered.
+function resetLogbookFormForCreate() {
+  const logbookForm = logbookModal?.querySelector('form');
+
+  logbookForm?.reset();
+
+  if (logbookEntryIdField) {
+    logbookEntryIdField.value = '';
+  }
+
+  setLogbookFormMode('create');
+  setLogbookFieldValue('input[name="date"]', new Date().toISOString().slice(0, 10));
+  setLogbookFieldValue('select[name="driver"]', 'unassigned');
+  syncLogbookOdometerStartFromVehicle(true);
+}
+
 // Converts a table date like dd/mm/yyyy into the yyyy-mm-dd format required by date inputs.
 function convertDisplayDateToInputValue(value) {
   if (!value || !value.includes('/')) {
@@ -841,10 +878,7 @@ function populateLogbookEditForm(button) {
 
 openLogbookModalButtons.forEach((button) => {
   button.addEventListener('click', () => {
-    setLogbookFormMode('create');
-    if (logbookEntryIdField) {
-      logbookEntryIdField.value = '';
-    }
+    resetLogbookFormForCreate();
     setLogbookModalOpen(true);
   });
 });
@@ -879,6 +913,10 @@ logbookModal?.addEventListener('click', (event) => {
 if (logbookModal?.dataset.openOnLoad === 'true') {
   document.body.classList.add('overflow-hidden');
 }
+
+logbookVehicleSelect?.addEventListener('change', () => {
+  syncLogbookOdometerStartFromVehicle();
+});
 
 confirmLogbookDeleteButton?.addEventListener('click', () => {
   if (!pendingLogbookDeleteForm) {

@@ -211,10 +211,14 @@ include __DIR__ . '/../../includes/sidebar.php';
 
                     <label class="block">
                         <span class="mb-2 block text-sm font-semibold text-fleet-ink">Vehicle *</span>
-                        <select name="vehicle" required class="vehicle-form-control">
+                        <select name="vehicle" required class="vehicle-form-control" data-logbook-vehicle-select>
                             <option value="">Select vehicle</option>
                             <?php foreach ($logbookVehicleOptions as $vehicleOption): ?>
-                                <option value="<?= htmlspecialchars((string) $vehicleOption['id'], ENT_QUOTES, 'UTF-8'); ?>" <?= (($logbookFormData['vehicle'] ?? '') === (string) $vehicleOption['id']) ? 'selected' : ''; ?>>
+                                <option
+                                    value="<?= htmlspecialchars((string) $vehicleOption['id'], ENT_QUOTES, 'UTF-8'); ?>"
+                                    data-current-mileage="<?= htmlspecialchars((string) ($vehicleOption['current_mileage'] ?? 0), ENT_QUOTES, 'UTF-8'); ?>"
+                                    <?= (($logbookFormData['vehicle'] ?? '') === (string) $vehicleOption['id']) ? 'selected' : ''; ?>
+                                >
                                     <?= htmlspecialchars($vehicleOption['registration_no'], ENT_QUOTES, 'UTF-8'); ?>
                                 </option>
                             <?php endforeach; ?>

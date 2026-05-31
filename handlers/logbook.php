@@ -78,7 +78,7 @@ function logbookFormatDate(?string $date): string
 function logbookFetchVehicleOptions(PDO $pdo): array
 {
     // The modal uses live vehicle records instead of hard-coded registration numbers.
-    $statement = $pdo->query('SELECT id, registration_no FROM vehicles ORDER BY registration_no ASC');
+    $statement = $pdo->query('SELECT id, registration_no, current_mileage FROM vehicles ORDER BY registration_no ASC');
 
     return $statement->fetchAll();
 }
@@ -263,6 +263,43 @@ function logbookAssertForeignKeysExist(PDO $pdo, int $vehicleId, ?int $driverId)
     }
 }
 
+// Returns the currently stored vehicle mileage so new trips can continue from the latest reading.
+function logbookFetchVehicleMileage(PDO $pdo, int $vehicleId): int
+{
+    $statement = $pdo->prepare('SELECT current_mileage FROM vehicles WHERE id = :id LIMIT 1');
+    $statement->execute(['id' => $vehicleId]);
+    $mileage = $statement->fetchColumn();
+
+    return $mileage === false ? 0 : (int) $mileage;
+}
+
+// Fills a missing trip start reading from the vehicle record and grows the stored mileage after saves.
+function logbookApplyVehicleMileageProgress(PDO $pdo, array $validated): array
+{
+    if ($validated['odometer_start'] === null) {
+        $validated['odometer_start'] = logbookFetchVehicleMileage($pdo, $validated['vehicle_id']);
+    }
+
+    if ($validated['odometer_end'] !== null && $validated['odometer_end'] < $validated['odometer_start']) {
+        throw new RuntimeException('Odometer end cannot be less than odometer start.');
+    }
+
+    if ($validated['odometer_end'] !== null) {
+        // Keep vehicle mileage piling up by moving the stored reading forward to the latest saved end value.
+        $statement = $pdo->prepare(
+            'UPDATE vehicles
+             SET current_mileage = GREATEST(current_mileage, :odometer_end)
+             WHERE id = :vehicle_id'
+        );
+        $statement->execute([
+            'odometer_end' => $validated['odometer_end'],
+            'vehicle_id' => $validated['vehicle_id'],
+        ]);
+    }
+
+    return $validated;
+}
+
 // Form normalization helper for POST data
 // Collects and trims raw POST values from the logbook form.
 function logbookBuildFormDataFromPost(): array
@@ -291,9 +328,11 @@ function logbookHandleCreateOrUpdate(string $action): void
     $formData = logbookBuildFormDataFromPost();
 
     try {
-        $validated = logbookValidateInput($formData);
         $pdo = fleetDb();
+        $validated = logbookValidateInput($formData);
         logbookAssertForeignKeysExist($pdo, $validated['vehicle_id'], $validated['driver_id']);
+        $pdo->beginTransaction();
+        $validated = logbookApplyVehicleMileageProgress($pdo, $validated);
 
         if ($action === 'update') {
             $entryId = filter_var($formData['entry_id'], FILTER_VALIDATE_INT, ['options' => ['min_range' => 1]]);
@@ -369,6 +408,7 @@ function logbookHandleCreateOrUpdate(string $action): void
         $statement->bindValue(':fuel_cost', $validated['fuel_cost'], $validated['fuel_cost'] === null ? PDO::PARAM_NULL : PDO::PARAM_STR);
         $statement->bindValue(':remarks', $validated['remarks'], $validated['remarks'] === null ? PDO::PARAM_NULL : PDO::PARAM_STR);
         $statement->execute();
+        $pdo->commit();
 
         logbookSetFlash([
             'notification' => [
@@ -380,6 +420,10 @@ function logbookHandleCreateOrUpdate(string $action): void
             ],
         ]);
     } catch (RuntimeException $exception) {
+        if (isset($pdo) && $pdo instanceof PDO && $pdo->inTransaction()) {
+            $pdo->rollBack();
+        }
+
         logbookSetFlash([
             'notification' => [
                 'type' => 'error',
@@ -391,6 +435,10 @@ function logbookHandleCreateOrUpdate(string $action): void
             'form_mode' => $action,
         ]);
     } catch (Throwable $exception) {
+        if (isset($pdo) && $pdo instanceof PDO && $pdo->inTransaction()) {
+            $pdo->rollBack();
+        }
+
         logbookSetFlash([
             'notification' => [
                 'type' => 'error',
