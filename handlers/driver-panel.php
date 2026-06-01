@@ -1,0 +1,1863 @@
+<?php
+
+declare(strict_types=1);
+
+require_once __DIR__ . '/../config/database.php';
+
+// Driver panel helpers use the existing schema and gracefully fall back while auth is not yet implemented.
+const DRIVER_PANEL_PRETRIP_CHECKLIST = [
+    'Engine oil level',
+    'Coolant / radiator',
+    'Tyres and pressure',
+    'Brakes',
+    'Lights and indicators',
+    'Battery / electricals',
+    'Mirrors and windscreen',
+    'Seatbelts and safety kit',
+];
+
+function driverPanelStartSession(): void
+{
+    if (session_status() !== PHP_SESSION_ACTIVE) {
+        session_start();
+    }
+}
+
+function driverPanelHandlerUrl(): string
+{
+    return '/fleet-system/handlers/driver-panel.php';
+}
+
+function driverPanelDashboardUrl(): string
+{
+    return '/fleet-system/driver-panel/index.php';
+}
+
+function driverPanelVehicleUrl(): string
+{
+    return '/fleet-system/driver-panel/my-vehicle.php';
+}
+
+function driverPanelPreTripUrl(): string
+{
+    return '/fleet-system/driver-panel/pre-trip-inspection.php';
+}
+
+function driverPanelTripLogUrl(): string
+{
+    return '/fleet-system/driver-panel/trip-log.php';
+}
+
+function driverPanelSetFlash(string $key, array $payload): void
+{
+    driverPanelStartSession();
+    $_SESSION[$key] = $payload;
+}
+
+function driverPanelPullFlash(string $key): ?array
+{
+    driverPanelStartSession();
+
+    if (!isset($_SESSION[$key]) || !is_array($_SESSION[$key])) {
+        return null;
+    }
+
+    $flash = $_SESSION[$key];
+    unset($_SESSION[$key]);
+
+    return $flash;
+}
+
+function driverPanelSetPreTripFlash(array $payload): void
+{
+    driverPanelSetFlash('driver_panel_pre_trip_flash', $payload);
+}
+
+function driverPanelPullPreTripFlash(): ?array
+{
+    return driverPanelPullFlash('driver_panel_pre_trip_flash');
+}
+
+function driverPanelSetTripFlash(array $payload): void
+{
+    driverPanelSetFlash('driver_panel_trip_flash', $payload);
+}
+
+function driverPanelPullTripFlash(): ?array
+{
+    return driverPanelPullFlash('driver_panel_trip_flash');
+}
+
+function driverPanelSetMessagesFlash(array $payload): void
+{
+    driverPanelSetFlash('driver_panel_messages_flash', $payload);
+}
+
+function driverPanelPullMessagesFlash(): ?array
+{
+    return driverPanelPullFlash('driver_panel_messages_flash');
+}
+
+function driverPanelEnsureIncidentReportsTable(PDO $pdo): void
+{
+    $pdo->exec(
+        "CREATE TABLE IF NOT EXISTS incident_reports (
+            id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+            driver_id INT UNSIGNED NOT NULL,
+            vehicle_id INT UNSIGNED DEFAULT NULL,
+            incident_type ENUM('breakdown','accident','unusual_issue') NOT NULL,
+            incident_date DATE NOT NULL,
+            location VARCHAR(150) DEFAULT NULL,
+            subject VARCHAR(180) NOT NULL,
+            description TEXT NOT NULL,
+            urgency ENUM('low','medium','high','critical') NOT NULL DEFAULT 'medium',
+            status ENUM('reported','under_review','resolved') NOT NULL DEFAULT 'reported',
+            created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            updated_at TIMESTAMP NULL DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP,
+            KEY idx_incident_reports_driver_id (driver_id),
+            KEY idx_incident_reports_vehicle_id (vehicle_id),
+            CONSTRAINT fk_incident_reports_driver
+                FOREIGN KEY (driver_id) REFERENCES drivers(id)
+                ON DELETE CASCADE ON UPDATE CASCADE,
+            CONSTRAINT fk_incident_reports_vehicle
+                FOREIGN KEY (vehicle_id) REFERENCES vehicles(id)
+                ON DELETE SET NULL ON UPDATE CASCADE
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci"
+    );
+}
+
+function driverPanelNormalizeVehicleStatus(string $status): array
+{
+    return match ($status) {
+        'active' => ['label' => 'Active', 'classes' => 'border-green-200 bg-fleet-success-soft text-fleet-success'],
+        'maintenance' => ['label' => 'Maintenance', 'classes' => 'border-orange-200 bg-fleet-warning-soft text-fleet-warning-strong'],
+        'grounded' => ['label' => 'Grounded', 'classes' => 'border-red-200 bg-fleet-danger-soft text-fleet-danger'],
+        'disposed' => ['label' => 'Disposed', 'classes' => 'border-slate-200 bg-slate-100 text-slate-600'],
+        default => ['label' => ucfirst($status), 'classes' => 'border-slate-200 bg-slate-100 text-slate-600'],
+    };
+}
+
+function driverPanelFormatDate(?string $date): string
+{
+    if ($date === null || $date === '') {
+        return '-';
+    }
+
+    $timestamp = strtotime($date);
+
+    return $timestamp ? date('d M Y', $timestamp) : $date;
+}
+
+function driverPanelFindCurrentDriver(PDO $pdo): ?array
+{
+    driverPanelStartSession();
+
+    $driverId = null;
+
+    if (isset($_SESSION['driver_id'])) {
+        $driverId = filter_var((string) $_SESSION['driver_id'], FILTER_VALIDATE_INT, ['options' => ['min_range' => 1]]);
+    }
+
+    if ($driverId === null || $driverId === false) {
+        $driverId = filter_var((string) ($_GET['driver_id'] ?? ''), FILTER_VALIDATE_INT, ['options' => ['min_range' => 1]]);
+    }
+
+    if ($driverId !== null && $driverId !== false) {
+        $statement = $pdo->prepare(
+            'SELECT
+                d.id,
+                d.user_id,
+                d.full_name,
+                d.employee_id,
+                d.phone,
+                d.email,
+                d.license_number,
+                d.license_classes,
+                d.license_expiry,
+                d.status,
+                COALESCE(dep.name, \'Transport\') AS department_name
+            FROM drivers d
+            LEFT JOIN departments dep ON dep.id = d.department_id
+            WHERE d.id = :id
+            LIMIT 1'
+        );
+        $statement->execute(['id' => (int) $driverId]);
+        $driver = $statement->fetch();
+
+        if ($driver) {
+            return $driver;
+        }
+    }
+
+    $statement = $pdo->query(
+        'SELECT
+            d.id,
+            d.user_id,
+            d.full_name,
+            d.employee_id,
+            d.phone,
+            d.email,
+            d.license_number,
+            d.license_classes,
+            d.license_expiry,
+            d.status,
+            COALESCE(dep.name, \'Transport\') AS department_name
+        FROM drivers d
+        LEFT JOIN departments dep ON dep.id = d.department_id
+        LEFT JOIN vehicle_assignments va
+            ON va.driver_id = d.id
+            AND va.released_at IS NULL
+        WHERE d.status = \'active\'
+        ORDER BY CASE WHEN va.id IS NULL THEN 1 ELSE 0 END, d.created_at ASC, d.id ASC
+        LIMIT 1'
+    );
+
+    $driver = $statement->fetch();
+
+    if ($driver) {
+        $_SESSION['driver_id'] = (int) $driver['id'];
+    }
+
+    return $driver ?: null;
+}
+
+function driverPanelFetchAssignedVehicle(PDO $pdo, int $driverId): ?array
+{
+    $statement = $pdo->prepare(
+        'SELECT
+            v.id,
+            v.registration_no,
+            v.make,
+            v.model,
+            v.manufacture_year,
+            v.vehicle_type,
+            v.fuel_type,
+            v.current_mileage,
+            v.insurance_expiry,
+            v.status,
+            v.notes,
+            COALESCE(dep.name, \'Unassigned\') AS department_name,
+            va.assigned_at
+        FROM vehicle_assignments va
+        INNER JOIN vehicles v ON v.id = va.vehicle_id
+        LEFT JOIN departments dep ON dep.id = v.department_id
+        WHERE va.driver_id = :driver_id
+            AND va.released_at IS NULL
+        ORDER BY va.assigned_at DESC, va.id DESC
+        LIMIT 1'
+    );
+    $statement->execute(['driver_id' => $driverId]);
+
+    $vehicle = $statement->fetch();
+
+    if (!$vehicle) {
+        return null;
+    }
+
+    $status = driverPanelNormalizeVehicleStatus((string) $vehicle['status']);
+
+    return [
+        'id' => (int) $vehicle['id'],
+        'registration_no' => $vehicle['registration_no'],
+        'make_model' => trim($vehicle['make'] . ' ' . $vehicle['model']),
+        'manufacture_year' => $vehicle['manufacture_year'] ?: '-',
+        'vehicle_type' => ucfirst((string) $vehicle['vehicle_type']),
+        'fuel_type' => ucfirst((string) $vehicle['fuel_type']),
+        'current_mileage' => number_format((int) $vehicle['current_mileage']) . ' km',
+        'current_mileage_raw' => (int) $vehicle['current_mileage'],
+        'insurance_expiry' => $vehicle['insurance_expiry'],
+        'insurance_expiry_label' => driverPanelFormatDate($vehicle['insurance_expiry']),
+        'department_name' => $vehicle['department_name'],
+        'assigned_at' => driverPanelFormatDate($vehicle['assigned_at']),
+        'notes' => $vehicle['notes'] ?: 'No vehicle notes available.',
+        'status_label' => $status['label'],
+        'status_classes' => $status['classes'],
+    ];
+}
+
+function driverPanelFetchLatestTrip(PDO $pdo, int $driverId): ?array
+{
+    $statement = $pdo->prepare(
+        'SELECT
+            vl.id,
+            vl.trip_date,
+            vl.departure_location,
+            vl.destination,
+            vl.purpose,
+            vl.odometer_start,
+            vl.odometer_end,
+            vl.distance_km,
+            v.registration_no
+        FROM vehicle_logs vl
+        INNER JOIN vehicles v ON v.id = vl.vehicle_id
+        WHERE vl.driver_id = :driver_id
+        ORDER BY vl.trip_date DESC, vl.id DESC
+        LIMIT 1'
+    );
+    $statement->execute(['driver_id' => $driverId]);
+    $trip = $statement->fetch();
+
+    if (!$trip) {
+        return null;
+    }
+
+    $isInProgress = $trip['odometer_start'] !== null && $trip['odometer_end'] === null;
+
+    return [
+        'id' => (int) $trip['id'],
+        'date' => driverPanelFormatDate($trip['trip_date']),
+        'date_raw' => $trip['trip_date'],
+        'vehicle' => $trip['registration_no'],
+        'from' => $trip['departure_location'],
+        'to' => $trip['destination'],
+        'purpose' => $trip['purpose'],
+        'odometer_start' => $trip['odometer_start'] !== null ? number_format((int) $trip['odometer_start']) . ' km' : '-',
+        'odometer_end' => $trip['odometer_end'] !== null ? number_format((int) $trip['odometer_end']) . ' km' : '-',
+        'distance' => $trip['distance_km'] !== null ? number_format((int) $trip['distance_km']) . ' km' : '-',
+        'status_label' => $isInProgress ? 'Trip in progress' : 'Last trip completed',
+        'status_classes' => $isInProgress
+            ? 'border-blue-200 bg-fleet-primary-soft text-fleet-primary'
+            : 'border-green-200 bg-fleet-success-soft text-fleet-success',
+        'is_in_progress' => $isInProgress,
+    ];
+}
+
+function driverPanelFetchLatestPreInspection(PDO $pdo, int $driverId, ?int $vehicleId): ?array
+{
+    if ($vehicleId === null) {
+        return null;
+    }
+
+    $statement = $pdo->prepare(
+        'SELECT
+            inspection_date,
+            overall_status,
+            defects
+        FROM inspections
+        WHERE inspection_type = \'pre\'
+            AND driver_id = :driver_id
+            AND vehicle_id = :vehicle_id
+        ORDER BY inspection_date DESC, id DESC
+        LIMIT 1'
+    );
+    $statement->execute([
+        'driver_id' => $driverId,
+        'vehicle_id' => $vehicleId,
+    ]);
+
+    $report = $statement->fetch();
+
+    if (!$report) {
+        return null;
+    }
+
+    return [
+        'date' => driverPanelFormatDate($report['inspection_date']),
+        'date_raw' => $report['inspection_date'],
+        'overall_status' => (string) $report['overall_status'],
+        'defects' => $report['defects'] ?: 'No defects recorded.',
+    ];
+}
+
+function driverPanelBuildAlerts(?array $driver, ?array $vehicle, ?array $latestTrip, ?array $latestPreInspection): array
+{
+    $alerts = [];
+    $today = date('Y-m-d');
+
+    if ($driver === null) {
+        return [[
+            'tone' => 'danger',
+            'title' => 'Driver profile unavailable',
+            'message' => 'No active driver profile could be resolved for the driver panel.',
+        ]];
+    }
+
+    if ($vehicle === null) {
+        $alerts[] = [
+            'tone' => 'warning',
+            'title' => 'No vehicle assigned',
+            'message' => 'You do not currently have an active vehicle assignment. Please contact transport office.',
+        ];
+    }
+
+    if ($vehicle !== null && in_array($vehicle['status_label'], ['Maintenance', 'Grounded'], true)) {
+        $alerts[] = [
+            'tone' => 'danger',
+            'title' => 'Assigned vehicle needs attention',
+            'message' => 'Your assigned vehicle is currently marked as ' . strtolower($vehicle['status_label']) . '.',
+        ];
+    }
+
+    if ($driver['license_expiry'] !== null && $driver['license_expiry'] !== '') {
+        $daysToLicenseExpiry = (int) floor((strtotime((string) $driver['license_expiry']) - strtotime($today)) / 86400);
+
+        if ($daysToLicenseExpiry < 0) {
+            $alerts[] = [
+                'tone' => 'danger',
+                'title' => 'Driving license expired',
+                'message' => 'Your driving license expired on ' . driverPanelFormatDate($driver['license_expiry']) . '.',
+            ];
+        } elseif ($daysToLicenseExpiry <= 30) {
+            $alerts[] = [
+                'tone' => 'warning',
+                'title' => 'Driving license expiring soon',
+                'message' => 'Your driving license expires on ' . driverPanelFormatDate($driver['license_expiry']) . '.',
+            ];
+        }
+    }
+
+    if ($vehicle !== null && $vehicle['insurance_expiry'] !== null && $vehicle['insurance_expiry'] !== '') {
+        $daysToInsuranceExpiry = (int) floor((strtotime((string) $vehicle['insurance_expiry']) - strtotime($today)) / 86400);
+
+        if ($daysToInsuranceExpiry < 0) {
+            $alerts[] = [
+                'tone' => 'danger',
+                'title' => 'Vehicle insurance expired',
+                'message' => 'Insurance for ' . $vehicle['registration_no'] . ' expired on ' . $vehicle['insurance_expiry_label'] . '.',
+            ];
+        } elseif ($daysToInsuranceExpiry <= 30) {
+            $alerts[] = [
+                'tone' => 'warning',
+                'title' => 'Vehicle insurance expiring soon',
+                'message' => 'Insurance for ' . $vehicle['registration_no'] . ' expires on ' . $vehicle['insurance_expiry_label'] . '.',
+            ];
+        }
+    }
+
+    if ($latestPreInspection === null && $vehicle !== null) {
+        $alerts[] = [
+            'tone' => 'info',
+            'title' => 'Pre-trip inspection reminder',
+            'message' => 'No pre-trip inspection has been recorded yet for your assigned vehicle.',
+        ];
+    } elseif ($latestPreInspection !== null && in_array($latestPreInspection['overall_status'], ['faulty', 'needs_repair'], true)) {
+        $alerts[] = [
+            'tone' => 'danger',
+            'title' => 'Inspection issue reported',
+            'message' => $latestPreInspection['defects'],
+        ];
+    }
+
+    if ($latestTrip === null) {
+        $alerts[] = [
+            'tone' => 'info',
+            'title' => 'No trip activity yet',
+            'message' => 'Your trip history is empty. Start logging journeys from the Trip Log page.',
+        ];
+    }
+
+    if ($alerts === []) {
+        $alerts[] = [
+            'tone' => 'success',
+            'title' => 'All key checks look good',
+            'message' => 'Your profile, vehicle, and recent operational status do not have urgent alerts right now.',
+        ];
+    }
+
+    return $alerts;
+}
+
+function driverPanelBuildTripStatus(?array $vehicle, ?array $latestTrip, ?array $latestPreInspection): array
+{
+    if ($vehicle === null) {
+        return [
+            'label' => 'No vehicle assigned',
+            'detail' => 'Transport office needs to assign a vehicle before trip work can begin.',
+            'classes' => 'border-orange-200 bg-fleet-warning-soft text-fleet-warning-strong',
+        ];
+    }
+
+    if (in_array($vehicle['status_label'], ['Maintenance', 'Grounded'], true)) {
+        return [
+            'label' => 'Vehicle unavailable',
+            'detail' => 'Your assigned vehicle is currently marked ' . strtolower($vehicle['status_label']) . '.',
+            'classes' => 'border-red-200 bg-fleet-danger-soft text-fleet-danger',
+        ];
+    }
+
+    if ($latestTrip !== null && $latestTrip['is_in_progress']) {
+        return [
+            'label' => 'Trip in progress',
+            'detail' => $latestTrip['from'] . ' to ' . $latestTrip['to'] . ' on ' . $latestTrip['date'] . '.',
+            'classes' => 'border-blue-200 bg-fleet-primary-soft text-fleet-primary',
+        ];
+    }
+
+    if ($latestPreInspection !== null && in_array($latestPreInspection['overall_status'], ['faulty', 'needs_repair'], true)) {
+        return [
+            'label' => 'Inspection issue pending',
+            'detail' => 'Latest pre-trip inspection reported issues that need attention before travel.',
+            'classes' => 'border-red-200 bg-fleet-danger-soft text-fleet-danger',
+        ];
+    }
+
+    if ($latestPreInspection === null) {
+        return [
+            'label' => 'Inspection pending',
+            'detail' => 'Complete a pre-trip inspection before starting today\'s journey.',
+            'classes' => 'border-orange-200 bg-fleet-warning-soft text-fleet-warning-strong',
+        ];
+    }
+
+    return [
+        'label' => 'Ready for trip',
+        'detail' => 'Assigned vehicle is active and the latest recorded checks do not show urgent issues.',
+        'classes' => 'border-green-200 bg-fleet-success-soft text-fleet-success',
+    ];
+}
+
+function driverPanelFetchCommonData(): array
+{
+    $emptyState = [
+        'driverProfile' => null,
+        'assignedVehicle' => null,
+        'tripStatus' => [
+            'label' => 'Unavailable',
+            'detail' => 'Driver panel data could not be loaded.',
+            'classes' => 'border-red-200 bg-fleet-danger-soft text-fleet-danger',
+        ],
+        'latestTrip' => null,
+        'latestPreInspection' => null,
+        'alerts' => [[
+            'tone' => 'danger',
+            'title' => 'Unable to load driver panel',
+            'message' => 'A system error occurred while loading driver information.',
+        ]],
+    ];
+
+    try {
+        $pdo = fleetDb();
+        $driver = driverPanelFindCurrentDriver($pdo);
+
+        if ($driver === null) {
+            return $emptyState;
+        }
+
+        $assignedVehicle = driverPanelFetchAssignedVehicle($pdo, (int) $driver['id']);
+        $latestTrip = driverPanelFetchLatestTrip($pdo, (int) $driver['id']);
+        $latestPreInspection = driverPanelFetchLatestPreInspection($pdo, (int) $driver['id'], $assignedVehicle['id'] ?? null);
+        $alerts = driverPanelBuildAlerts($driver, $assignedVehicle, $latestTrip, $latestPreInspection);
+        $tripStatus = driverPanelBuildTripStatus($assignedVehicle, $latestTrip, $latestPreInspection);
+
+        return [
+            'driverProfile' => [
+                'id' => (int) $driver['id'],
+                'name' => $driver['full_name'],
+                'employee_id' => $driver['employee_id'] ?: 'Not assigned',
+                'phone' => $driver['phone'] ?: 'No phone on file',
+                'email' => $driver['email'] ?: 'No email on file',
+                'department' => $driver['department_name'],
+                'license_number' => $driver['license_number'],
+                'license_classes' => $driver['license_classes'] ?: '-',
+                'license_expiry' => driverPanelFormatDate($driver['license_expiry']),
+                'status' => ucfirst((string) $driver['status']),
+                'initial' => strtoupper(substr((string) $driver['full_name'], 0, 1)),
+            ],
+            'assignedVehicle' => $assignedVehicle,
+            'tripStatus' => $tripStatus,
+            'latestTrip' => $latestTrip,
+            'latestPreInspection' => $latestPreInspection,
+            'alerts' => $alerts,
+        ];
+    } catch (Throwable $exception) {
+        return $emptyState;
+    }
+}
+
+function driverPanelFetchDashboardData(): array
+{
+    $commonData = driverPanelFetchCommonData();
+
+    $overviewCards = [
+        [
+            'label' => 'Assigned Vehicle',
+            'value' => $commonData['assignedVehicle']['registration_no'] ?? 'Not assigned',
+            'icon' => 'V',
+        ],
+        [
+            'label' => 'Current Mileage',
+            'value' => $commonData['assignedVehicle']['current_mileage'] ?? '-',
+            'icon' => 'M',
+        ],
+        [
+            'label' => 'Trip Status',
+            'value' => $commonData['tripStatus']['label'],
+            'icon' => 'T',
+        ],
+        [
+            'label' => 'License Expiry',
+            'value' => $commonData['driverProfile']['license_expiry'] ?? '-',
+            'icon' => 'L',
+        ],
+    ];
+
+    return $commonData + [
+        'overviewCards' => $overviewCards,
+    ];
+}
+
+function driverPanelFetchVehiclePageData(): array
+{
+    $commonData = driverPanelFetchCommonData();
+    $vehicle = $commonData['assignedVehicle'];
+
+    $vehicleHighlights = [
+        [
+            'label' => 'Registration Number',
+            'value' => $vehicle['registration_no'] ?? 'Not assigned',
+        ],
+        [
+            'label' => 'Make & Model',
+            'value' => $vehicle['make_model'] ?? '-',
+        ],
+        [
+            'label' => 'Current Mileage',
+            'value' => $vehicle['current_mileage'] ?? '-',
+        ],
+        [
+            'label' => 'Vehicle Condition',
+            'value' => $vehicle['status_label'] ?? 'Unknown',
+        ],
+    ];
+
+    return $commonData + [
+        'vehicleHighlights' => $vehicleHighlights,
+    ];
+}
+
+function driverPanelBuildChecklistRowsFromFormData(array $formData): array
+{
+    $points = isset($formData['inspection_point']) && is_array($formData['inspection_point']) ? $formData['inspection_point'] : [];
+    $statuses = isset($formData['item_status']) && is_array($formData['item_status']) ? $formData['item_status'] : [];
+    $remarks = isset($formData['item_remarks']) && is_array($formData['item_remarks']) ? $formData['item_remarks'] : [];
+    $actions = isset($formData['item_action']) && is_array($formData['item_action']) ? $formData['item_action'] : [];
+
+    $rows = [];
+
+    foreach (DRIVER_PANEL_PRETRIP_CHECKLIST as $index => $point) {
+        $rows[] = [
+            'inspection_point' => $points[$index] ?? $point,
+            'item_status' => $statuses[$index] ?? 'good',
+            'item_remarks' => $remarks[$index] ?? '',
+            'item_action' => $actions[$index] ?? '',
+        ];
+    }
+
+    return $rows;
+}
+
+function driverPanelBuildInspectionItemPayload(array $checklistRows): array
+{
+    $items = [];
+
+    foreach ($checklistRows as $row) {
+        $status = strtolower(trim((string) ($row['item_status'] ?? 'good')));
+        $remarks = trim((string) ($row['item_remarks'] ?? ''));
+        $action = trim((string) ($row['item_action'] ?? ''));
+
+        $findings = ucfirst($status);
+        if ($remarks !== '') {
+            $findings .= ' - ' . $remarks;
+        }
+
+        $items[] = [
+            'inspection_point' => trim((string) ($row['inspection_point'] ?? '')),
+            'findings' => $findings,
+            'action_point' => $action === '' ? null : $action,
+        ];
+    }
+
+    return $items;
+}
+
+function driverPanelGenerateInspectionReference(int $driverId): string
+{
+    return 'DPI-' . date('YmdHis') . '-' . $driverId;
+}
+
+function driverPanelBuildPreTripFormDataFromPost(): array
+{
+    $points = $_POST['inspection_point'] ?? [];
+    $statuses = $_POST['item_status'] ?? [];
+    $remarks = $_POST['item_remarks'] ?? [];
+    $actions = $_POST['item_action'] ?? [];
+
+    return [
+        'inspection_date' => trim((string) ($_POST['inspection_date'] ?? date('Y-m-d'))),
+        'mileage' => trim((string) ($_POST['mileage'] ?? '')),
+        'overall_status' => strtolower(trim((string) ($_POST['overall_status'] ?? 'good'))),
+        'defects' => trim((string) ($_POST['defects'] ?? '')),
+        'inspection_point' => array_map(static fn ($value): string => trim((string) $value), is_array($points) ? $points : []),
+        'item_status' => array_map(static fn ($value): string => strtolower(trim((string) $value)), is_array($statuses) ? $statuses : []),
+        'item_remarks' => array_map(static fn ($value): string => trim((string) $value), is_array($remarks) ? $remarks : []),
+        'item_action' => array_map(static fn ($value): string => trim((string) $value), is_array($actions) ? $actions : []),
+    ];
+}
+
+function driverPanelValidatePreTripFormData(array $formData, array $driverProfile, array $assignedVehicle): array
+{
+    $allowedStatuses = ['good', 'fair', 'faulty', 'needs_repair'];
+    $inspectionDate = $formData['inspection_date'] !== '' ? $formData['inspection_date'] : date('Y-m-d');
+    $overallStatus = in_array($formData['overall_status'], $allowedStatuses, true) ? $formData['overall_status'] : 'good';
+
+    $date = DateTimeImmutable::createFromFormat('Y-m-d', $inspectionDate);
+    $dateErrors = DateTimeImmutable::getLastErrors();
+
+    if (!$date || ($dateErrors['warning_count'] ?? 0) > 0 || ($dateErrors['error_count'] ?? 0) > 0) {
+        throw new RuntimeException('Please provide a valid inspection date.');
+    }
+
+    $mileage = $formData['mileage'] === ''
+        ? $assignedVehicle['current_mileage_raw']
+        : filter_var($formData['mileage'], FILTER_VALIDATE_INT, ['options' => ['min_range' => 0]]);
+
+    if ($mileage === false) {
+        throw new RuntimeException('Please provide a valid mileage reading.');
+    }
+
+    $checklistRows = driverPanelBuildChecklistRowsFromFormData($formData);
+    $items = driverPanelBuildInspectionItemPayload($checklistRows);
+
+    return [
+        'vehicle_id' => (int) $assignedVehicle['id'],
+        'driver_id' => (int) $driverProfile['id'],
+        'inspection_date' => $date->format('Y-m-d'),
+        'mileage' => (int) $mileage,
+        'overall_status' => $overallStatus,
+        'defects' => $formData['defects'] === '' ? null : $formData['defects'],
+        'invoice_number' => driverPanelGenerateInspectionReference((int) $driverProfile['id']),
+        'inspector_name' => $driverProfile['name'],
+        'items' => $items,
+        'checklist_rows' => $checklistRows,
+    ];
+}
+
+function driverPanelSaveInspectionItems(PDO $pdo, int $inspectionId, array $items): void
+{
+    $deleteStatement = $pdo->prepare('DELETE FROM inspection_items WHERE inspection_id = :inspection_id');
+    $deleteStatement->execute(['inspection_id' => $inspectionId]);
+
+    $insertStatement = $pdo->prepare(
+        'INSERT INTO inspection_items (inspection_id, inspection_point, findings, action_point)
+        VALUES (:inspection_id, :inspection_point, :findings, :action_point)'
+    );
+
+    foreach ($items as $item) {
+        $insertStatement->bindValue(':inspection_id', $inspectionId, PDO::PARAM_INT);
+        $insertStatement->bindValue(':inspection_point', $item['inspection_point']);
+        $insertStatement->bindValue(':findings', $item['findings'], $item['findings'] === null ? PDO::PARAM_NULL : PDO::PARAM_STR);
+        $insertStatement->bindValue(':action_point', $item['action_point'], $item['action_point'] === null ? PDO::PARAM_NULL : PDO::PARAM_STR);
+        $insertStatement->execute();
+    }
+}
+
+function driverPanelHandlePreTripSubmission(): void
+{
+    $formData = driverPanelBuildPreTripFormDataFromPost();
+
+    try {
+        $pdo = fleetDb();
+        $commonData = driverPanelFetchCommonData();
+        $driverProfile = $commonData['driverProfile'];
+        $assignedVehicle = $commonData['assignedVehicle'];
+
+        if ($driverProfile === null || $assignedVehicle === null) {
+            throw new RuntimeException('A driver profile and assigned vehicle are required before submitting an inspection.');
+        }
+
+        $validated = driverPanelValidatePreTripFormData($formData, $driverProfile, $assignedVehicle);
+        $pdo->beginTransaction();
+
+        $statement = $pdo->prepare(
+            "INSERT INTO inspections (
+                vehicle_id,
+                driver_id,
+                inspection_type,
+                invoice_number,
+                inspection_date,
+                inspector_name,
+                inspector_title,
+                mileage,
+                overall_status,
+                defects
+            ) VALUES (
+                :vehicle_id,
+                :driver_id,
+                'pre',
+                :invoice_number,
+                :inspection_date,
+                :inspector_name,
+                'Driver',
+                :mileage,
+                :overall_status,
+                :defects
+            )"
+        );
+        $statement->bindValue(':vehicle_id', $validated['vehicle_id'], PDO::PARAM_INT);
+        $statement->bindValue(':driver_id', $validated['driver_id'], PDO::PARAM_INT);
+        $statement->bindValue(':invoice_number', $validated['invoice_number']);
+        $statement->bindValue(':inspection_date', $validated['inspection_date']);
+        $statement->bindValue(':inspector_name', $validated['inspector_name']);
+        $statement->bindValue(':mileage', $validated['mileage'], PDO::PARAM_INT);
+        $statement->bindValue(':overall_status', $validated['overall_status']);
+        $statement->bindValue(':defects', $validated['defects'], $validated['defects'] === null ? PDO::PARAM_NULL : PDO::PARAM_STR);
+        $statement->execute();
+
+        $inspectionId = (int) $pdo->lastInsertId();
+        driverPanelSaveInspectionItems($pdo, $inspectionId, $validated['items']);
+        $pdo->commit();
+
+        driverPanelSetPreTripFlash([
+            'notification' => [
+                'type' => 'success',
+                'title' => 'Inspection submitted successfully',
+                'message' => 'Your pre-trip inspection has been saved.',
+            ],
+        ]);
+    } catch (RuntimeException $exception) {
+        if (isset($pdo) && $pdo instanceof PDO && $pdo->inTransaction()) {
+            $pdo->rollBack();
+        }
+
+        driverPanelSetPreTripFlash([
+            'notification' => [
+                'type' => 'error',
+                'title' => 'Inspection was not submitted',
+                'message' => $exception->getMessage(),
+            ],
+            'form_data' => $formData,
+        ]);
+    } catch (Throwable $exception) {
+        if (isset($pdo) && $pdo instanceof PDO && $pdo->inTransaction()) {
+            $pdo->rollBack();
+        }
+
+        driverPanelSetPreTripFlash([
+            'notification' => [
+                'type' => 'error',
+                'title' => 'Inspection was not submitted',
+                'message' => 'A system error occurred while saving the inspection.',
+            ],
+            'form_data' => $formData,
+        ]);
+    }
+
+    header('Location: ' . driverPanelPreTripUrl());
+    exit;
+}
+
+function driverPanelFetchPreTripReports(PDO $pdo, int $driverId, ?int $vehicleId): array
+{
+    if ($vehicleId === null) {
+        return [];
+    }
+
+    $statement = $pdo->prepare(
+        "SELECT id, invoice_number, inspection_date, overall_status, defects, mileage
+        FROM inspections
+        WHERE inspection_type = 'pre'
+            AND driver_id = :driver_id
+            AND vehicle_id = :vehicle_id
+        ORDER BY inspection_date DESC, id DESC
+        LIMIT 6"
+    );
+    $statement->execute([
+        'driver_id' => $driverId,
+        'vehicle_id' => $vehicleId,
+    ]);
+
+    $reports = [];
+
+    foreach ($statement->fetchAll() as $row) {
+        $status = (string) ($row['overall_status'] ?? '');
+        $reports[] = [
+            'invoice' => $row['invoice_number'] ?: '-',
+            'date' => driverPanelFormatDate($row['inspection_date']),
+            'status' => ucwords(str_replace('_', ' ', $status ?: 'pending')),
+            'status_classes' => match ($status) {
+                'good' => 'border-green-200 bg-fleet-success-soft text-fleet-success',
+                'fair' => 'border-orange-200 bg-fleet-warning-soft text-fleet-warning-strong',
+                'faulty', 'needs_repair' => 'border-red-200 bg-fleet-danger-soft text-fleet-danger',
+                default => 'border-slate-200 bg-slate-100 text-slate-600',
+            },
+            'defects' => $row['defects'] ?: 'No defects summary provided.',
+            'mileage' => $row['mileage'] !== null ? number_format((int) $row['mileage']) . ' km' : '-',
+        ];
+    }
+
+    return $reports;
+}
+
+function driverPanelFetchPreTripPageData(): array
+{
+    $commonData = driverPanelFetchCommonData();
+    $flash = driverPanelPullPreTripFlash();
+    $notification = $flash['notification'] ?? null;
+    $formData = $flash['form_data'] ?? [];
+    $driverProfile = $commonData['driverProfile'];
+    $assignedVehicle = $commonData['assignedVehicle'];
+    $recentReports = [];
+
+    if ($formData === []) {
+        $formData = [
+            'inspection_date' => date('Y-m-d'),
+            'mileage' => $assignedVehicle['current_mileage_raw'] ?? '',
+            'overall_status' => 'good',
+            'defects' => '',
+        ];
+    }
+
+    try {
+        if ($driverProfile !== null && $assignedVehicle !== null) {
+            $recentReports = driverPanelFetchPreTripReports(fleetDb(), (int) $driverProfile['id'], (int) $assignedVehicle['id']);
+        }
+    } catch (Throwable $exception) {
+        $notification = $notification ?? [
+            'type' => 'error',
+            'title' => 'Unable to load pre-trip history',
+            'message' => 'Recent pre-trip inspection records could not be loaded right now.',
+        ];
+    }
+
+    $latestReport = $recentReports[0] ?? null;
+
+    return $commonData + [
+        'preTripNotification' => $notification,
+        'preTripFormData' => $formData,
+        'preTripChecklistRows' => driverPanelBuildChecklistRowsFromFormData($formData),
+        'preTripRecentReports' => $recentReports,
+        'preTripLatestStatus' => $latestReport,
+        'preTripFormAction' => driverPanelHandlerUrl(),
+    ];
+}
+
+function driverPanelBuildTripStartFormDataFromPost(): array
+{
+    return [
+        'trip_date' => trim((string) ($_POST['trip_date'] ?? date('Y-m-d'))),
+        'departure_location' => trim((string) ($_POST['departure_location'] ?? '')),
+        'destination' => trim((string) ($_POST['destination'] ?? '')),
+        'purpose' => trim((string) ($_POST['purpose'] ?? '')),
+        'odometer_start' => trim((string) ($_POST['odometer_start'] ?? '')),
+    ];
+}
+
+function driverPanelBuildTripEndFormDataFromPost(): array
+{
+    return [
+        'trip_id' => trim((string) ($_POST['trip_id'] ?? '')),
+        'odometer_end' => trim((string) ($_POST['odometer_end'] ?? '')),
+        'fuel_litres' => trim((string) ($_POST['fuel_litres'] ?? '')),
+        'fuel_cost' => trim((string) ($_POST['fuel_cost'] ?? '')),
+        'remarks' => trim((string) ($_POST['remarks'] ?? '')),
+    ];
+}
+
+function driverPanelFetchOpenTrip(PDO $pdo, int $driverId): ?array
+{
+    $statement = $pdo->prepare(
+        "SELECT
+            vl.id,
+            vl.trip_date,
+            vl.departure_location,
+            vl.destination,
+            vl.purpose,
+            vl.odometer_start,
+            vl.odometer_end,
+            vl.fuel_litres,
+            vl.fuel_cost,
+            vl.remarks,
+            v.registration_no
+        FROM vehicle_logs vl
+        INNER JOIN vehicles v ON v.id = vl.vehicle_id
+        WHERE vl.driver_id = :driver_id
+            AND vl.odometer_end IS NULL
+        ORDER BY vl.trip_date DESC, vl.id DESC
+        LIMIT 1"
+    );
+    $statement->execute(['driver_id' => $driverId]);
+    $trip = $statement->fetch();
+
+    if (!$trip) {
+        return null;
+    }
+
+    return [
+        'id' => (int) $trip['id'],
+        'date' => driverPanelFormatDate($trip['trip_date']),
+        'date_raw' => $trip['trip_date'],
+        'vehicle' => $trip['registration_no'],
+        'from' => $trip['departure_location'],
+        'to' => $trip['destination'],
+        'purpose' => $trip['purpose'],
+        'odometer_start' => $trip['odometer_start'] !== null ? (int) $trip['odometer_start'] : null,
+        'odometer_start_label' => $trip['odometer_start'] !== null ? number_format((int) $trip['odometer_start']) . ' km' : '-',
+    ];
+}
+
+function driverPanelFetchRecentTrips(PDO $pdo, int $driverId): array
+{
+    $statement = $pdo->prepare(
+        "SELECT
+            vl.id,
+            vl.trip_date,
+            vl.departure_location,
+            vl.destination,
+            vl.purpose,
+            vl.odometer_start,
+            vl.odometer_end,
+            vl.distance_km,
+            vl.fuel_litres,
+            vl.remarks,
+            v.registration_no
+        FROM vehicle_logs vl
+        INNER JOIN vehicles v ON v.id = vl.vehicle_id
+        WHERE vl.driver_id = :driver_id
+        ORDER BY vl.trip_date DESC, vl.id DESC
+        LIMIT 8"
+    );
+    $statement->execute(['driver_id' => $driverId]);
+
+    $trips = [];
+
+    foreach ($statement->fetchAll() as $row) {
+        $isOpen = $row['odometer_end'] === null;
+        $trips[] = [
+            'date' => driverPanelFormatDate($row['trip_date']),
+            'vehicle' => $row['registration_no'],
+            'route' => $row['departure_location'] . ' - ' . $row['destination'],
+            'purpose' => $row['purpose'],
+            'distance' => $row['distance_km'] !== null ? number_format((int) $row['distance_km']) . ' km' : '-',
+            'fuel' => $row['fuel_litres'] !== null ? rtrim(rtrim(number_format((float) $row['fuel_litres'], 2, '.', ''), '0'), '.') . ' L' : '-',
+            'remarks' => $row['remarks'] ?: '-',
+            'status' => $isOpen ? 'In Progress' : 'Completed',
+            'status_classes' => $isOpen
+                ? 'border-blue-200 bg-fleet-primary-soft text-fleet-primary'
+                : 'border-green-200 bg-fleet-success-soft text-fleet-success',
+        ];
+    }
+
+    return $trips;
+}
+
+function driverPanelValidateTripStart(array $formData, array $assignedVehicle): array
+{
+    if ($formData['departure_location'] === '' || $formData['destination'] === '' || $formData['purpose'] === '') {
+        throw new RuntimeException('Departure location, destination, and purpose are required to start a trip.');
+    }
+
+    $date = DateTimeImmutable::createFromFormat('Y-m-d', $formData['trip_date']);
+    $dateErrors = DateTimeImmutable::getLastErrors();
+    if (!$date || ($dateErrors['warning_count'] ?? 0) > 0 || ($dateErrors['error_count'] ?? 0) > 0) {
+        throw new RuntimeException('Please provide a valid trip date.');
+    }
+
+    $odometerStart = $formData['odometer_start'] === ''
+        ? $assignedVehicle['current_mileage_raw']
+        : filter_var($formData['odometer_start'], FILTER_VALIDATE_INT, ['options' => ['min_range' => 0]]);
+
+    if ($odometerStart === false) {
+        throw new RuntimeException('Please provide a valid odometer start reading.');
+    }
+
+    return [
+        'trip_date' => $date->format('Y-m-d'),
+        'departure_location' => $formData['departure_location'],
+        'destination' => $formData['destination'],
+        'purpose' => $formData['purpose'],
+        'odometer_start' => (int) $odometerStart,
+    ];
+}
+
+function driverPanelHandleStartTrip(): void
+{
+    $formData = driverPanelBuildTripStartFormDataFromPost();
+
+    try {
+        $pdo = fleetDb();
+        $commonData = driverPanelFetchCommonData();
+        $driverProfile = $commonData['driverProfile'];
+        $assignedVehicle = $commonData['assignedVehicle'];
+
+        if ($driverProfile === null || $assignedVehicle === null) {
+            throw new RuntimeException('A driver profile and assigned vehicle are required before starting a trip.');
+        }
+
+        if (driverPanelFetchOpenTrip($pdo, (int) $driverProfile['id']) !== null) {
+            throw new RuntimeException('Finish the current trip before starting a new one.');
+        }
+
+        $validated = driverPanelValidateTripStart($formData, $assignedVehicle);
+        $statement = $pdo->prepare(
+            "INSERT INTO vehicle_logs (
+                vehicle_id,
+                driver_id,
+                trip_date,
+                departure_location,
+                destination,
+                purpose,
+                odometer_start
+            ) VALUES (
+                :vehicle_id,
+                :driver_id,
+                :trip_date,
+                :departure_location,
+                :destination,
+                :purpose,
+                :odometer_start
+            )"
+        );
+        $statement->execute([
+            'vehicle_id' => (int) $assignedVehicle['id'],
+            'driver_id' => (int) $driverProfile['id'],
+            'trip_date' => $validated['trip_date'],
+            'departure_location' => $validated['departure_location'],
+            'destination' => $validated['destination'],
+            'purpose' => $validated['purpose'],
+            'odometer_start' => $validated['odometer_start'],
+        ]);
+
+        driverPanelSetTripFlash([
+            'notification' => [
+                'type' => 'success',
+                'title' => 'Trip started successfully',
+                'message' => 'The trip has been opened and is now in progress.',
+            ],
+        ]);
+    } catch (RuntimeException $exception) {
+        driverPanelSetTripFlash([
+            'notification' => [
+                'type' => 'error',
+                'title' => 'Trip could not be started',
+                'message' => $exception->getMessage(),
+            ],
+            'start_form_data' => $formData,
+        ]);
+    } catch (Throwable $exception) {
+        driverPanelSetTripFlash([
+            'notification' => [
+                'type' => 'error',
+                'title' => 'Trip could not be started',
+                'message' => 'A system error occurred while starting the trip.',
+            ],
+            'start_form_data' => $formData,
+        ]);
+    }
+
+    header('Location: ' . driverPanelTripLogUrl());
+    exit;
+}
+
+function driverPanelValidateTripEnd(array $formData, array $openTrip): array
+{
+    $tripId = filter_var($formData['trip_id'], FILTER_VALIDATE_INT, ['options' => ['min_range' => 1]]);
+    if ($tripId === false || (int) $tripId !== (int) $openTrip['id']) {
+        throw new RuntimeException('The active trip could not be identified.');
+    }
+
+    $odometerEnd = filter_var($formData['odometer_end'], FILTER_VALIDATE_INT, ['options' => ['min_range' => 0]]);
+    if ($odometerEnd === false) {
+        throw new RuntimeException('Please provide a valid odometer end reading.');
+    }
+
+    if ($openTrip['odometer_start'] !== null && $odometerEnd < (int) $openTrip['odometer_start']) {
+        throw new RuntimeException('Odometer end cannot be less than odometer start.');
+    }
+
+    $fuelLitres = $formData['fuel_litres'] === '' ? null : filter_var($formData['fuel_litres'], FILTER_VALIDATE_FLOAT);
+    $fuelCost = $formData['fuel_cost'] === '' ? null : filter_var($formData['fuel_cost'], FILTER_VALIDATE_FLOAT);
+
+    if ($fuelLitres === false || $fuelCost === false) {
+        throw new RuntimeException('Please review the fuel fields and enter valid values.');
+    }
+
+    return [
+        'trip_id' => (int) $tripId,
+        'odometer_end' => (int) $odometerEnd,
+        'fuel_litres' => $fuelLitres === null ? null : (float) $fuelLitres,
+        'fuel_cost' => $fuelCost === null ? null : (float) $fuelCost,
+        'remarks' => $formData['remarks'] === '' ? null : $formData['remarks'],
+    ];
+}
+
+function driverPanelHandleEndTrip(): void
+{
+    $formData = driverPanelBuildTripEndFormDataFromPost();
+
+    try {
+        $pdo = fleetDb();
+        $commonData = driverPanelFetchCommonData();
+        $driverProfile = $commonData['driverProfile'];
+        $assignedVehicle = $commonData['assignedVehicle'];
+
+        if ($driverProfile === null || $assignedVehicle === null) {
+            throw new RuntimeException('A driver profile and assigned vehicle are required before ending a trip.');
+        }
+
+        $openTrip = driverPanelFetchOpenTrip($pdo, (int) $driverProfile['id']);
+        if ($openTrip === null) {
+            throw new RuntimeException('There is no active trip to end.');
+        }
+
+        $validated = driverPanelValidateTripEnd($formData, $openTrip);
+        $pdo->beginTransaction();
+
+        $statement = $pdo->prepare(
+            "UPDATE vehicle_logs SET
+                odometer_end = :odometer_end,
+                fuel_litres = :fuel_litres,
+                fuel_cost = :fuel_cost,
+                remarks = :remarks
+            WHERE id = :trip_id"
+        );
+        $statement->bindValue(':odometer_end', $validated['odometer_end'], PDO::PARAM_INT);
+        $statement->bindValue(':fuel_litres', $validated['fuel_litres'], $validated['fuel_litres'] === null ? PDO::PARAM_NULL : PDO::PARAM_STR);
+        $statement->bindValue(':fuel_cost', $validated['fuel_cost'], $validated['fuel_cost'] === null ? PDO::PARAM_NULL : PDO::PARAM_STR);
+        $statement->bindValue(':remarks', $validated['remarks'], $validated['remarks'] === null ? PDO::PARAM_NULL : PDO::PARAM_STR);
+        $statement->bindValue(':trip_id', $validated['trip_id'], PDO::PARAM_INT);
+        $statement->execute();
+
+        $mileageStatement = $pdo->prepare(
+            'UPDATE vehicles
+             SET current_mileage = GREATEST(current_mileage, :odometer_end)
+             WHERE id = :vehicle_id'
+        );
+        $mileageStatement->execute([
+            'odometer_end' => $validated['odometer_end'],
+            'vehicle_id' => (int) $assignedVehicle['id'],
+        ]);
+
+        $pdo->commit();
+
+        driverPanelSetTripFlash([
+            'notification' => [
+                'type' => 'success',
+                'title' => 'Trip ended successfully',
+                'message' => 'The trip has been completed and saved to the logbook.',
+            ],
+        ]);
+    } catch (RuntimeException $exception) {
+        if (isset($pdo) && $pdo instanceof PDO && $pdo->inTransaction()) {
+            $pdo->rollBack();
+        }
+
+        driverPanelSetTripFlash([
+            'notification' => [
+                'type' => 'error',
+                'title' => 'Trip could not be ended',
+                'message' => $exception->getMessage(),
+            ],
+            'end_form_data' => $formData,
+        ]);
+    } catch (Throwable $exception) {
+        if (isset($pdo) && $pdo instanceof PDO && $pdo->inTransaction()) {
+            $pdo->rollBack();
+        }
+
+        driverPanelSetTripFlash([
+            'notification' => [
+                'type' => 'error',
+                'title' => 'Trip could not be ended',
+                'message' => 'A system error occurred while closing the trip.',
+            ],
+            'end_form_data' => $formData,
+        ]);
+    }
+
+    header('Location: ' . driverPanelTripLogUrl());
+    exit;
+}
+
+function driverPanelFetchTripLogPageData(): array
+{
+    $commonData = driverPanelFetchCommonData();
+    $flash = driverPanelPullTripFlash();
+    $notification = $flash['notification'] ?? null;
+    $driverProfile = $commonData['driverProfile'];
+    $assignedVehicle = $commonData['assignedVehicle'];
+    $activeTrip = null;
+    $recentTrips = [];
+
+    try {
+        if ($driverProfile !== null) {
+            $pdo = fleetDb();
+            $activeTrip = driverPanelFetchOpenTrip($pdo, (int) $driverProfile['id']);
+            $recentTrips = driverPanelFetchRecentTrips($pdo, (int) $driverProfile['id']);
+        }
+    } catch (Throwable $exception) {
+        $notification = $notification ?? [
+            'type' => 'error',
+            'title' => 'Unable to load trip history',
+            'message' => 'Trip details could not be loaded right now.',
+        ];
+    }
+
+    $startFormData = $flash['start_form_data'] ?? [
+        'trip_date' => date('Y-m-d'),
+        'departure_location' => '',
+        'destination' => '',
+        'purpose' => '',
+        'odometer_start' => $assignedVehicle['current_mileage_raw'] ?? '',
+    ];
+
+    $endFormData = $flash['end_form_data'] ?? [
+        'trip_id' => $activeTrip['id'] ?? '',
+        'odometer_end' => '',
+        'fuel_litres' => '',
+        'fuel_cost' => '',
+        'remarks' => '',
+    ];
+
+    return $commonData + [
+        'tripLogNotification' => $notification,
+        'activeTrip' => $activeTrip,
+        'recentTrips' => $recentTrips,
+        'tripStartFormData' => $startFormData,
+        'tripEndFormData' => $endFormData,
+        'tripFormAction' => driverPanelHandlerUrl(),
+    ];
+}
+
+function driverPanelFetchTripHistory(PDO $pdo, int $driverId): array
+{
+    $statement = $pdo->prepare(
+        "SELECT
+            vl.id,
+            vl.trip_date,
+            vl.departure_location,
+            vl.destination,
+            vl.purpose,
+            vl.odometer_start,
+            vl.odometer_end,
+            vl.distance_km,
+            vl.fuel_litres,
+            vl.fuel_cost,
+            vl.remarks,
+            v.registration_no
+        FROM vehicle_logs vl
+        INNER JOIN vehicles v ON v.id = vl.vehicle_id
+        WHERE vl.driver_id = :driver_id
+        ORDER BY vl.trip_date DESC, vl.id DESC"
+    );
+    $statement->execute(['driver_id' => $driverId]);
+
+    $trips = [];
+
+    foreach ($statement->fetchAll() as $row) {
+        $isInProgress = $row['odometer_end'] === null;
+        $trips[] = [
+            'id' => (int) $row['id'],
+            'date' => driverPanelFormatDate($row['trip_date']),
+            'date_raw' => $row['trip_date'],
+            'vehicle' => $row['registration_no'],
+            'route' => $row['departure_location'] . ' - ' . $row['destination'],
+            'from' => $row['departure_location'],
+            'to' => $row['destination'],
+            'purpose' => $row['purpose'],
+            'distance' => $row['distance_km'] !== null ? number_format((int) $row['distance_km']) . ' km' : '-',
+            'distance_raw' => $row['distance_km'] !== null ? (int) $row['distance_km'] : null,
+            'odometer_start' => $row['odometer_start'] !== null ? number_format((int) $row['odometer_start']) . ' km' : '-',
+            'odometer_end' => $row['odometer_end'] !== null ? number_format((int) $row['odometer_end']) . ' km' : '-',
+            'fuel_litres' => $row['fuel_litres'] !== null ? rtrim(rtrim(number_format((float) $row['fuel_litres'], 2, '.', ''), '0'), '.') . ' L' : '-',
+            'fuel_cost' => $row['fuel_cost'] !== null ? 'UGX ' . number_format((float) $row['fuel_cost'], 0) : '-',
+            'remarks' => $row['remarks'] ?: 'No remarks recorded.',
+            'status' => $isInProgress ? 'In Progress' : 'Completed',
+            'status_classes' => $isInProgress
+                ? 'border-blue-200 bg-fleet-primary-soft text-fleet-primary'
+                : 'border-green-200 bg-fleet-success-soft text-fleet-success',
+        ];
+    }
+
+    return $trips;
+}
+
+function driverPanelSelectTripDetail(array $tripHistory): ?array
+{
+    if ($tripHistory === []) {
+        return null;
+    }
+
+    $requestedTripId = filter_var((string) ($_GET['trip_id'] ?? ''), FILTER_VALIDATE_INT, ['options' => ['min_range' => 1]]);
+
+    if ($requestedTripId !== false) {
+        foreach ($tripHistory as $trip) {
+            if ((int) $trip['id'] === (int) $requestedTripId) {
+                return $trip;
+            }
+        }
+    }
+
+    return $tripHistory[0];
+}
+
+function driverPanelFetchReportHistory(PDO $pdo, int $driverId): array
+{
+    $statement = $pdo->prepare(
+        "SELECT
+            i.id,
+            i.inspection_type,
+            i.invoice_number,
+            i.inspection_date,
+            i.overall_status,
+            i.defects,
+            i.works_done,
+            i.repair_cost,
+            v.registration_no,
+            (
+                SELECT mr.status
+                FROM maintenance_records mr
+                WHERE mr.vehicle_id = i.vehicle_id
+                    AND mr.date_reported >= i.inspection_date
+                ORDER BY mr.date_reported DESC, mr.id DESC
+                LIMIT 1
+            ) AS maintenance_status,
+            (
+                SELECT mr.description
+                FROM maintenance_records mr
+                WHERE mr.vehicle_id = i.vehicle_id
+                    AND mr.date_reported >= i.inspection_date
+                ORDER BY mr.date_reported DESC, mr.id DESC
+                LIMIT 1
+            ) AS maintenance_description,
+            (
+                SELECT mr.date_completed
+                FROM maintenance_records mr
+                WHERE mr.vehicle_id = i.vehicle_id
+                    AND mr.date_reported >= i.inspection_date
+                ORDER BY mr.date_reported DESC, mr.id DESC
+                LIMIT 1
+            ) AS maintenance_completed_date
+        FROM inspections i
+        INNER JOIN vehicles v ON v.id = i.vehicle_id
+        WHERE i.driver_id = :driver_id
+            AND i.inspection_type IN ('pre', 'post')
+        ORDER BY i.inspection_date DESC, i.id DESC"
+    );
+    $statement->execute(['driver_id' => $driverId]);
+
+    $reports = [];
+
+    foreach ($statement->fetchAll() as $row) {
+        $inspectionType = (string) $row['inspection_type'];
+        $overallStatus = (string) ($row['overall_status'] ?? '');
+        $maintenanceStatus = $row['maintenance_status'] ? ucwords(str_replace('_', ' ', (string) $row['maintenance_status'])) : 'No maintenance feedback';
+
+        $reports[] = [
+            'id' => (int) $row['id'],
+            'type' => $inspectionType === 'post' ? 'Post-Trip / Follow-up' : 'Pre-Inspection',
+            'type_classes' => $inspectionType === 'post'
+                ? 'border-blue-200 bg-fleet-primary-soft text-fleet-primary'
+                : 'border-orange-200 bg-fleet-warning-soft text-fleet-warning-strong',
+            'date' => driverPanelFormatDate($row['inspection_date']),
+            'vehicle' => $row['registration_no'],
+            'reference' => $row['invoice_number'] ?: '-',
+            'status' => $overallStatus !== '' ? ucwords(str_replace('_', ' ', $overallStatus)) : 'Pending',
+            'status_classes' => match ($overallStatus) {
+                'good', 'completed' => 'border-green-200 bg-fleet-success-soft text-fleet-success',
+                'fair' => 'border-orange-200 bg-fleet-warning-soft text-fleet-warning-strong',
+                'faulty', 'needs_repair' => 'border-red-200 bg-fleet-danger-soft text-fleet-danger',
+                default => 'border-slate-200 bg-slate-100 text-slate-600',
+            },
+            'report_summary' => $inspectionType === 'post'
+                ? ($row['works_done'] ?: 'No post-trip summary recorded.')
+                : ($row['defects'] ?: 'No defects summary recorded.'),
+            'maintenance_feedback' => $row['maintenance_description'] ?: 'No maintenance feedback linked yet.',
+            'maintenance_status' => $maintenanceStatus,
+            'maintenance_completed_date' => driverPanelFormatDate($row['maintenance_completed_date']),
+        ];
+    }
+
+    return $reports;
+}
+
+function driverPanelFetchHistoryPageData(): array
+{
+    $commonData = driverPanelFetchCommonData();
+    $driverProfile = $commonData['driverProfile'];
+    $tripHistory = [];
+    $tripDetail = null;
+    $reportHistory = [];
+
+    try {
+        if ($driverProfile !== null) {
+            $pdo = fleetDb();
+            $tripHistory = driverPanelFetchTripHistory($pdo, (int) $driverProfile['id']);
+            $tripDetail = driverPanelSelectTripDetail($tripHistory);
+            $reportHistory = driverPanelFetchReportHistory($pdo, (int) $driverProfile['id']);
+        }
+    } catch (Throwable $exception) {
+        // Keep the page resilient and render empty states instead of failing hard.
+    }
+
+    return $commonData + [
+        'tripHistory' => $tripHistory,
+        'tripDetail' => $tripDetail,
+        'reportHistory' => $reportHistory,
+    ];
+}
+
+function driverPanelBuildReminderNotifications(array $commonData): array
+{
+    $reminders = [];
+    $latestTrip = $commonData['latestTrip'];
+    $latestPreInspection = $commonData['latestPreInspection'];
+    $assignedVehicle = $commonData['assignedVehicle'];
+
+    if ($assignedVehicle === null) {
+        $reminders[] = [
+            'title' => 'Vehicle assignment reminder',
+            'message' => 'You need an assigned vehicle before normal trip workflow can continue.',
+            'tone' => 'warning',
+        ];
+    }
+
+    if ($latestPreInspection === null) {
+        $reminders[] = [
+            'title' => 'Inspection reminder',
+            'message' => 'Complete a pre-trip inspection before starting a journey.',
+            'tone' => 'info',
+        ];
+    }
+
+    if ($latestTrip !== null && $latestTrip['is_in_progress']) {
+        $reminders[] = [
+            'title' => 'Trip log reminder',
+            'message' => 'You have an open trip record. End the trip after reaching your destination.',
+            'tone' => 'info',
+        ];
+    }
+
+    if ($reminders === []) {
+        $reminders[] = [
+            'title' => 'No pending reminders',
+            'message' => 'There are no outstanding driver reminders right now.',
+            'tone' => 'success',
+        ];
+    }
+
+    return $reminders;
+}
+
+function driverPanelBuildVehicleNotifications(array $commonData): array
+{
+    $alerts = [];
+    $assignedVehicle = $commonData['assignedVehicle'];
+    $latestPreInspection = $commonData['latestPreInspection'];
+
+    if ($assignedVehicle !== null) {
+        $alerts[] = [
+            'title' => 'Vehicle condition',
+            'message' => $assignedVehicle['registration_no'] . ' is currently marked ' . strtolower($assignedVehicle['status_label']) . '.',
+            'tone' => in_array($assignedVehicle['status_label'], ['Maintenance', 'Grounded'], true) ? 'danger' : 'success',
+        ];
+    }
+
+    if ($latestPreInspection !== null && in_array($latestPreInspection['overall_status'], ['faulty', 'needs_repair'], true)) {
+        $alerts[] = [
+            'title' => 'Inspection issue alert',
+            'message' => $latestPreInspection['defects'],
+            'tone' => 'danger',
+        ];
+    }
+
+    if ($alerts === []) {
+        $alerts[] = [
+            'title' => 'No vehicle alerts',
+            'message' => 'No urgent vehicle-specific alerts are active at the moment.',
+            'tone' => 'success',
+        ];
+    }
+
+    return $alerts;
+}
+
+function driverPanelFetchDriverMessages(PDO $pdo, array $driverProfile): array
+{
+    $statement = $pdo->prepare(
+        "SELECT
+            c.subject,
+            c.message,
+            c.message_type,
+            c.created_at,
+            COALESCE(u.name, 'Transport Office') AS sender_name,
+            cr.delivery_status
+        FROM communication_recipients cr
+        INNER JOIN communications c ON c.id = cr.communication_id
+        LEFT JOIN users u ON u.id = c.sender_user_id
+        WHERE cr.driver_id = :driver_id
+            OR (cr.recipient_email = :driver_email AND :driver_email <> '')
+        ORDER BY c.created_at DESC, c.id DESC
+        LIMIT 10"
+    );
+    $statement->execute([
+        'driver_id' => (int) $driverProfile['id'],
+        'driver_email' => (string) ($driverProfile['email'] ?? ''),
+    ]);
+
+    $messages = [];
+
+    foreach ($statement->fetchAll() as $row) {
+        $messages[] = [
+            'subject' => $row['subject'],
+            'message' => $row['message'],
+            'sender' => $row['sender_name'],
+            'date' => date('d M Y H:i', strtotime((string) $row['created_at'])),
+            'type' => ucwords(str_replace('_', ' ', (string) $row['message_type'])),
+            'delivery_status' => ucwords((string) $row['delivery_status']),
+        ];
+    }
+
+    return $messages;
+}
+
+function driverPanelBuildIncidentFormDataFromPost(): array
+{
+    return [
+        'incident_type' => strtolower(trim((string) ($_POST['incident_type'] ?? 'breakdown'))),
+        'incident_date' => trim((string) ($_POST['incident_date'] ?? date('Y-m-d'))),
+        'location' => trim((string) ($_POST['location'] ?? '')),
+        'subject' => trim((string) ($_POST['subject'] ?? '')),
+        'description' => trim((string) ($_POST['description'] ?? '')),
+        'urgency' => strtolower(trim((string) ($_POST['urgency'] ?? 'medium'))),
+    ];
+}
+
+function driverPanelValidateIncidentFormData(array $formData, array $driverProfile, ?array $assignedVehicle): array
+{
+    $allowedTypes = ['breakdown', 'accident', 'unusual_issue'];
+    $allowedUrgency = ['low', 'medium', 'high', 'critical'];
+
+    if ($formData['subject'] === '' || $formData['description'] === '') {
+        throw new RuntimeException('Incident subject and description are required.');
+    }
+
+    if (!in_array($formData['incident_type'], $allowedTypes, true)) {
+        throw new RuntimeException('Please choose a valid incident type.');
+    }
+
+    if (!in_array($formData['urgency'], $allowedUrgency, true)) {
+        throw new RuntimeException('Please choose a valid urgency level.');
+    }
+
+    $date = DateTimeImmutable::createFromFormat('Y-m-d', $formData['incident_date']);
+    $dateErrors = DateTimeImmutable::getLastErrors();
+    if (!$date || ($dateErrors['warning_count'] ?? 0) > 0 || ($dateErrors['error_count'] ?? 0) > 0) {
+        throw new RuntimeException('Please provide a valid incident date.');
+    }
+
+    return [
+        'driver_id' => (int) $driverProfile['id'],
+        'vehicle_id' => $assignedVehicle['id'] ?? null,
+        'incident_type' => $formData['incident_type'],
+        'incident_date' => $date->format('Y-m-d'),
+        'location' => $formData['location'] === '' ? null : $formData['location'],
+        'subject' => $formData['subject'],
+        'description' => $formData['description'],
+        'urgency' => $formData['urgency'],
+    ];
+}
+
+function driverPanelHandleIncidentReport(): void
+{
+    $formData = driverPanelBuildIncidentFormDataFromPost();
+
+    try {
+        $pdo = fleetDb();
+        driverPanelEnsureIncidentReportsTable($pdo);
+        $commonData = driverPanelFetchCommonData();
+        $driverProfile = $commonData['driverProfile'];
+        $assignedVehicle = $commonData['assignedVehicle'];
+
+        if ($driverProfile === null) {
+            throw new RuntimeException('A driver profile is required before submitting an incident report.');
+        }
+
+        $validated = driverPanelValidateIncidentFormData($formData, $driverProfile, $assignedVehicle);
+        $statement = $pdo->prepare(
+            "INSERT INTO incident_reports (
+                driver_id,
+                vehicle_id,
+                incident_type,
+                incident_date,
+                location,
+                subject,
+                description,
+                urgency
+            ) VALUES (
+                :driver_id,
+                :vehicle_id,
+                :incident_type,
+                :incident_date,
+                :location,
+                :subject,
+                :description,
+                :urgency
+            )"
+        );
+        $statement->bindValue(':driver_id', $validated['driver_id'], PDO::PARAM_INT);
+        $statement->bindValue(':vehicle_id', $validated['vehicle_id'], $validated['vehicle_id'] === null ? PDO::PARAM_NULL : PDO::PARAM_INT);
+        $statement->bindValue(':incident_type', $validated['incident_type']);
+        $statement->bindValue(':incident_date', $validated['incident_date']);
+        $statement->bindValue(':location', $validated['location'], $validated['location'] === null ? PDO::PARAM_NULL : PDO::PARAM_STR);
+        $statement->bindValue(':subject', $validated['subject']);
+        $statement->bindValue(':description', $validated['description']);
+        $statement->bindValue(':urgency', $validated['urgency']);
+        $statement->execute();
+
+        driverPanelSetMessagesFlash([
+            'notification' => [
+                'type' => 'success',
+                'title' => 'Incident reported successfully',
+                'message' => 'Your incident report has been submitted to the transport office.',
+            ],
+        ]);
+    } catch (RuntimeException $exception) {
+        driverPanelSetMessagesFlash([
+            'notification' => [
+                'type' => 'error',
+                'title' => 'Incident was not reported',
+                'message' => $exception->getMessage(),
+            ],
+            'incident_form_data' => $formData,
+        ]);
+    } catch (Throwable $exception) {
+        driverPanelSetMessagesFlash([
+            'notification' => [
+                'type' => 'error',
+                'title' => 'Incident was not reported',
+                'message' => 'A system error occurred while saving the incident report.',
+            ],
+            'incident_form_data' => $formData,
+        ]);
+    }
+
+    header('Location: ' . driverPanelMessagesUrlPath());
+    exit;
+}
+
+function driverPanelMessagesUrlPath(): string
+{
+    return '/fleet-system/driver-panel/messages.php';
+}
+
+function driverPanelFetchIncidentHistory(PDO $pdo, int $driverId): array
+{
+    driverPanelEnsureIncidentReportsTable($pdo);
+
+    $statement = $pdo->prepare(
+        "SELECT
+            ir.incident_type,
+            ir.incident_date,
+            ir.location,
+            ir.subject,
+            ir.description,
+            ir.urgency,
+            ir.status,
+            v.registration_no
+        FROM incident_reports ir
+        LEFT JOIN vehicles v ON v.id = ir.vehicle_id
+        WHERE ir.driver_id = :driver_id
+        ORDER BY ir.incident_date DESC, ir.id DESC
+        LIMIT 10"
+    );
+    $statement->execute(['driver_id' => $driverId]);
+
+    $incidents = [];
+
+    foreach ($statement->fetchAll() as $row) {
+        $status = (string) $row['status'];
+        $incidents[] = [
+            'type' => ucwords(str_replace('_', ' ', (string) $row['incident_type'])),
+            'date' => driverPanelFormatDate($row['incident_date']),
+            'location' => $row['location'] ?: 'No location given',
+            'subject' => $row['subject'],
+            'description' => $row['description'],
+            'urgency' => ucfirst((string) $row['urgency']),
+            'vehicle' => $row['registration_no'] ?: 'No linked vehicle',
+            'status' => ucwords(str_replace('_', ' ', $status)),
+            'status_classes' => match ($status) {
+                'resolved' => 'border-green-200 bg-fleet-success-soft text-fleet-success',
+                'under_review' => 'border-blue-200 bg-fleet-primary-soft text-fleet-primary',
+                default => 'border-orange-200 bg-fleet-warning-soft text-fleet-warning-strong',
+            },
+        ];
+    }
+
+    return $incidents;
+}
+
+function driverPanelFetchMessagesPageData(): array
+{
+    $commonData = driverPanelFetchCommonData();
+    $flash = driverPanelPullMessagesFlash();
+    $notification = $flash['notification'] ?? null;
+    $driverProfile = $commonData['driverProfile'];
+    $transportMessages = [];
+    $incidentHistory = [];
+
+    try {
+        if ($driverProfile !== null) {
+            $pdo = fleetDb();
+            $transportMessages = driverPanelFetchDriverMessages($pdo, $driverProfile);
+            $incidentHistory = driverPanelFetchIncidentHistory($pdo, (int) $driverProfile['id']);
+        }
+    } catch (Throwable $exception) {
+        $notification = $notification ?? [
+            'type' => 'error',
+            'title' => 'Unable to load message center',
+            'message' => 'Messages or incident records could not be loaded right now.',
+        ];
+    }
+
+    $incidentFormData = $flash['incident_form_data'] ?? [
+        'incident_type' => 'breakdown',
+        'incident_date' => date('Y-m-d'),
+        'location' => '',
+        'subject' => '',
+        'description' => '',
+        'urgency' => 'medium',
+    ];
+
+    return $commonData + [
+        'messagesNotification' => $notification,
+        'transportMessages' => $transportMessages,
+        'driverReminders' => driverPanelBuildReminderNotifications($commonData),
+        'vehicleNotifications' => driverPanelBuildVehicleNotifications($commonData),
+        'incidentFormData' => $incidentFormData,
+        'incidentHistory' => $incidentHistory,
+        'messagesFormAction' => driverPanelHandlerUrl(),
+    ];
+}
+
+function driverPanelHandleRequest(): void
+{
+    if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+        header('Location: ' . driverPanelDashboardUrl());
+        exit;
+    }
+
+    $action = trim((string) ($_POST['driver_panel_action'] ?? ''));
+
+    if ($action === 'submit_pre_trip') {
+        driverPanelHandlePreTripSubmission();
+    }
+
+    if ($action === 'start_trip') {
+        driverPanelHandleStartTrip();
+    }
+
+    if ($action === 'end_trip') {
+        driverPanelHandleEndTrip();
+    }
+
+    if ($action === 'submit_incident') {
+        driverPanelHandleIncidentReport();
+    }
+
+    header('Location: ' . driverPanelDashboardUrl());
+    exit;
+}
+
+if (basename(__FILE__) === basename((string) ($_SERVER['SCRIPT_FILENAME'] ?? ''))) {
+    driverPanelHandleRequest();
+}

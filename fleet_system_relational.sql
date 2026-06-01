@@ -7,6 +7,7 @@ SET FOREIGN_KEY_CHECKS = 0;
 
 DROP TABLE IF EXISTS communication_recipients;
 DROP TABLE IF EXISTS communications;
+DROP TABLE IF EXISTS incident_reports;
 DROP TABLE IF EXISTS post_inspection_system_checks;
 DROP TABLE IF EXISTS inspection_items;
 DROP TABLE IF EXISTS inspections;
@@ -335,6 +336,29 @@ CREATE TABLE communication_recipients (
     ON DELETE SET NULL ON UPDATE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
+CREATE TABLE incident_reports (
+  id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+  driver_id INT UNSIGNED NOT NULL,
+  vehicle_id INT UNSIGNED DEFAULT NULL,
+  incident_type ENUM('breakdown','accident','unusual_issue') NOT NULL,
+  incident_date DATE NOT NULL,
+  location VARCHAR(150) DEFAULT NULL,
+  subject VARCHAR(180) NOT NULL,
+  description TEXT NOT NULL,
+  urgency ENUM('low','medium','high','critical') NOT NULL DEFAULT 'medium',
+  status ENUM('reported','under_review','resolved') NOT NULL DEFAULT 'reported',
+  created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMP NULL DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP,
+  KEY idx_incident_reports_driver_id (driver_id),
+  KEY idx_incident_reports_vehicle_id (vehicle_id),
+  CONSTRAINT fk_incident_reports_driver
+    FOREIGN KEY (driver_id) REFERENCES drivers(id)
+    ON DELETE CASCADE ON UPDATE CASCADE,
+  CONSTRAINT fk_incident_reports_vehicle
+    FOREIGN KEY (vehicle_id) REFERENCES vehicles(id)
+    ON DELETE SET NULL ON UPDATE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
 CREATE TABLE contractors (
   id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
   name VARCHAR(150) NOT NULL,
@@ -434,4 +458,3 @@ INSERT INTO vehicle_logs (vehicle_id, driver_id, trip_date, departure_location, 
 
 INSERT INTO maintenance_records (vehicle_id, maintenance_type, date_reported, date_completed, description, total_cost, status) VALUES
 ((SELECT id FROM vehicles WHERE registration_no = 'UAJ 433X'), 'repair', '2026-05-18', '2026-05-18', 'Engine overhaul, brakes, windscreen and related repairs', 4200000.00, 'completed');
-

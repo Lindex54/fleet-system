@@ -1,0 +1,101 @@
+Driver Panel Plan
+
+This file captures the first working plan for the separate driver-facing panel.
+The current Drivers module is admin-oriented, so this new panel should focus on
+what a driver needs for daily work.
+
+Purpose
+
+- Create a separate driver panel from the admin drivers page.
+- Keep the driver experience simple, focused, and role-specific.
+- Connect the panel to existing system areas like logbook, inspections, and communications.
+
+Driver Panel Goals
+
+- Let drivers quickly see their assigned vehicle and current status.
+- Make pre-trip and post-trip actions easy to complete.
+- Allow drivers to manage only their own trips and reports.
+- Surface important alerts, reminders, and messages from transport/admin staff.
+
+Recommended Main Sections
+
+1. Driver Dashboard
+- Driver name and profile summary
+- Assigned vehicle summary
+- Current trip status
+- Important alerts and reminders
+
+2. My Vehicle
+- Vehicle registration number
+- Make and model
+- Current mileage
+- Vehicle condition/status
+- Quick access to vehicle details relevant to the driver
+
+3. Pre-Trip Inspection
+- Start inspection action
+- Inspection checklist
+- Defect reporting
+- Submission status
+
+4. Trip Log / Journey Management
+- Start trip
+- Departure location
+- Destination
+- Purpose of journey
+- Odometer start and end
+- Fuel used
+- Trip remarks
+- End trip action
+
+5. My Trip History
+- List of trips for the logged-in driver only
+- Date, vehicle, route, purpose, distance, and status
+- View trip details
+
+6. Reports History
+- Pre-inspection history
+- Post-trip or issue report history
+- Maintenance feedback on reported issues
+
+7. Messages and Notifications
+- Messages from transport office
+- Reminders for inspections and logs
+- Vehicle-related alerts
+
+8. Emergency / Incident Reporting
+- Report breakdown
+- Report accident
+- Report unusual vehicle issue
+
+Navigation Recommendation
+
+- Dashboard
+- My Vehicle
+- Pre-Trip Inspection
+- Trip Log
+- History
+- Messages
+- Profile
+
+What Should Stay Out of the Driver Panel
+
+- Managing other drivers
+- Deleting system records
+- Service provider management
+- Fleet-wide reporting
+- Admin-only settings and controls
+
+Suggested Implementation Order
+
+1. Driver dashboard
+2. Assigned vehicle view
+3. Pre-trip inspection flow
+4. Start/end trip log flow
+5. Driver history pages
+6. Notifications and incident reporting
+
+Current Assumption
+
+- This driver panel will be separate from the current admin Drivers module.
+- It will eventually serve logged-in drivers with restricted access to only their own data and actions.
