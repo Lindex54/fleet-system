@@ -680,3 +680,182 @@ document.addEventListener('keydown', (event) => {
     setEstateDeleteModalOpen(false);
   }
 });
+
+// Landing page vehicle showcase
+window.nextVehicle = window.nextVehicle || function nextVehicleFallback() {};
+window.previousVehicle = window.previousVehicle || function previousVehicleFallback() {};
+
+const fleetShowcase = document.querySelector('[data-fleet-showcase]');
+
+if (fleetShowcase) {
+  const fleetVehicles = [
+    {
+      registration: 'UBQ 123C',
+      model: 'Toyota Prado',
+      type: 'Administrative SUV',
+      status: 'Available',
+      capacity: '7 Seater',
+      usage: 'Executive field coordination',
+      description: 'Reliable field-ready transport for official university movement, inspections, and administrative duty.',
+      image: 'assets/images/fleet-showcase/prado-garage.png',
+      alt: 'Toyota Prado university fleet vehicle',
+    },
+    {
+      registration: 'UG 347M',
+      model: 'Toyota Hiace',
+      type: 'Staff Transport Van',
+      status: 'Reserved',
+      capacity: '14 Seater',
+      usage: 'Campus and inter-campus staff movement',
+      description: 'A dependable transport van used for scheduled staff transfers, committee travel, and coordinated academic trips.',
+      image: 'assets/images/fleet-showcase/hiace-garage.png',
+      alt: 'Toyota Hiace staff transport van',
+    },
+    {
+      registration: 'UAK 881P',
+      model: 'Mitsubishi Canter',
+      type: 'Works Utility Truck',
+      status: 'In Service',
+      capacity: 'Heavy Utility',
+      usage: 'Estates maintenance logistics',
+      description: 'Supports estates and works activity through material movement, maintenance deployment, and site operations support.',
+      image: 'assets/images/fleet-showcase/canter-garage.png',
+      alt: 'Mitsubishi Canter works truck',
+    },
+    {
+      registration: 'UBE 554K',
+      model: 'Toyota Corolla',
+      type: 'Departmental Sedan',
+      status: 'Available',
+      capacity: '5 Seater',
+      usage: 'Routine departmental travel',
+      description: 'Efficient official transport for departmental errands, documentation runs, and light operational assignments.',
+      image: 'assets/images/fleet-showcase/corolla-garage.png',
+      alt: 'Toyota Corolla departmental vehicle',
+    },
+  ];
+
+  const previousVehicleButton = fleetShowcase.querySelector('[data-vehicle-prev]');
+  const nextVehicleButton = fleetShowcase.querySelector('[data-vehicle-next]');
+  const showcaseImage = fleetShowcase.querySelector('[data-vehicle-image]');
+  const showcaseModel = fleetShowcase.querySelector('[data-vehicle-model]');
+  const showcaseStatus = fleetShowcase.querySelector('[data-vehicle-status]');
+  const showcaseRegistration = fleetShowcase.querySelector('[data-vehicle-registration]');
+  const showcaseType = fleetShowcase.querySelector('[data-vehicle-type]');
+  const showcaseCapacity = fleetShowcase.querySelector('[data-vehicle-capacity]');
+  const showcaseUsage = fleetShowcase.querySelector('[data-vehicle-usage]');
+  const showcaseSubtitle = fleetShowcase.querySelector('[data-vehicle-subtitle]');
+  const showcaseCaption = fleetShowcase.querySelector('[data-vehicle-caption]');
+  const showcaseDescription = fleetShowcase.querySelector('[data-vehicle-description]');
+  const showcaseDots = fleetShowcase.querySelector('[data-vehicle-dots]');
+
+  let currentVehicleIndex = 0;
+  let vehicleAutoRotateId = null;
+
+  function getStatusClass(status) {
+    if (status === 'Available') {
+      return 'is-available';
+    }
+
+    if (status === 'Reserved') {
+      return 'is-reserved';
+    }
+
+    return 'is-service';
+  }
+
+  function renderDots() {
+    if (!showcaseDots) {
+      return;
+    }
+
+    showcaseDots.innerHTML = '';
+
+    fleetVehicles.forEach((vehicle, index) => {
+      const dot = document.createElement('button');
+      dot.type = 'button';
+      dot.className = `landing-showcase-dot${index === currentVehicleIndex ? ' is-active' : ''}`;
+      dot.setAttribute('aria-label', `Show ${vehicle.model}`);
+      dot.onclick = () => {
+        setFleetVehicle(index);
+        restartVehicleAutoRotate();
+      };
+      showcaseDots.append(dot);
+    });
+  }
+
+  function renderVehicle(index) {
+    const vehicle = fleetVehicles[index];
+
+    if (!vehicle) {
+      return;
+    }
+
+    showcaseModel.textContent = vehicle.model;
+    showcaseStatus.textContent = vehicle.status;
+    showcaseStatus.className = `landing-status-pill ${getStatusClass(vehicle.status)}`;
+    showcaseRegistration.textContent = vehicle.registration;
+    showcaseType.textContent = vehicle.type;
+    showcaseCapacity.textContent = vehicle.capacity;
+    showcaseUsage.textContent = vehicle.usage;
+    showcaseSubtitle.textContent = vehicle.model;
+    if (showcaseCaption) {
+      showcaseCaption.textContent = `${vehicle.type} • ${vehicle.registration}`;
+    }
+    showcaseDescription.textContent = vehicle.description;
+
+    if (!showcaseImage) {
+      renderDots();
+      return;
+    }
+
+    showcaseImage.classList.remove('is-visible');
+    showcaseImage.src = vehicle.image;
+    showcaseImage.alt = vehicle.alt;
+    window.requestAnimationFrame(() => {
+      showcaseImage.classList.add('is-visible');
+    });
+
+    renderDots();
+  }
+
+  function setFleetVehicle(index) {
+    currentVehicleIndex = (index + fleetVehicles.length) % fleetVehicles.length;
+    fleetShowcase.dataset.activeVehicleIndex = String(currentVehicleIndex);
+    renderVehicle(currentVehicleIndex);
+  }
+
+  function restartVehicleAutoRotate() {
+    window.clearInterval(vehicleAutoRotateId);
+    vehicleAutoRotateId = window.setInterval(() => {
+      setFleetVehicle(currentVehicleIndex + 1);
+    }, 5000);
+  }
+
+  window.nextVehicle = function nextVehicle() {
+    setFleetVehicle(currentVehicleIndex + 1);
+    restartVehicleAutoRotate();
+  };
+
+  window.previousVehicle = function previousVehicle() {
+    setFleetVehicle(currentVehicleIndex - 1);
+    restartVehicleAutoRotate();
+  };
+
+  previousVehicleButton.onclick = window.previousVehicle;
+  nextVehicleButton.onclick = window.nextVehicle;
+
+  fleetVehicles.forEach((vehicle) => {
+    const image = new Image();
+    image.src = vehicle.image;
+  });
+
+  window.__fleetShowcaseState = {
+    fleetVehicles,
+    getCurrentVehicleIndex: () => currentVehicleIndex,
+    setFleetVehicle,
+  };
+
+  setFleetVehicle(currentVehicleIndex);
+  restartVehicleAutoRotate();
+}

@@ -52,7 +52,7 @@ include __DIR__ . '/includes/sidebar.php';
             <section class="mt-6 grid gap-6 xl:grid-cols-[minmax(0,1.65fr)_minmax(320px,0.95fr)]">
                 <div class="space-y-6">
                     <section>
-                        <article class="dashboard-panel dashboard-panel-chart">
+                        <article class="dashboard-panel dashboard-panel-chart driver-card rounded-lg border border-fleet-line bg-fleet-surface shadow-fleet-card">
                             <div class="dashboard-panel-head">
                                 <div>
                                     <p class="dashboard-eyebrow">Driver Profile</p>
@@ -70,7 +70,7 @@ include __DIR__ . '/includes/sidebar.php';
                                 </span>
                                 <div class="min-w-0 flex-1">
                                     <div class="grid gap-4 sm:grid-cols-2">
-                                        <div class="rounded-[1.25rem] border border-fleet-line-soft bg-white/70 p-4">
+                                        <div class="driver-subcard rounded-[1.25rem] border border-fleet-line-soft bg-white/70 p-4">
                                             <p class="text-xs font-extrabold uppercase tracking-wide text-fleet-sidebar">Profile Summary</p>
                                             <dl class="mt-3 space-y-2 text-sm">
                                                 <div class="flex items-center justify-between gap-4">
@@ -92,7 +92,7 @@ include __DIR__ . '/includes/sidebar.php';
                                             </dl>
                                         </div>
 
-                                        <div class="rounded-[1.25rem] border border-fleet-line-soft bg-white/70 p-4">
+                                        <div class="driver-subcard rounded-[1.25rem] border border-fleet-line-soft bg-white/70 p-4">
                                             <p class="text-xs font-extrabold uppercase tracking-wide text-fleet-sidebar">Contact</p>
                                             <dl class="mt-3 space-y-2 text-sm">
                                                 <div class="flex items-center justify-between gap-4">
@@ -115,7 +115,7 @@ include __DIR__ . '/includes/sidebar.php';
                         </article>
                     </section>
 
-                    <section class="dashboard-panel overflow-hidden">
+                    <section class="dashboard-panel driver-card rounded-lg border border-fleet-line bg-fleet-surface shadow-fleet-card overflow-hidden">
                         <div class="dashboard-panel-head">
                             <div>
                                 <h2 class="text-lg font-extrabold text-fleet-ink">Current Trip Status</h2>
@@ -127,12 +127,12 @@ include __DIR__ . '/includes/sidebar.php';
                         </div>
 
                         <?php if ($latestTrip === null): ?>
-                            <div class="rounded-[1.25rem] border border-dashed border-fleet-line px-5 py-8 text-center text-sm text-fleet-muted">
+                            <div class="driver-subcard rounded-[1.25rem] border border-dashed border-fleet-line px-5 py-8 text-center text-sm text-fleet-muted">
                                 No trip has been recorded yet for this driver.
                             </div>
                         <?php else: ?>
                             <div class="grid gap-4 sm:grid-cols-2">
-                                <div class="rounded-[1.25rem] border border-fleet-line-soft bg-fleet-primary-soft p-4">
+                                <div class="driver-subcard rounded-[1.25rem] border border-fleet-line-soft bg-fleet-primary-soft p-4">
                                     <p class="text-xs font-extrabold uppercase tracking-wide text-fleet-sidebar">Latest Trip</p>
                                     <dl class="mt-3 space-y-2 text-sm">
                                         <div class="flex items-center justify-between gap-4">
@@ -154,7 +154,7 @@ include __DIR__ . '/includes/sidebar.php';
                                     </dl>
                                 </div>
 
-                                <div class="rounded-[1.25rem] border border-fleet-line-soft bg-white/70 p-4">
+                                <div class="driver-subcard rounded-[1.25rem] border border-fleet-line-soft bg-white/70 p-4">
                                     <p class="text-xs font-extrabold uppercase tracking-wide text-fleet-sidebar">Trip Detail</p>
                                     <p class="mt-3 text-sm font-semibold text-fleet-ink"><?= htmlspecialchars($latestTrip['purpose'], ENT_QUOTES, 'UTF-8'); ?></p>
                                     <div class="mt-4 space-y-2 text-sm">
@@ -169,7 +169,7 @@ include __DIR__ . '/includes/sidebar.php';
                 </div>
 
                 <div class="space-y-6">
-                    <section class="dashboard-panel">
+                    <section class="dashboard-panel driver-card rounded-lg border border-fleet-line bg-fleet-surface shadow-fleet-card">
                         <div class="dashboard-panel-head">
                             <div>
                                 <h2 class="text-xl font-extrabold text-fleet-ink">Assigned Vehicle</h2>
@@ -183,7 +183,7 @@ include __DIR__ . '/includes/sidebar.php';
                         </div>
 
                         <?php if ($assignedVehicle === null): ?>
-                            <div class="rounded-[1.25rem] border border-dashed border-fleet-line px-5 py-8 text-center text-sm text-fleet-muted">
+                            <div class="driver-subcard rounded-[1.25rem] border border-dashed border-fleet-line px-5 py-8 text-center text-sm text-fleet-muted">
                                 No vehicle is currently assigned to this driver profile.
                             </div>
                         <?php else: ?>
@@ -195,7 +195,7 @@ include __DIR__ . '/includes/sidebar.php';
                                 </div>
 
                                 <div class="grid gap-4">
-                                    <div class="rounded-[1.25rem] border border-fleet-line-soft bg-fleet-surface-muted p-4">
+                                    <div class="driver-subcard rounded-[1.25rem] border border-fleet-line-soft bg-fleet-surface-muted p-4">
                                         <p class="text-xs font-extrabold uppercase tracking-wide text-fleet-sidebar">Vehicle Summary</p>
                                         <dl class="mt-3 space-y-2 text-sm">
                                             <div class="flex items-center justify-between gap-4">
@@ -217,7 +217,7 @@ include __DIR__ . '/includes/sidebar.php';
                                         </dl>
                                     </div>
 
-                                    <div class="rounded-[1.25rem] border border-fleet-line-soft bg-fleet-surface-muted p-4">
+                                    <div class="driver-subcard rounded-[1.25rem] border border-fleet-line-soft bg-fleet-surface-muted p-4">
                                         <p class="text-xs font-extrabold uppercase tracking-wide text-fleet-sidebar">Trip Status</p>
                                         <p class="mt-3 inline-flex rounded-lg border px-3 py-1 text-xs font-semibold <?= htmlspecialchars($tripStatus['classes'], ENT_QUOTES, 'UTF-8'); ?>">
                                             <?= htmlspecialchars($tripStatus['label'], ENT_QUOTES, 'UTF-8'); ?>
@@ -229,7 +229,7 @@ include __DIR__ . '/includes/sidebar.php';
                         <?php endif; ?>
                     </section>
 
-                    <section class="dashboard-panel dashboard-panel-alerts">
+                    <section class="dashboard-panel dashboard-panel-alerts driver-card rounded-lg border border-fleet-line bg-fleet-surface shadow-fleet-card">
                         <div class="dashboard-panel-head">
                             <div>
                                 <h2 class="text-lg font-extrabold text-fleet-ink">Important Alerts &amp; Reminders</h2>
@@ -248,7 +248,7 @@ include __DIR__ . '/includes/sidebar.php';
                                     default => 'border-blue-200 bg-fleet-primary-soft text-fleet-primary',
                                 };
                                 ?>
-                                <div class="rounded-[1.25rem] border px-4 py-4 <?= $alertClasses; ?>">
+                                <div class="driver-subcard rounded-[1.25rem] border px-4 py-4 <?= $alertClasses; ?>">
                                     <p class="text-sm font-extrabold"><?= htmlspecialchars($alert['title'], ENT_QUOTES, 'UTF-8'); ?></p>
                                     <p class="mt-2 text-sm leading-6"><?= htmlspecialchars($alert['message'], ENT_QUOTES, 'UTF-8'); ?></p>
                                 </div>
