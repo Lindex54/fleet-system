@@ -5,8 +5,9 @@ extract(driverPanelFetchMessagesPageData());
 include __DIR__ . '/../includes/header.php';
 include __DIR__ . '/includes/sidebar.php';
 ?>
-<main class="min-h-screen lg:pl-64">
-    <div class="mx-auto max-w-[1320px] px-4 py-6 sm:px-6 lg:px-8">
+<main class="driver-panel-page min-h-screen lg:pl-64">
+    <div class="mx-auto max-w-[1536px] px-4 py-5 sm:px-6 lg:px-8">
+        <div class="dashboard-shell driver-page-shell">
         <div class="mb-6 flex items-start justify-between gap-4">
             <div>
                 <h1 class="text-2xl font-extrabold tracking-normal text-fleet-ink sm:text-3xl">Messages</h1>
@@ -49,27 +50,27 @@ include __DIR__ . '/includes/sidebar.php';
             </section>
         <?php endif; ?>
 
-        <section class="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-            <article class="rounded-lg border border-fleet-line bg-fleet-surface p-5 shadow-fleet-card">
+        <section class="driver-stat-grid grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+            <article class="driver-stat-card rounded-lg border border-fleet-line bg-fleet-surface p-5 shadow-fleet-card">
                 <p class="text-sm font-medium text-fleet-muted">Transport Messages</p>
                 <p class="mt-2 text-2xl font-extrabold text-fleet-ink"><?= count($transportMessages); ?></p>
             </article>
-            <article class="rounded-lg border border-fleet-line bg-fleet-surface p-5 shadow-fleet-card">
+            <article class="driver-stat-card rounded-lg border border-fleet-line bg-fleet-surface p-5 shadow-fleet-card">
                 <p class="text-sm font-medium text-fleet-muted">Reminders</p>
                 <p class="mt-2 text-2xl font-extrabold text-fleet-ink"><?= count($driverReminders); ?></p>
             </article>
-            <article class="rounded-lg border border-fleet-line bg-fleet-surface p-5 shadow-fleet-card">
+            <article class="driver-stat-card rounded-lg border border-fleet-line bg-fleet-surface p-5 shadow-fleet-card">
                 <p class="text-sm font-medium text-fleet-muted">Vehicle Alerts</p>
                 <p class="mt-2 text-2xl font-extrabold text-fleet-ink"><?= count($vehicleNotifications); ?></p>
             </article>
-            <article class="rounded-lg border border-fleet-line bg-fleet-surface p-5 shadow-fleet-card">
+            <article class="driver-stat-card rounded-lg border border-fleet-line bg-fleet-surface p-5 shadow-fleet-card">
                 <p class="text-sm font-medium text-fleet-muted">Incident Reports</p>
                 <p class="mt-2 text-2xl font-extrabold text-fleet-ink"><?= count($incidentHistory); ?></p>
             </article>
         </section>
 
         <section class="mt-6 grid gap-6 xl:grid-cols-[1fr_1fr]">
-            <article class="rounded-lg border border-fleet-line bg-fleet-surface p-6 shadow-fleet-card">
+            <article class="driver-card rounded-lg border border-fleet-line bg-fleet-surface p-6 shadow-fleet-card">
                 <div class="flex items-center justify-between gap-4">
                     <div>
                         <h2 class="text-lg font-extrabold text-fleet-ink">Messages From Transport Office</h2>
@@ -85,7 +86,7 @@ include __DIR__ . '/includes/sidebar.php';
                         </div>
                     <?php else: ?>
                         <?php foreach ($transportMessages as $message): ?>
-                            <div class="rounded-lg border border-fleet-line-soft bg-fleet-surface-muted p-4">
+                            <div class="driver-subcard rounded-lg border border-fleet-line-soft bg-fleet-surface-muted p-4">
                                 <div class="flex items-start justify-between gap-4">
                                     <div>
                                         <p class="text-sm font-extrabold text-fleet-ink"><?= htmlspecialchars($message['subject'], ENT_QUOTES, 'UTF-8'); ?></p>
@@ -104,7 +105,7 @@ include __DIR__ . '/includes/sidebar.php';
             </article>
 
             <article class="space-y-6">
-                <section class="rounded-lg border border-fleet-line bg-fleet-surface p-6 shadow-fleet-card">
+                <section class="driver-card rounded-lg border border-fleet-line bg-fleet-surface p-6 shadow-fleet-card">
                     <div class="flex items-center justify-between gap-4">
                         <div>
                             <h2 class="text-lg font-extrabold text-fleet-ink">Reminders For Inspections And Logs</h2>
@@ -121,7 +122,7 @@ include __DIR__ . '/includes/sidebar.php';
                                 default => 'border-blue-200 bg-fleet-primary-soft text-fleet-primary',
                             };
                             ?>
-                            <div class="rounded-lg border px-4 py-4 <?= $reminderClasses; ?>">
+                            <div class="driver-subcard rounded-lg border px-4 py-4 <?= $reminderClasses; ?>">
                                 <p class="text-sm font-extrabold"><?= htmlspecialchars($reminder['title'], ENT_QUOTES, 'UTF-8'); ?></p>
                                 <p class="mt-2 text-sm leading-6"><?= htmlspecialchars($reminder['message'], ENT_QUOTES, 'UTF-8'); ?></p>
                             </div>
@@ -129,7 +130,7 @@ include __DIR__ . '/includes/sidebar.php';
                     </div>
                 </section>
 
-                <section class="rounded-lg border border-fleet-line bg-fleet-surface p-6 shadow-fleet-card">
+                <section class="driver-card rounded-lg border border-fleet-line bg-fleet-surface p-6 shadow-fleet-card">
                     <div class="flex items-center justify-between gap-4">
                         <div>
                             <h2 class="text-lg font-extrabold text-fleet-ink">Vehicle-Related Alerts</h2>
@@ -146,7 +147,7 @@ include __DIR__ . '/includes/sidebar.php';
                                 default => 'border-blue-200 bg-fleet-primary-soft text-fleet-primary',
                             };
                             ?>
-                            <div class="rounded-lg border px-4 py-4 <?= $alertClasses; ?>">
+                            <div class="driver-subcard rounded-lg border px-4 py-4 <?= $alertClasses; ?>">
                                 <p class="text-sm font-extrabold"><?= htmlspecialchars($alert['title'], ENT_QUOTES, 'UTF-8'); ?></p>
                                 <p class="mt-2 text-sm leading-6"><?= htmlspecialchars($alert['message'], ENT_QUOTES, 'UTF-8'); ?></p>
                             </div>
@@ -157,7 +158,7 @@ include __DIR__ . '/includes/sidebar.php';
         </section>
 
         <section class="mt-6 grid gap-6 xl:grid-cols-[0.95fr_1.05fr]">
-            <article class="rounded-lg border border-fleet-line bg-fleet-surface p-6 shadow-fleet-card">
+            <article class="driver-card rounded-lg border border-fleet-line bg-fleet-surface p-6 shadow-fleet-card">
                 <div class="mb-5 flex items-center justify-between gap-4">
                     <div>
                         <h2 class="text-lg font-extrabold text-fleet-ink">Emergency / Incident Reporting</h2>
@@ -218,7 +219,7 @@ include __DIR__ . '/includes/sidebar.php';
                 </form>
             </article>
 
-            <article class="rounded-lg border border-fleet-line bg-fleet-surface p-6 shadow-fleet-card">
+            <article class="driver-card rounded-lg border border-fleet-line bg-fleet-surface p-6 shadow-fleet-card">
                 <div class="flex items-center justify-between gap-4">
                     <div>
                         <h2 class="text-lg font-extrabold text-fleet-ink">Incident History</h2>
@@ -234,7 +235,7 @@ include __DIR__ . '/includes/sidebar.php';
                         </div>
                     <?php else: ?>
                         <?php foreach ($incidentHistory as $incident): ?>
-                            <div class="rounded-lg border border-fleet-line-soft bg-fleet-surface-muted p-4">
+                            <div class="driver-subcard rounded-lg border border-fleet-line-soft bg-fleet-surface-muted p-4">
                                 <div class="flex flex-wrap items-start justify-between gap-3">
                                     <div>
                                         <p class="text-sm font-extrabold text-fleet-ink"><?= htmlspecialchars($incident['subject'], ENT_QUOTES, 'UTF-8'); ?></p>
@@ -256,6 +257,7 @@ include __DIR__ . '/includes/sidebar.php';
                 </div>
             </article>
         </section>
+        </div>
     </div>
 </main>
 <?php include __DIR__ . '/../includes/footer.php'; ?>

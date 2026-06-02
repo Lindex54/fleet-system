@@ -5,8 +5,9 @@ extract(driverPanelFetchPreTripPageData());
 include __DIR__ . '/../includes/header.php';
 include __DIR__ . '/includes/sidebar.php';
 ?>
-<main class="min-h-screen lg:pl-64">
-    <div class="mx-auto max-w-[1320px] px-4 py-6 sm:px-6 lg:px-8">
+<main class="driver-panel-page min-h-screen lg:pl-64">
+    <div class="mx-auto max-w-[1536px] px-4 py-5 sm:px-6 lg:px-8">
+        <div class="dashboard-shell driver-page-shell">
         <div class="mb-6 flex items-start justify-between gap-4">
             <div>
                 <h1 class="text-2xl font-extrabold tracking-normal text-fleet-ink sm:text-3xl">Pre-Trip Inspection</h1>
@@ -49,27 +50,27 @@ include __DIR__ . '/includes/sidebar.php';
             </section>
         <?php endif; ?>
 
-        <section class="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-            <article class="rounded-lg border border-fleet-line bg-fleet-surface p-5 shadow-fleet-card">
+        <section class="driver-stat-grid grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+            <article class="driver-stat-card rounded-lg border border-fleet-line bg-fleet-surface p-5 shadow-fleet-card">
                 <p class="text-sm font-medium text-fleet-muted">Assigned Vehicle</p>
                 <p class="mt-2 text-2xl font-extrabold text-fleet-ink"><?= htmlspecialchars($assignedVehicle['registration_no'] ?? 'Not assigned', ENT_QUOTES, 'UTF-8'); ?></p>
             </article>
-            <article class="rounded-lg border border-fleet-line bg-fleet-surface p-5 shadow-fleet-card">
+            <article class="driver-stat-card rounded-lg border border-fleet-line bg-fleet-surface p-5 shadow-fleet-card">
                 <p class="text-sm font-medium text-fleet-muted">Driver</p>
                 <p class="mt-2 text-2xl font-extrabold text-fleet-ink"><?= htmlspecialchars($driverProfile['name'] ?? 'Unavailable', ENT_QUOTES, 'UTF-8'); ?></p>
             </article>
-            <article class="rounded-lg border border-fleet-line bg-fleet-surface p-5 shadow-fleet-card">
+            <article class="driver-stat-card rounded-lg border border-fleet-line bg-fleet-surface p-5 shadow-fleet-card">
                 <p class="text-sm font-medium text-fleet-muted">Current Mileage</p>
                 <p class="mt-2 text-2xl font-extrabold text-fleet-ink"><?= htmlspecialchars($assignedVehicle['current_mileage'] ?? '-', ENT_QUOTES, 'UTF-8'); ?></p>
             </article>
-            <article class="rounded-lg border border-fleet-line bg-fleet-surface p-5 shadow-fleet-card">
+            <article class="driver-stat-card rounded-lg border border-fleet-line bg-fleet-surface p-5 shadow-fleet-card">
                 <p class="text-sm font-medium text-fleet-muted">Submission Status</p>
                 <p class="mt-2 text-2xl font-extrabold text-fleet-ink"><?= htmlspecialchars($preTripLatestStatus['status'] ?? 'No submission yet', ENT_QUOTES, 'UTF-8'); ?></p>
             </article>
         </section>
 
         <section class="mt-6 grid gap-6 xl:grid-cols-[1.15fr_0.85fr]">
-            <article class="rounded-lg border border-fleet-line bg-fleet-surface p-6 shadow-fleet-card">
+            <article class="driver-card rounded-lg border border-fleet-line bg-fleet-surface p-6 shadow-fleet-card">
                 <div class="mb-5 flex items-center justify-between gap-4">
                     <div>
                         <h2 class="text-xl font-extrabold text-fleet-ink">Start Inspection Action</h2>
@@ -110,7 +111,7 @@ include __DIR__ . '/includes/sidebar.php';
                             <h3 class="text-sm font-extrabold uppercase tracking-wide text-fleet-sidebar">Inspection Checklist</h3>
                             <div class="mt-4 space-y-4">
                                 <?php foreach ($preTripChecklistRows as $index => $row): ?>
-                                    <div class="rounded-lg border border-fleet-line-soft bg-fleet-surface-muted p-4">
+                                    <div class="driver-subcard rounded-lg border border-fleet-line-soft bg-fleet-surface-muted p-4">
                                         <input type="hidden" name="inspection_point[]" value="<?= htmlspecialchars($row['inspection_point'], ENT_QUOTES, 'UTF-8'); ?>">
                                         <div class="grid gap-4 md:grid-cols-[1.2fr_0.8fr_1fr_1fr]">
                                             <div>
@@ -154,7 +155,7 @@ include __DIR__ . '/includes/sidebar.php';
             </article>
 
             <article class="space-y-6">
-                <section class="rounded-lg border border-fleet-line bg-fleet-surface p-6 shadow-fleet-card">
+                <section class="driver-card rounded-lg border border-fleet-line bg-fleet-surface p-6 shadow-fleet-card">
                     <div class="flex items-center justify-between gap-4">
                         <div>
                             <h2 class="text-lg font-extrabold text-fleet-ink">Submission Status</h2>
@@ -172,7 +173,7 @@ include __DIR__ . '/includes/sidebar.php';
                             No inspection submission has been recorded yet.
                         </div>
                     <?php else: ?>
-                        <div class="mt-5 rounded-lg border border-fleet-line-soft bg-fleet-surface-muted p-4">
+                        <div class="driver-subcard mt-5 rounded-lg border border-fleet-line-soft bg-fleet-surface-muted p-4">
                             <p class="text-sm text-fleet-muted">Date: <span class="font-semibold text-fleet-ink"><?= htmlspecialchars($preTripLatestStatus['date'], ENT_QUOTES, 'UTF-8'); ?></span></p>
                             <p class="mt-2 text-sm text-fleet-muted">Mileage: <span class="font-semibold text-fleet-ink"><?= htmlspecialchars($preTripLatestStatus['mileage'], ENT_QUOTES, 'UTF-8'); ?></span></p>
                             <p class="mt-3 text-sm leading-6 text-fleet-muted"><?= htmlspecialchars($preTripLatestStatus['defects'], ENT_QUOTES, 'UTF-8'); ?></p>
@@ -180,7 +181,7 @@ include __DIR__ . '/includes/sidebar.php';
                     <?php endif; ?>
                 </section>
 
-                <section class="rounded-lg border border-fleet-line bg-fleet-surface p-6 shadow-fleet-card">
+                <section class="driver-card rounded-lg border border-fleet-line bg-fleet-surface p-6 shadow-fleet-card">
                     <div class="flex items-center justify-between gap-4">
                         <div>
                             <h2 class="text-lg font-extrabold text-fleet-ink">Recent Inspection Submissions</h2>
@@ -196,7 +197,7 @@ include __DIR__ . '/includes/sidebar.php';
                             </div>
                         <?php else: ?>
                             <?php foreach ($preTripRecentReports as $report): ?>
-                                <div class="rounded-lg border border-fleet-line-soft bg-fleet-surface-muted p-4">
+                                <div class="driver-subcard rounded-lg border border-fleet-line-soft bg-fleet-surface-muted p-4">
                                     <div class="flex items-start justify-between gap-4">
                                         <div>
                                             <p class="text-sm font-extrabold text-fleet-ink"><?= htmlspecialchars($report['invoice'], ENT_QUOTES, 'UTF-8'); ?></p>
@@ -214,6 +215,7 @@ include __DIR__ . '/includes/sidebar.php';
                 </section>
             </article>
         </section>
+        </div>
     </div>
 </main>
 <?php include __DIR__ . '/../includes/footer.php'; ?>

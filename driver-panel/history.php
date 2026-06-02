@@ -5,8 +5,9 @@ extract(driverPanelFetchHistoryPageData());
 include __DIR__ . '/../includes/header.php';
 include __DIR__ . '/includes/sidebar.php';
 ?>
-<main class="min-h-screen lg:pl-64">
-    <div class="mx-auto max-w-[1320px] px-4 py-6 sm:px-6 lg:px-8">
+<main class="driver-panel-page min-h-screen lg:pl-64">
+    <div class="mx-auto max-w-[1536px] px-4 py-5 sm:px-6 lg:px-8">
+        <div class="dashboard-shell driver-page-shell">
         <div class="mb-6 flex items-start justify-between gap-4">
             <div>
                 <h1 class="text-2xl font-extrabold tracking-normal text-fleet-ink sm:text-3xl">History</h1>
@@ -17,27 +18,27 @@ include __DIR__ . '/includes/sidebar.php';
             </button>
         </div>
 
-        <section class="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-            <article class="rounded-lg border border-fleet-line bg-fleet-surface p-5 shadow-fleet-card">
+        <section class="driver-stat-grid grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+            <article class="driver-stat-card rounded-lg border border-fleet-line bg-fleet-surface p-5 shadow-fleet-card">
                 <p class="text-sm font-medium text-fleet-muted">Driver</p>
                 <p class="mt-2 text-2xl font-extrabold text-fleet-ink"><?= htmlspecialchars($driverProfile['name'] ?? 'Unavailable', ENT_QUOTES, 'UTF-8'); ?></p>
             </article>
-            <article class="rounded-lg border border-fleet-line bg-fleet-surface p-5 shadow-fleet-card">
+            <article class="driver-stat-card rounded-lg border border-fleet-line bg-fleet-surface p-5 shadow-fleet-card">
                 <p class="text-sm font-medium text-fleet-muted">Trip Records</p>
                 <p class="mt-2 text-2xl font-extrabold text-fleet-ink"><?= count($tripHistory); ?></p>
             </article>
-            <article class="rounded-lg border border-fleet-line bg-fleet-surface p-5 shadow-fleet-card">
+            <article class="driver-stat-card rounded-lg border border-fleet-line bg-fleet-surface p-5 shadow-fleet-card">
                 <p class="text-sm font-medium text-fleet-muted">Inspection Reports</p>
                 <p class="mt-2 text-2xl font-extrabold text-fleet-ink"><?= count($reportHistory); ?></p>
             </article>
-            <article class="rounded-lg border border-fleet-line bg-fleet-surface p-5 shadow-fleet-card">
+            <article class="driver-stat-card rounded-lg border border-fleet-line bg-fleet-surface p-5 shadow-fleet-card">
                 <p class="text-sm font-medium text-fleet-muted">Assigned Vehicle</p>
                 <p class="mt-2 text-2xl font-extrabold text-fleet-ink"><?= htmlspecialchars($assignedVehicle['registration_no'] ?? 'Not assigned', ENT_QUOTES, 'UTF-8'); ?></p>
             </article>
         </section>
 
         <section class="mt-6 grid gap-6 xl:grid-cols-[1.15fr_0.85fr]">
-            <article class="rounded-lg border border-fleet-line bg-fleet-surface shadow-fleet-card">
+            <article class="driver-table-card rounded-lg border border-fleet-line bg-fleet-surface shadow-fleet-card">
                 <div class="flex items-center justify-between gap-4 border-b border-fleet-line-soft px-5 py-5">
                     <div>
                         <h2 class="text-lg font-extrabold text-fleet-ink">My Trip History</h2>
@@ -88,7 +89,7 @@ include __DIR__ . '/includes/sidebar.php';
                 <?php endif; ?>
             </article>
 
-            <article class="rounded-lg border border-fleet-line bg-fleet-surface p-6 shadow-fleet-card">
+            <article class="driver-card rounded-lg border border-fleet-line bg-fleet-surface p-6 shadow-fleet-card">
                 <div class="flex items-center justify-between gap-4">
                     <div>
                         <h2 class="text-lg font-extrabold text-fleet-ink">Trip Detail</h2>
@@ -114,7 +115,7 @@ include __DIR__ . '/includes/sidebar.php';
                         </div>
 
                         <div class="grid gap-4 sm:grid-cols-2">
-                            <div class="rounded-lg border border-fleet-line-soft bg-fleet-surface-muted p-4">
+                            <div class="driver-subcard rounded-lg border border-fleet-line-soft bg-fleet-surface-muted p-4">
                                 <p class="text-xs font-extrabold uppercase tracking-wide text-fleet-sidebar">Journey Detail</p>
                                 <dl class="mt-3 space-y-2 text-sm">
                                     <div class="flex items-center justify-between gap-4">
@@ -136,7 +137,7 @@ include __DIR__ . '/includes/sidebar.php';
                                 </dl>
                             </div>
 
-                            <div class="rounded-lg border border-fleet-line-soft bg-fleet-surface-muted p-4">
+                            <div class="driver-subcard rounded-lg border border-fleet-line-soft bg-fleet-surface-muted p-4">
                                 <p class="text-xs font-extrabold uppercase tracking-wide text-fleet-sidebar">Operational Detail</p>
                                 <dl class="mt-3 space-y-2 text-sm">
                                     <div class="flex items-center justify-between gap-4">
@@ -159,7 +160,7 @@ include __DIR__ . '/includes/sidebar.php';
                             </div>
                         </div>
 
-                        <div class="rounded-lg border border-fleet-line-soft bg-fleet-surface-muted p-4">
+                        <div class="driver-subcard rounded-lg border border-fleet-line-soft bg-fleet-surface-muted p-4">
                             <p class="text-xs font-extrabold uppercase tracking-wide text-fleet-sidebar">Remarks</p>
                             <p class="mt-3 text-sm leading-6 text-fleet-muted"><?= htmlspecialchars($tripDetail['remarks'], ENT_QUOTES, 'UTF-8'); ?></p>
                         </div>
@@ -168,7 +169,7 @@ include __DIR__ . '/includes/sidebar.php';
             </article>
         </section>
 
-        <section class="mt-6 rounded-lg border border-fleet-line bg-fleet-surface shadow-fleet-card">
+        <section class="driver-table-card mt-6 rounded-lg border border-fleet-line bg-fleet-surface shadow-fleet-card">
             <div class="flex items-center justify-between gap-4 border-b border-fleet-line-soft px-5 py-5">
                 <div>
                     <h2 class="text-lg font-extrabold text-fleet-ink">Reports History</h2>
@@ -182,7 +183,7 @@ include __DIR__ . '/includes/sidebar.php';
             <?php else: ?>
                 <div class="grid gap-4 p-5 xl:grid-cols-2">
                     <?php foreach ($reportHistory as $report): ?>
-                        <article class="rounded-lg border border-fleet-line-soft bg-fleet-surface-muted p-5">
+                        <article class="driver-subcard rounded-lg border border-fleet-line-soft bg-fleet-surface-muted p-5">
                             <div class="flex flex-wrap items-start justify-between gap-3">
                                 <div>
                                     <p class="text-sm font-extrabold text-fleet-ink"><?= htmlspecialchars($report['vehicle'], ENT_QUOTES, 'UTF-8'); ?></p>
@@ -215,6 +216,7 @@ include __DIR__ . '/includes/sidebar.php';
                 </div>
             <?php endif; ?>
         </section>
+        </div>
     </div>
 </main>
 <?php include __DIR__ . '/../includes/footer.php'; ?>

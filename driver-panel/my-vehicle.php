@@ -5,8 +5,9 @@ extract(driverPanelFetchVehiclePageData());
 include __DIR__ . '/../includes/header.php';
 include __DIR__ . '/includes/sidebar.php';
 ?>
-<main class="min-h-screen lg:pl-64">
-    <div class="mx-auto max-w-[1320px] px-4 py-6 sm:px-6 lg:px-8">
+<main class="driver-panel-page min-h-screen lg:pl-64">
+    <div class="mx-auto max-w-[1536px] px-4 py-5 sm:px-6 lg:px-8">
+        <div class="dashboard-shell driver-page-shell">
         <div class="mb-6 flex items-start justify-between gap-4">
             <div>
                 <h1 class="text-2xl font-extrabold tracking-normal text-fleet-ink sm:text-3xl">My Vehicle</h1>
@@ -17,9 +18,9 @@ include __DIR__ . '/includes/sidebar.php';
             </button>
         </div>
 
-        <section class="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+        <section class="driver-stat-grid grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
             <?php foreach ($vehicleHighlights as $highlight): ?>
-                <article class="rounded-lg border border-fleet-line bg-fleet-surface p-5 shadow-fleet-card">
+                <article class="driver-stat-card rounded-lg border border-fleet-line bg-fleet-surface p-5 shadow-fleet-card">
                     <p class="text-sm font-medium text-fleet-muted"><?= htmlspecialchars($highlight['label'], ENT_QUOTES, 'UTF-8'); ?></p>
                     <p class="mt-2 text-2xl font-extrabold text-fleet-ink"><?= htmlspecialchars($highlight['value'], ENT_QUOTES, 'UTF-8'); ?></p>
                 </article>
@@ -27,7 +28,7 @@ include __DIR__ . '/includes/sidebar.php';
         </section>
 
         <section class="mt-6 grid gap-6 xl:grid-cols-[1.05fr_0.95fr]">
-            <article class="rounded-lg border border-fleet-line bg-fleet-surface p-6 shadow-fleet-card">
+            <article class="driver-card rounded-lg border border-fleet-line bg-fleet-surface p-6 shadow-fleet-card">
                 <div class="flex items-start justify-between gap-4">
                     <div>
                         <h2 class="text-xl font-extrabold text-fleet-ink">Vehicle Overview</h2>
@@ -47,7 +48,7 @@ include __DIR__ . '/includes/sidebar.php';
                 <?php else: ?>
                     <div class="mt-6 space-y-5">
                         <div class="grid gap-4 md:grid-cols-2">
-                            <div class="rounded-lg border border-fleet-line-soft bg-fleet-surface-muted p-4">
+                            <div class="driver-subcard rounded-lg border border-fleet-line-soft bg-fleet-surface-muted p-4">
                                 <p class="text-xs font-extrabold uppercase tracking-wide text-fleet-sidebar">Core Details</p>
                                 <dl class="mt-3 space-y-2 text-sm">
                                     <div class="flex items-center justify-between gap-4">
@@ -69,7 +70,7 @@ include __DIR__ . '/includes/sidebar.php';
                                 </dl>
                             </div>
 
-                            <div class="rounded-lg border border-fleet-line-soft bg-fleet-surface-muted p-4">
+                            <div class="driver-subcard rounded-lg border border-fleet-line-soft bg-fleet-surface-muted p-4">
                                 <p class="text-xs font-extrabold uppercase tracking-wide text-fleet-sidebar">Operational State</p>
                                 <dl class="mt-3 space-y-2 text-sm">
                                     <div class="flex items-center justify-between gap-4">
@@ -92,7 +93,7 @@ include __DIR__ . '/includes/sidebar.php';
                             </div>
                         </div>
 
-                        <div class="rounded-lg border border-fleet-line-soft bg-fleet-surface-muted p-4">
+                        <div class="driver-subcard rounded-lg border border-fleet-line-soft bg-fleet-surface-muted p-4">
                             <p class="text-xs font-extrabold uppercase tracking-wide text-fleet-sidebar">Driver-Relevant Notes</p>
                             <p class="mt-3 text-sm leading-6 text-fleet-muted"><?= htmlspecialchars($assignedVehicle['notes'], ENT_QUOTES, 'UTF-8'); ?></p>
                         </div>
@@ -101,26 +102,26 @@ include __DIR__ . '/includes/sidebar.php';
             </article>
 
             <article class="space-y-6">
-                <section class="rounded-lg border border-fleet-line bg-fleet-surface p-6 shadow-fleet-card">
+                <section class="driver-card rounded-lg border border-fleet-line bg-fleet-surface p-6 shadow-fleet-card">
                     <h2 class="text-lg font-extrabold text-fleet-ink">Quick Access</h2>
                     <p class="mt-1 text-sm text-fleet-muted">Shortcuts tied to this vehicle and its daily operations</p>
                     <div class="mt-5 space-y-3">
-                        <a href="<?= htmlspecialchars(($basePath ?: '') . '/driver-panel/pre-trip-inspection.php', ENT_QUOTES, 'UTF-8'); ?>" class="flex items-center justify-between rounded-lg border border-fleet-line-soft bg-fleet-surface-muted px-4 py-4 text-sm font-semibold text-fleet-ink transition hover:border-fleet-primary hover:bg-blue-50/50">
+                        <a href="<?= htmlspecialchars(($basePath ?: '') . '/driver-panel/pre-trip-inspection.php', ENT_QUOTES, 'UTF-8'); ?>" class="driver-action-link flex items-center justify-between rounded-lg border border-fleet-line-soft bg-fleet-surface-muted px-4 py-4 text-sm font-semibold text-fleet-ink transition hover:border-fleet-primary hover:bg-blue-50/50">
                             <span>Go to Pre-Trip Inspection</span>
                             <span class="text-fleet-primary">&rarr;</span>
                         </a>
-                        <a href="<?= htmlspecialchars(($basePath ?: '') . '/driver-panel/trip-log.php', ENT_QUOTES, 'UTF-8'); ?>" class="flex items-center justify-between rounded-lg border border-fleet-line-soft bg-fleet-surface-muted px-4 py-4 text-sm font-semibold text-fleet-ink transition hover:border-fleet-primary hover:bg-blue-50/50">
+                        <a href="<?= htmlspecialchars(($basePath ?: '') . '/driver-panel/trip-log.php', ENT_QUOTES, 'UTF-8'); ?>" class="driver-action-link flex items-center justify-between rounded-lg border border-fleet-line-soft bg-fleet-surface-muted px-4 py-4 text-sm font-semibold text-fleet-ink transition hover:border-fleet-primary hover:bg-blue-50/50">
                             <span>Open Trip Log</span>
                             <span class="text-fleet-primary">&rarr;</span>
                         </a>
-                        <a href="<?= htmlspecialchars(($basePath ?: '') . '/driver-panel/history.php', ENT_QUOTES, 'UTF-8'); ?>" class="flex items-center justify-between rounded-lg border border-fleet-line-soft bg-fleet-surface-muted px-4 py-4 text-sm font-semibold text-fleet-ink transition hover:border-fleet-primary hover:bg-blue-50/50">
+                        <a href="<?= htmlspecialchars(($basePath ?: '') . '/driver-panel/history.php', ENT_QUOTES, 'UTF-8'); ?>" class="driver-action-link flex items-center justify-between rounded-lg border border-fleet-line-soft bg-fleet-surface-muted px-4 py-4 text-sm font-semibold text-fleet-ink transition hover:border-fleet-primary hover:bg-blue-50/50">
                             <span>View Driver History</span>
                             <span class="text-fleet-primary">&rarr;</span>
                         </a>
                     </div>
                 </section>
 
-                <section class="rounded-lg border border-fleet-line bg-fleet-surface p-6 shadow-fleet-card">
+                <section class="driver-card rounded-lg border border-fleet-line bg-fleet-surface p-6 shadow-fleet-card">
                     <div class="flex items-center justify-between gap-4">
                         <div>
                             <h2 class="text-lg font-extrabold text-fleet-ink">Current Trip State</h2>
@@ -133,7 +134,7 @@ include __DIR__ . '/includes/sidebar.php';
                     <p class="mt-4 text-sm leading-6 text-fleet-muted"><?= htmlspecialchars($tripStatus['detail'], ENT_QUOTES, 'UTF-8'); ?></p>
 
                     <?php if ($latestPreInspection !== null): ?>
-                        <div class="mt-5 rounded-lg border border-fleet-line-soft bg-fleet-surface-muted p-4">
+                        <div class="driver-subcard mt-5 rounded-lg border border-fleet-line-soft bg-fleet-surface-muted p-4">
                             <p class="text-xs font-extrabold uppercase tracking-wide text-fleet-sidebar">Latest Pre-Trip Inspection</p>
                             <p class="mt-3 text-sm text-fleet-muted">Date: <span class="font-semibold text-fleet-ink"><?= htmlspecialchars($latestPreInspection['date'], ENT_QUOTES, 'UTF-8'); ?></span></p>
                             <p class="mt-2 text-sm text-fleet-muted">Status: <span class="font-semibold text-fleet-ink"><?= htmlspecialchars(ucwords(str_replace('_', ' ', $latestPreInspection['overall_status'])), ENT_QUOTES, 'UTF-8'); ?></span></p>
@@ -143,6 +144,7 @@ include __DIR__ . '/includes/sidebar.php';
                 </section>
             </article>
         </section>
+        </div>
     </div>
 </main>
 <?php include __DIR__ . '/../includes/footer.php'; ?>

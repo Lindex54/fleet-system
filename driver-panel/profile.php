@@ -3,8 +3,9 @@ $activePage = 'driver-profile';
 include __DIR__ . '/../includes/header.php';
 include __DIR__ . '/includes/sidebar.php';
 ?>
-<main class="min-h-screen lg:pl-64">
-    <div class="mx-auto max-w-[1320px] px-4 py-6 sm:px-6 lg:px-8">
+<main class="driver-panel-page min-h-screen lg:pl-64">
+    <div class="mx-auto max-w-[1536px] px-4 py-5 sm:px-6 lg:px-8">
+        <div class="dashboard-shell driver-page-shell">
         <div class="mb-6 flex items-start justify-between gap-4">
             <div>
                 <h1 class="text-2xl font-extrabold tracking-normal text-fleet-ink sm:text-3xl">Profile</h1>
@@ -15,10 +16,11 @@ include __DIR__ . '/includes/sidebar.php';
             </button>
         </div>
 
-        <section class="rounded-lg border border-fleet-line bg-fleet-surface p-6 shadow-fleet-card">
+        <section class="driver-card rounded-lg border border-fleet-line bg-fleet-surface p-6 shadow-fleet-card">
             <h2 class="text-lg font-extrabold text-fleet-ink">Profile Page</h2>
             <p class="mt-2 text-sm text-fleet-muted">This page is scaffolded and ready for driver profile features.</p>
         </section>
+        </div>
     </div>
 </main>
 <?php include __DIR__ . '/../includes/footer.php'; ?>
