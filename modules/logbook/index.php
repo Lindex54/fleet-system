@@ -158,7 +158,13 @@ include __DIR__ . '/../../includes/sidebar.php';
                                 <td class="border border-fleet-line px-3 py-4">
                                     <div class="flex justify-end gap-3">
                                         <button type="button" data-edit-logbook-entry class="text-fleet-sidebar hover:text-fleet-primary" aria-label="Edit log <?= $index + 1; ?>">Edit</button>
-                                        <form action="<?= htmlspecialchars($logbookFormAction, ENT_QUOTES, 'UTF-8'); ?>" method="post" data-delete-logbook-form>
+                                        <form
+                                            action="<?= htmlspecialchars($logbookFormAction, ENT_QUOTES, 'UTF-8'); ?>"
+                                            method="post"
+                                            data-delete-logbook-form
+                                            data-delete-name="<?= htmlspecialchars($log['vehicle'], ENT_QUOTES, 'UTF-8'); ?>"
+                                            data-delete-detail="<?= htmlspecialchars(trim($log['date'] . ' - ' . $log['driver'] . ' - ' . $log['from'] . ' to ' . $log['to']), ENT_QUOTES, 'UTF-8'); ?>"
+                                        >
                                             <!-- Delete uses a small dedicated POST form so it remains explicit and safe. -->
                                             <input type="hidden" name="logbook_action" value="delete">
                                             <input type="hidden" name="entry_id" value="<?= htmlspecialchars((string) ($log['id'] ?? ''), ENT_QUOTES, 'UTF-8'); ?>">
@@ -304,10 +310,13 @@ include __DIR__ . '/../../includes/sidebar.php';
                 </div>
             </div>
             <div class="logbook-delete-body">
-                <!-- This custom confirmation modal replaces the browser popup for a cleaner app-like delete flow. -->
-                <p class="logbook-delete-copy">
-                    This logbook entry will be removed from the official records. This action cannot be undone.
-                </p>
+                <p class="logbook-delete-copy">You are about to permanently remove this logbook entry from the official records.</p>
+                <div class="mt-4 rounded-lg border border-fleet-line bg-fleet-surface-muted px-4 py-3">
+                    <p class="text-xs font-extrabold uppercase tracking-[0.18em] text-fleet-muted">Selected Entry</p>
+                    <p class="mt-1 text-base font-extrabold text-fleet-ink" data-logbook-delete-name>This log entry</p>
+                    <p class="mt-1 text-sm text-fleet-muted" data-logbook-delete-detail>Vehicle, trip date, driver, and route will appear here.</p>
+                </div>
+                <p class="mt-4 text-sm text-fleet-muted">This action cannot be undone.</p>
                 <div class="logbook-delete-actions">
                     <button type="button" data-cancel-logbook-delete class="logbook-delete-button logbook-delete-button-secondary">
                         Keep Entry

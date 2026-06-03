@@ -259,8 +259,19 @@ updateCommunicationRecipientState();
 
 // Modal references for all module pages
 const vehicleModal = document.querySelector('#vehicle-modal');
+const vehicleForm = vehicleModal?.querySelector('form');
+const vehicleActionField = vehicleModal?.querySelector('[data-vehicle-action-field]');
+const vehicleIdField = vehicleModal?.querySelector('[data-vehicle-id-field]');
+const vehicleModalTitle = vehicleModal?.querySelector('[data-vehicle-modal-title]');
+const vehicleSubmitButton = vehicleModal?.querySelector('[data-vehicle-submit-button]');
+const vehicleRepairsField = vehicleModal?.querySelector('[data-vehicle-repairs-field]');
 const openVehicleModalButtons = document.querySelectorAll('[data-open-vehicle-modal]');
+const openVehicleEditButtons = document.querySelectorAll('[data-open-vehicle-edit]');
 const closeVehicleModalButtons = document.querySelectorAll('[data-close-vehicle-modal]');
+const openVehicleDeleteButtons = document.querySelectorAll('[data-open-vehicle-delete]');
+const vehicleDeleteModal = document.querySelector('#vehicle-delete-modal');
+const cancelVehicleDeleteButton = document.querySelector('[data-cancel-vehicle-delete]');
+const confirmVehicleDeleteButton = document.querySelector('[data-confirm-vehicle-delete]');
 const estateViewModal = document.querySelector('#estate-view-modal');
 const openEstateViewModalButtons = document.querySelectorAll('[data-open-estate-view-modal]');
 const closeEstateViewModalButtons = document.querySelectorAll('[data-close-estate-view-modal]');
@@ -279,7 +290,91 @@ const closeEstateNewModalButtons = document.querySelectorAll('[data-close-estate
 const estateNewProgress = document.querySelector('[data-estate-new-progress]');
 const estateNewProgressLabel = document.querySelector('[data-estate-new-progress-label]');
 
+function setDeletePreview(modal, nameSelector, detailSelector, form, fallbackName, fallbackDetail) {
+  const nameField = modal?.querySelector(nameSelector);
+  const detailField = modal?.querySelector(detailSelector);
+  const name = form?.dataset.deleteName || fallbackName;
+  const detail = form?.dataset.deleteDetail || fallbackDetail;
+
+  if (nameField) {
+    nameField.textContent = name;
+  }
+
+  if (detailField) {
+    detailField.textContent = detail;
+  }
+}
+
 // Vehicle page modal behavior
+function setVehicleFormMode(mode) {
+  const isUpdateMode = mode === 'update';
+
+  if (vehicleActionField) {
+    vehicleActionField.value = isUpdateMode ? 'update' : 'create';
+  }
+
+  if (vehicleModalTitle) {
+    vehicleModalTitle.textContent = isUpdateMode ? 'Edit Vehicle' : 'Add New Vehicle';
+  }
+
+  if (vehicleSubmitButton) {
+    vehicleSubmitButton.textContent = isUpdateMode ? 'Save Changes' : 'Add Vehicle';
+  }
+
+  if (vehicleRepairsField) {
+    vehicleRepairsField.classList.toggle('hidden', !isUpdateMode);
+    vehicleRepairsField.classList.toggle('block', isUpdateMode);
+  }
+}
+
+function setVehicleFieldValue(selector, value) {
+  const field = vehicleModal?.querySelector(selector);
+
+  if (field) {
+    field.value = value;
+  }
+}
+
+function resetVehicleFormForCreate() {
+  vehicleForm?.reset();
+
+  if (vehicleIdField) {
+    vehicleIdField.value = '';
+  }
+
+  setVehicleFormMode('create');
+  setVehicleFieldValue('select[name="vehicle_type"]', 'sedan');
+  setVehicleFieldValue('select[name="fuel_type"]', 'diesel');
+  setVehicleFieldValue('input[name="current_mileage"]', '0');
+  setVehicleFieldValue('select[name="status"]', 'active');
+  setVehicleFieldValue('textarea[name="repairs_done"]', '');
+}
+
+function populateVehicleEditForm(button) {
+  const row = button.closest('.vehicle-row');
+  if (!row) {
+    return;
+  }
+
+  setVehicleFormMode('update');
+
+  if (vehicleIdField) {
+    vehicleIdField.value = row.dataset.vehicleId || '';
+  }
+
+  setVehicleFieldValue('input[name="registration_number"]', row.dataset.registrationNumber || '');
+  setVehicleFieldValue('input[name="make"]', row.dataset.make || '');
+  setVehicleFieldValue('input[name="model"]', row.dataset.model || '');
+  setVehicleFieldValue('input[name="year"]', row.dataset.year || '');
+  setVehicleFieldValue('select[name="vehicle_type"]', row.dataset.vehicleType || 'sedan');
+  setVehicleFieldValue('select[name="fuel_type"]', row.dataset.fuelType || 'diesel');
+  setVehicleFieldValue('input[name="department"]', row.dataset.department || '');
+  setVehicleFieldValue('input[name="current_mileage"]', row.dataset.currentMileage || '0');
+  setVehicleFieldValue('input[name="insurance_expiry"]', row.dataset.insuranceExpiry || '');
+  setVehicleFieldValue('select[name="status"]', row.dataset.status || 'active');
+  setVehicleFieldValue('textarea[name="repairs_done"]', row.dataset.repairsDone || '');
+}
+
 // Opens or closes the vehicle modal and keeps focus/scroll state in sync.
 function setVehicleModalOpen(isOpen) {
   if (!vehicleModal) {
@@ -298,8 +393,59 @@ function setVehicleModalOpen(isOpen) {
   }
 }
 
+let pendingVehicleDeleteForm = null;
+
+// Opens or closes the custom vehicle delete confirmation modal.
+function setVehicleDeleteModalOpen(isOpen, form = null) {
+  if (!vehicleDeleteModal) {
+    return;
+  }
+
+  pendingVehicleDeleteForm = isOpen ? form : null;
+
+  if (isOpen) {
+    setDeletePreview(
+      vehicleDeleteModal,
+      '[data-vehicle-delete-name]',
+      '[data-vehicle-delete-detail]',
+      form,
+      'This vehicle',
+      'Registration and basic details will appear here.'
+    );
+  }
+
+  vehicleDeleteModal.classList.toggle('is-open', isOpen);
+  vehicleDeleteModal.setAttribute('aria-hidden', String(!isOpen));
+  document.body.classList.toggle('overflow-hidden', isOpen);
+
+  if (isOpen) {
+    confirmVehicleDeleteButton?.focus();
+  }
+}
+
 openVehicleModalButtons.forEach((button) => {
-  button.addEventListener('click', () => setVehicleModalOpen(true));
+  button.addEventListener('click', () => {
+    resetVehicleFormForCreate();
+    setVehicleModalOpen(true);
+  });
+});
+
+openVehicleEditButtons.forEach((button) => {
+  button.addEventListener('click', () => {
+    populateVehicleEditForm(button);
+    setVehicleModalOpen(true);
+  });
+});
+
+openVehicleDeleteButtons.forEach((button) => {
+  button.addEventListener('click', (event) => {
+    event.preventDefault();
+    const form = button.closest('form');
+
+    if (form) {
+      setVehicleDeleteModalOpen(true, form);
+    }
+  });
 });
 
 closeVehicleModalButtons.forEach((button) => {
@@ -312,10 +458,37 @@ vehicleModal?.addEventListener('click', (event) => {
   }
 });
 
+vehicleDeleteModal?.addEventListener('click', (event) => {
+  if (event.target === vehicleDeleteModal) {
+    setVehicleDeleteModalOpen(false);
+  }
+});
+
+confirmVehicleDeleteButton?.addEventListener('click', () => {
+  if (!pendingVehicleDeleteForm) {
+    setVehicleDeleteModalOpen(false);
+    return;
+  }
+
+  const form = pendingVehicleDeleteForm;
+  setVehicleDeleteModalOpen(false);
+  form.submit();
+});
+
+cancelVehicleDeleteButton?.addEventListener('click', () => {
+  setVehicleDeleteModalOpen(false);
+});
+
 if (vehicleModal?.dataset.openOnLoad === 'true') {
   // When the server returns the page with the modal already open, keep body scroll locked.
   document.body.classList.add('overflow-hidden');
 }
+
+document.addEventListener('keydown', (event) => {
+  if (event.key === 'Escape' && vehicleDeleteModal && vehicleDeleteModal.classList.contains('is-open')) {
+    setVehicleDeleteModalOpen(false);
+  }
+});
 
 // Shared flash popup/toast behavior
 const flashNotice = document.querySelector('[data-flash-notice]');
@@ -534,6 +707,18 @@ function setEstateDeleteModalOpen(isOpen, form = null) {
   }
 
   pendingEstateDeleteForm = isOpen ? form : null;
+
+  if (isOpen) {
+    setDeletePreview(
+      estateDeleteModal,
+      '[data-estate-delete-name]',
+      '[data-estate-delete-detail]',
+      form,
+      'This project',
+      'Project code and location will appear here.'
+    );
+  }
+
   estateDeleteModal.classList.toggle('is-open', isOpen);
   estateDeleteModal.setAttribute('aria-hidden', String(!isOpen));
   document.body.classList.toggle('overflow-hidden', isOpen);

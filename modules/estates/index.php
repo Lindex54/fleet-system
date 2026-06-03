@@ -166,7 +166,12 @@ include __DIR__ . '/../../includes/sidebar.php';
                         <div class="flex translate-y-1 items-center gap-2 opacity-0 transition duration-150 group-hover:translate-y-0 group-hover:opacity-100 group-focus-within:translate-y-0 group-focus-within:opacity-100">
                             <button type="button" data-open-estate-view-modal class="inline-flex h-9 w-9 items-center justify-center rounded-lg text-fleet-ink transition hover:bg-blue-50 hover:text-fleet-primary" aria-label="View project">V</button>
                             <button type="button" data-open-estate-edit-modal class="inline-flex h-9 w-9 items-center justify-center rounded-lg text-fleet-ink transition hover:bg-blue-50 hover:text-fleet-primary" aria-label="Edit project">E</button>
-                            <form action="<?= htmlspecialchars($estateFormAction, ENT_QUOTES, 'UTF-8'); ?>" method="post">
+                            <form
+                                action="<?= htmlspecialchars($estateFormAction, ENT_QUOTES, 'UTF-8'); ?>"
+                                method="post"
+                                data-delete-name="<?= htmlspecialchars($project['name'], ENT_QUOTES, 'UTF-8'); ?>"
+                                data-delete-detail="<?= htmlspecialchars(trim($project['code'] . ' - ' . $project['location']), ENT_QUOTES, 'UTF-8'); ?>"
+                            >
                                 <input type="hidden" name="estate_action" value="delete">
                                 <input type="hidden" name="project_id" value="<?= htmlspecialchars((string) $project['id'], ENT_QUOTES, 'UTF-8'); ?>">
                                 <button type="submit" data-open-estate-delete class="inline-flex h-9 w-9 items-center justify-center rounded-lg text-fleet-danger transition hover:bg-red-50" aria-label="Delete project">D</button>
@@ -274,7 +279,13 @@ include __DIR__ . '/../../includes/sidebar.php';
                 </div>
             </div>
             <div class="logbook-delete-body">
-                <p class="logbook-delete-copy">This estate project will be removed from the system. This action cannot be undone.</p>
+                <p class="logbook-delete-copy">You are about to permanently remove this estate project from the system.</p>
+                <div class="mt-4 rounded-lg border border-fleet-line bg-fleet-surface-muted px-4 py-3">
+                    <p class="text-xs font-extrabold uppercase tracking-[0.18em] text-fleet-muted">Selected Project</p>
+                    <p class="mt-1 text-base font-extrabold text-fleet-ink" data-estate-delete-name>This project</p>
+                    <p class="mt-1 text-sm text-fleet-muted" data-estate-delete-detail>Project code and location will appear here.</p>
+                </div>
+                <p class="mt-4 text-sm text-fleet-muted">This action cannot be undone.</p>
                 <div class="logbook-delete-actions">
                     <button type="button" data-cancel-estate-delete class="logbook-delete-button logbook-delete-button-secondary">Keep Project</button>
                     <button type="button" data-confirm-estate-delete class="logbook-delete-button logbook-delete-button-danger">Delete Project</button>

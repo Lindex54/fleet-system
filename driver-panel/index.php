@@ -25,7 +25,11 @@ include __DIR__ . '/includes/sidebar.php';
                         <span class="dashboard-search-icon">Q</span>
                         <input type="search" placeholder="Search driver dashboard" aria-label="Search driver dashboard">
                     </label>
-                    <div class="dashboard-avatar"><?= htmlspecialchars($driverProfile['initial'] ?? 'D', ENT_QUOTES, 'UTF-8'); ?></div>
+                    <?php if (!empty($driverProfile['driver_photo_url']) && !empty($driverProfile['driver_photo_is_image'])): ?>
+                        <img src="<?= htmlspecialchars($driverProfile['driver_photo_url'], ENT_QUOTES, 'UTF-8'); ?>" alt="<?= htmlspecialchars($driverName, ENT_QUOTES, 'UTF-8'); ?>" class="dashboard-avatar object-cover">
+                    <?php else: ?>
+                        <div class="dashboard-avatar"><?= htmlspecialchars($driverProfile['initial'] ?? 'D', ENT_QUOTES, 'UTF-8'); ?></div>
+                    <?php endif; ?>
                 </div>
             </div>
 
@@ -65,9 +69,13 @@ include __DIR__ . '/includes/sidebar.php';
                             </div>
 
                             <div class="flex items-start gap-4">
-                                <span class="flex h-14 w-14 items-center justify-center rounded-2xl bg-fleet-primary-soft text-lg font-extrabold text-fleet-primary">
-                                    <?= htmlspecialchars($driverProfile['initial'] ?? 'D', ENT_QUOTES, 'UTF-8'); ?>
-                                </span>
+                                <?php if (!empty($driverProfile['driver_photo_url']) && !empty($driverProfile['driver_photo_is_image'])): ?>
+                                    <img src="<?= htmlspecialchars($driverProfile['driver_photo_url'], ENT_QUOTES, 'UTF-8'); ?>" alt="<?= htmlspecialchars($driverProfile['name'] ?? 'Driver', ENT_QUOTES, 'UTF-8'); ?>" class="h-14 w-14 rounded-2xl object-cover ring-2 ring-fleet-primary-soft">
+                                <?php else: ?>
+                                    <span class="flex h-14 w-14 items-center justify-center rounded-2xl bg-fleet-primary-soft text-lg font-extrabold text-fleet-primary">
+                                        <?= htmlspecialchars($driverProfile['initial'] ?? 'D', ENT_QUOTES, 'UTF-8'); ?>
+                                    </span>
+                                <?php endif; ?>
                                 <div class="min-w-0 flex-1">
                                     <div class="grid gap-4 sm:grid-cols-2">
                                         <div class="driver-subcard rounded-[1.25rem] border border-fleet-line-soft bg-white/70 p-4">
@@ -86,6 +94,10 @@ include __DIR__ . '/includes/sidebar.php';
                                                     <dd class="font-semibold text-fleet-ink"><?= htmlspecialchars($driverProfile['license_classes'] ?? '-', ENT_QUOTES, 'UTF-8'); ?></dd>
                                                 </div>
                                                 <div class="flex items-center justify-between gap-4">
+                                                    <dt class="text-fleet-muted">Gender</dt>
+                                                    <dd class="font-semibold text-fleet-ink"><?= htmlspecialchars($driverProfile['gender'] ?? '-', ENT_QUOTES, 'UTF-8'); ?></dd>
+                                                </div>
+                                                <div class="flex items-center justify-between gap-4">
                                                     <dt class="text-fleet-muted">License Expiry</dt>
                                                     <dd class="font-semibold text-fleet-ink"><?= htmlspecialchars($driverProfile['license_expiry'] ?? '-', ENT_QUOTES, 'UTF-8'); ?></dd>
                                                 </div>
@@ -102,6 +114,18 @@ include __DIR__ . '/includes/sidebar.php';
                                                 <div class="flex items-center justify-between gap-4">
                                                     <dt class="text-fleet-muted">Email</dt>
                                                     <dd class="truncate text-right font-semibold text-fleet-ink"><?= htmlspecialchars($driverProfile['email'] ?? '-', ENT_QUOTES, 'UTF-8'); ?></dd>
+                                                </div>
+                                                <div class="flex items-center justify-between gap-4">
+                                                    <dt class="text-fleet-muted">National ID / NIN</dt>
+                                                    <dd class="text-right font-semibold text-fleet-ink"><?= htmlspecialchars($driverProfile['national_id_number'] ?? '-', ENT_QUOTES, 'UTF-8'); ?></dd>
+                                                </div>
+                                                <div class="flex items-center justify-between gap-4">
+                                                    <dt class="text-fleet-muted">Issued On</dt>
+                                                    <dd class="font-semibold text-fleet-ink"><?= htmlspecialchars($driverProfile['license_issue_date'] ?? '-', ENT_QUOTES, 'UTF-8'); ?></dd>
+                                                </div>
+                                                <div class="flex items-center justify-between gap-4">
+                                                    <dt class="text-fleet-muted">Issuing Authority</dt>
+                                                    <dd class="text-right font-semibold text-fleet-ink"><?= htmlspecialchars($driverProfile['license_issuing_authority'] ?? '-', ENT_QUOTES, 'UTF-8'); ?></dd>
                                                 </div>
                                                 <div class="flex items-center justify-between gap-4">
                                                     <dt class="text-fleet-muted">Driver Status</dt>

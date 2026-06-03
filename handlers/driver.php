@@ -6,6 +6,76 @@ require_once __DIR__ . '/../config/database.php';
 
 // Driver constants and page/session helpers
 const DRIVER_ALLOWED_STATUSES = ['active', 'inactive', 'suspended'];
+const DRIVER_ALLOWED_GENDERS = ['male', 'female', 'other'];
+const DRIVER_UPLOAD_MAX_BYTES = 5242880;
+const DRIVER_ALLOWED_UPLOAD_EXTENSIONS = ['jpg', 'jpeg', 'png', 'pdf'];
+const DRIVER_ALLOWED_UPLOAD_MIME_TYPES = ['image/jpeg', 'image/png', 'application/pdf'];
+
+// Returns the absolute uploads directory used for driver files.
+function driverUploadDirectoryPath(): string
+{
+    return dirname(__DIR__) . '/uploads/drivers';
+}
+
+// Builds a public URL for a stored driver upload path.
+function driverBuildUploadUrl(?string $storedPath): string
+{
+    if ($storedPath === null || trim($storedPath) === '') {
+        return '';
+    }
+
+    return '/fleet-system/' . ltrim($storedPath, '/');
+}
+
+// Detects whether the stored upload path should be previewed as an image.
+function driverUploadIsImage(?string $storedPath): bool
+{
+    $extension = strtolower(pathinfo((string) $storedPath, PATHINFO_EXTENSION));
+
+    return in_array($extension, ['jpg', 'jpeg', 'png'], true);
+}
+
+// Returns a display label for an uploaded file.
+function driverUploadDisplayName(?string $storedPath): string
+{
+    if ($storedPath === null || trim($storedPath) === '') {
+        return 'No file uploaded';
+    }
+
+    return basename($storedPath);
+}
+
+// Removes a stored driver upload when it has been replaced.
+function driverDeleteStoredUpload(?string $storedPath): void
+{
+    if ($storedPath === null || trim($storedPath) === '') {
+        return;
+    }
+
+    $normalizedPath = str_replace('\\', '/', $storedPath);
+    if (!str_starts_with($normalizedPath, 'uploads/drivers/')) {
+        return;
+    }
+
+    $absolutePath = dirname(__DIR__) . '/' . $normalizedPath;
+    if (is_file($absolutePath)) {
+        @unlink($absolutePath);
+    }
+}
+
+// Ensures the uploads directory exists before files are moved into it.
+function driverEnsureUploadDirectoryExists(): void
+{
+    $directory = driverUploadDirectoryPath();
+
+    if (is_dir($directory)) {
+        return;
+    }
+
+    if (!mkdir($directory, 0775, true) && !is_dir($directory)) {
+        throw new RuntimeException('The uploads directory could not be prepared for driver files.');
+    }
+}
 
 // Starts the session used for driver flash notifications if it is not already active.
 function driverStartSession(): void
@@ -139,9 +209,16 @@ function driverFetchPageData(): array
                 d.employee_id,
                 d.phone,
                 d.email,
+                d.gender,
+                d.national_id_number,
                 d.license_number,
                 d.license_classes,
+                d.license_issue_date,
+                d.license_issuing_authority,
                 d.license_expiry,
+                d.driver_photo,
+                d.national_id_photo,
+                d.driving_license_scan,
                 d.status,
                 COALESCE(dep.name, \'-\') AS department_name,
                 v.id AS assigned_vehicle_id,
@@ -163,9 +240,25 @@ function driverFetchPageData(): array
                 'employee_id' => $row['employee_id'] ?: '',
                 'email' => $row['email'] ?: '-',
                 'phone' => $row['phone'] ?: '-',
+                'gender' => $row['gender'] ?: '',
+                'national_id_number' => $row['national_id_number'] ?: '',
                 'license' => $row['license_number'],
                 'license_classes' => $row['license_classes'] ?: '',
+                'license_issue_date' => $row['license_issue_date'] ?: '',
+                'license_issuing_authority' => $row['license_issuing_authority'] ?: '',
                 'license_expiry' => $row['license_expiry'] ?: '',
+                'driver_photo' => $row['driver_photo'] ?: '',
+                'driver_photo_url' => driverBuildUploadUrl($row['driver_photo'] ?? ''),
+                'driver_photo_name' => driverUploadDisplayName($row['driver_photo'] ?? ''),
+                'driver_photo_is_image' => driverUploadIsImage($row['driver_photo'] ?? ''),
+                'national_id_photo' => $row['national_id_photo'] ?: '',
+                'national_id_photo_url' => driverBuildUploadUrl($row['national_id_photo'] ?? ''),
+                'national_id_photo_name' => driverUploadDisplayName($row['national_id_photo'] ?? ''),
+                'national_id_photo_is_image' => driverUploadIsImage($row['national_id_photo'] ?? ''),
+                'driving_license_scan' => $row['driving_license_scan'] ?: '',
+                'driving_license_scan_url' => driverBuildUploadUrl($row['driving_license_scan'] ?? ''),
+                'driving_license_scan_name' => driverUploadDisplayName($row['driving_license_scan'] ?? ''),
+                'driving_license_scan_is_image' => driverUploadIsImage($row['driving_license_scan'] ?? ''),
                 'department' => $row['department_name'] === '-' ? '' : $row['department_name'],
                 'assigned' => $row['assigned_vehicle_reg'] ?: '-',
                 'assigned_vehicle_id' => $row['assigned_vehicle_id'] !== null ? (int) $row['assigned_vehicle_id'] : null,
@@ -204,12 +297,19 @@ function driverBuildFormDataFromPost(): array
         'employee_id' => trim((string) ($_POST['employee_id'] ?? '')),
         'phone' => trim((string) ($_POST['phone'] ?? '')),
         'email' => trim((string) ($_POST['email'] ?? '')),
+        'gender' => strtolower(trim((string) ($_POST['gender'] ?? ''))),
+        'national_id_number' => trim((string) ($_POST['national_id_number'] ?? '')),
         'license_number' => trim((string) ($_POST['license_number'] ?? '')),
         'license_classes' => trim((string) ($_POST['license_classes'] ?? '')),
+        'license_issue_date' => trim((string) ($_POST['license_issue_date'] ?? '')),
+        'license_issuing_authority' => trim((string) ($_POST['license_issuing_authority'] ?? '')),
         'license_expiry' => trim((string) ($_POST['license_expiry'] ?? '')),
         'department' => trim((string) ($_POST['department'] ?? '')),
         'assigned_vehicle' => trim((string) ($_POST['assigned_vehicle'] ?? '')),
         'status' => strtolower(trim((string) ($_POST['status'] ?? 'active'))),
+        'driver_photo' => trim((string) ($_POST['existing_driver_photo'] ?? '')),
+        'national_id_photo' => trim((string) ($_POST['existing_national_id_photo'] ?? '')),
+        'driving_license_scan' => trim((string) ($_POST['existing_driving_license_scan'] ?? '')),
     ];
 }
 
@@ -225,8 +325,24 @@ function driverValidateFormData(array $formData): array
         throw new RuntimeException('Please enter a valid email address.');
     }
 
+    if ($formData['gender'] !== '' && !in_array($formData['gender'], DRIVER_ALLOWED_GENDERS, true)) {
+        throw new RuntimeException('Please select a valid gender.');
+    }
+
     if (!in_array($formData['status'], DRIVER_ALLOWED_STATUSES, true)) {
         throw new RuntimeException('Please select a valid driver status.');
+    }
+
+    $licenseIssueDate = null;
+    if ($formData['license_issue_date'] !== '') {
+        $date = DateTimeImmutable::createFromFormat('Y-m-d', $formData['license_issue_date']);
+        $errors = DateTimeImmutable::getLastErrors();
+
+        if (!$date || ($errors['warning_count'] ?? 0) > 0 || ($errors['error_count'] ?? 0) > 0) {
+            throw new RuntimeException('Please enter a valid license issue date.');
+        }
+
+        $licenseIssueDate = $date->format('Y-m-d');
     }
 
     $licenseExpiry = null;
@@ -254,13 +370,98 @@ function driverValidateFormData(array $formData): array
         'employee_id' => $formData['employee_id'] === '' ? null : $formData['employee_id'],
         'phone' => $formData['phone'] === '' ? null : $formData['phone'],
         'email' => $formData['email'] === '' ? null : $formData['email'],
+        'gender' => $formData['gender'] === '' ? null : $formData['gender'],
+        'national_id_number' => $formData['national_id_number'] === '' ? null : $formData['national_id_number'],
         'license_number' => $formData['license_number'],
         'license_classes' => $formData['license_classes'] === '' ? null : $formData['license_classes'],
+        'license_issue_date' => $licenseIssueDate,
+        'license_issuing_authority' => $formData['license_issuing_authority'] === '' ? null : $formData['license_issuing_authority'],
         'license_expiry' => $licenseExpiry,
         'department' => $formData['department'],
         'assigned_vehicle_id' => $assignedVehicleId === null ? null : (int) $assignedVehicleId,
         'status' => $formData['status'],
+        'driver_photo' => $formData['driver_photo'] === '' ? null : $formData['driver_photo'],
+        'national_id_photo' => $formData['national_id_photo'] === '' ? null : $formData['national_id_photo'],
+        'driving_license_scan' => $formData['driving_license_scan'] === '' ? null : $formData['driving_license_scan'],
     ];
+}
+
+// Loads the current driver row when an update needs existing file values.
+function driverFetchExistingRecord(PDO $pdo, int $driverId): array
+{
+    $statement = $pdo->prepare(
+        'SELECT id, driver_photo, national_id_photo, driving_license_scan
+        FROM drivers
+        WHERE id = :id
+        LIMIT 1'
+    );
+    $statement->execute(['id' => $driverId]);
+    $driver = $statement->fetch();
+
+    if (!$driver) {
+        throw new RuntimeException('The selected driver no longer exists.');
+    }
+
+    return $driver;
+}
+
+// Validates and stores one optional driver upload, returning the final stored path.
+function driverStoreOptionalUpload(string $fieldName, string $label, ?string $existingPath, array &$newUploads, array &$oldUploadsToDelete): ?string
+{
+    $upload = $_FILES[$fieldName] ?? null;
+    if (!is_array($upload) || (int) ($upload['error'] ?? UPLOAD_ERR_NO_FILE) === UPLOAD_ERR_NO_FILE) {
+        return $existingPath;
+    }
+
+    $errorCode = (int) ($upload['error'] ?? UPLOAD_ERR_OK);
+    if ($errorCode !== UPLOAD_ERR_OK) {
+        throw new RuntimeException($label . ' could not be uploaded right now.');
+    }
+
+    $size = (int) ($upload['size'] ?? 0);
+    if ($size > DRIVER_UPLOAD_MAX_BYTES) {
+        throw new RuntimeException($label . ' must be 5MB or smaller.');
+    }
+
+    $originalName = (string) ($upload['name'] ?? '');
+    $extension = strtolower(pathinfo($originalName, PATHINFO_EXTENSION));
+    if (!in_array($extension, DRIVER_ALLOWED_UPLOAD_EXTENSIONS, true)) {
+        throw new RuntimeException($label . ' must be a JPG, JPEG, PNG, or PDF file.');
+    }
+
+    $temporaryPath = (string) ($upload['tmp_name'] ?? '');
+    $mimeType = '';
+    if ($temporaryPath !== '' && is_uploaded_file($temporaryPath)) {
+        $finfo = new finfo(FILEINFO_MIME_TYPE);
+        $mimeType = (string) $finfo->file($temporaryPath);
+    }
+
+    if ($mimeType === '' || !in_array($mimeType, DRIVER_ALLOWED_UPLOAD_MIME_TYPES, true)) {
+        throw new RuntimeException($label . ' must be a JPG, PNG, or PDF file.');
+    }
+
+    driverEnsureUploadDirectoryExists();
+
+    $storedFileName = sprintf(
+        '%s-%s-%s.%s',
+        $fieldName,
+        date('YmdHis'),
+        bin2hex(random_bytes(6)),
+        $extension
+    );
+    $relativePath = 'uploads/drivers/' . $storedFileName;
+    $absolutePath = driverUploadDirectoryPath() . '/' . $storedFileName;
+
+    if (!move_uploaded_file($temporaryPath, $absolutePath)) {
+        throw new RuntimeException($label . ' could not be saved.');
+    }
+
+    $newUploads[] = $relativePath;
+    if ($existingPath !== null && trim($existingPath) !== '') {
+        $oldUploadsToDelete[] = $existingPath;
+    }
+
+    return $relativePath;
 }
 
 // Vehicle assignment guards and sync helpers
@@ -352,11 +553,16 @@ function driverSyncVehicleAssignment(PDO $pdo, int $driverId, ?int $vehicleId): 
 function driverHandleCreateOrUpdate(string $action): void
 {
     $formData = driverBuildFormDataFromPost();
+    $newUploads = [];
+    $oldUploadsToDelete = [];
 
     try {
         $validated = driverValidateFormData($formData);
         $pdo = fleetDb();
+        $pdo->beginTransaction();
         $departmentId = driverFindOrCreateDepartmentId($pdo, $validated['department']);
+        $existingRecord = null;
+        $driverId = null;
 
         if ($action === 'update') {
             $driverId = filter_var($formData['driver_id'], FILTER_VALIDATE_INT, ['options' => ['min_range' => 1]]);
@@ -364,11 +570,29 @@ function driverHandleCreateOrUpdate(string $action): void
                 throw new RuntimeException('The selected driver could not be identified.');
             }
 
-            $exists = $pdo->prepare('SELECT COUNT(*) FROM drivers WHERE id = :id');
-            $exists->execute(['id' => $driverId]);
-            if ((int) $exists->fetchColumn() === 0) {
-                throw new RuntimeException('The selected driver no longer exists.');
-            }
+            $existingRecord = driverFetchExistingRecord($pdo, (int) $driverId);
+
+            $validated['driver_photo'] = driverStoreOptionalUpload(
+                'driver_photo',
+                'Driver photo',
+                $existingRecord['driver_photo'] ?: null,
+                $newUploads,
+                $oldUploadsToDelete
+            );
+            $validated['national_id_photo'] = driverStoreOptionalUpload(
+                'national_id_photo',
+                'National ID photo',
+                $existingRecord['national_id_photo'] ?: null,
+                $newUploads,
+                $oldUploadsToDelete
+            );
+            $validated['driving_license_scan'] = driverStoreOptionalUpload(
+                'driving_license_scan',
+                'Driving license scan',
+                $existingRecord['driving_license_scan'] ?: null,
+                $newUploads,
+                $oldUploadsToDelete
+            );
 
             // Updates keep the same driver row while refreshing editable profile fields.
             $statement = $pdo->prepare(
@@ -378,14 +602,43 @@ function driverHandleCreateOrUpdate(string $action): void
                     employee_id = :employee_id,
                     phone = :phone,
                     email = :email,
+                    gender = :gender,
+                    national_id_number = :national_id_number,
                     license_number = :license_number,
                     license_classes = :license_classes,
+                    license_issue_date = :license_issue_date,
+                    license_issuing_authority = :license_issuing_authority,
                     license_expiry = :license_expiry,
+                    driver_photo = :driver_photo,
+                    national_id_photo = :national_id_photo,
+                    driving_license_scan = :driving_license_scan,
                     status = :status
                 WHERE id = :driver_id'
             );
             $statement->bindValue(':driver_id', (int) $driverId, PDO::PARAM_INT);
         } else {
+            $validated['driver_photo'] = driverStoreOptionalUpload(
+                'driver_photo',
+                'Driver photo',
+                null,
+                $newUploads,
+                $oldUploadsToDelete
+            );
+            $validated['national_id_photo'] = driverStoreOptionalUpload(
+                'national_id_photo',
+                'National ID photo',
+                null,
+                $newUploads,
+                $oldUploadsToDelete
+            );
+            $validated['driving_license_scan'] = driverStoreOptionalUpload(
+                'driving_license_scan',
+                'Driving license scan',
+                null,
+                $newUploads,
+                $oldUploadsToDelete
+            );
+
             // New drivers are inserted first, then any selected vehicle is assigned afterwards.
             $statement = $pdo->prepare(
                 'INSERT INTO drivers (
@@ -394,9 +647,16 @@ function driverHandleCreateOrUpdate(string $action): void
                     employee_id,
                     phone,
                     email,
+                    gender,
+                    national_id_number,
                     license_number,
                     license_classes,
+                    license_issue_date,
+                    license_issuing_authority,
                     license_expiry,
+                    driver_photo,
+                    national_id_photo,
+                    driving_license_scan,
                     status
                 ) VALUES (
                     :department_id,
@@ -404,9 +664,16 @@ function driverHandleCreateOrUpdate(string $action): void
                     :employee_id,
                     :phone,
                     :email,
+                    :gender,
+                    :national_id_number,
                     :license_number,
                     :license_classes,
+                    :license_issue_date,
+                    :license_issuing_authority,
                     :license_expiry,
+                    :driver_photo,
+                    :national_id_photo,
+                    :driving_license_scan,
                     :status
                 )'
             );
@@ -417,14 +684,26 @@ function driverHandleCreateOrUpdate(string $action): void
         $statement->bindValue(':employee_id', $validated['employee_id'], $validated['employee_id'] === null ? PDO::PARAM_NULL : PDO::PARAM_STR);
         $statement->bindValue(':phone', $validated['phone'], $validated['phone'] === null ? PDO::PARAM_NULL : PDO::PARAM_STR);
         $statement->bindValue(':email', $validated['email'], $validated['email'] === null ? PDO::PARAM_NULL : PDO::PARAM_STR);
+        $statement->bindValue(':gender', $validated['gender'], $validated['gender'] === null ? PDO::PARAM_NULL : PDO::PARAM_STR);
+        $statement->bindValue(':national_id_number', $validated['national_id_number'], $validated['national_id_number'] === null ? PDO::PARAM_NULL : PDO::PARAM_STR);
         $statement->bindValue(':license_number', $validated['license_number']);
         $statement->bindValue(':license_classes', $validated['license_classes'], $validated['license_classes'] === null ? PDO::PARAM_NULL : PDO::PARAM_STR);
+        $statement->bindValue(':license_issue_date', $validated['license_issue_date'], $validated['license_issue_date'] === null ? PDO::PARAM_NULL : PDO::PARAM_STR);
+        $statement->bindValue(':license_issuing_authority', $validated['license_issuing_authority'], $validated['license_issuing_authority'] === null ? PDO::PARAM_NULL : PDO::PARAM_STR);
         $statement->bindValue(':license_expiry', $validated['license_expiry'], $validated['license_expiry'] === null ? PDO::PARAM_NULL : PDO::PARAM_STR);
+        $statement->bindValue(':driver_photo', $validated['driver_photo'], $validated['driver_photo'] === null ? PDO::PARAM_NULL : PDO::PARAM_STR);
+        $statement->bindValue(':national_id_photo', $validated['national_id_photo'], $validated['national_id_photo'] === null ? PDO::PARAM_NULL : PDO::PARAM_STR);
+        $statement->bindValue(':driving_license_scan', $validated['driving_license_scan'], $validated['driving_license_scan'] === null ? PDO::PARAM_NULL : PDO::PARAM_STR);
         $statement->bindValue(':status', $validated['status']);
         $statement->execute();
 
         $driverId = $action === 'update' ? (int) $formData['driver_id'] : (int) $pdo->lastInsertId();
         driverSyncVehicleAssignment($pdo, $driverId, $validated['assigned_vehicle_id']);
+        $pdo->commit();
+
+        foreach ($oldUploadsToDelete as $oldUpload) {
+            driverDeleteStoredUpload($oldUpload);
+        }
 
         driverSetFlash([
             'notification' => [
@@ -436,6 +715,14 @@ function driverHandleCreateOrUpdate(string $action): void
             ],
         ]);
     } catch (RuntimeException $exception) {
+        if (isset($pdo) && $pdo instanceof PDO && $pdo->inTransaction()) {
+            $pdo->rollBack();
+        }
+
+        foreach ($newUploads as $newUpload) {
+            driverDeleteStoredUpload($newUpload);
+        }
+
         driverSetFlash([
             'notification' => [
                 'type' => 'error',
@@ -447,6 +734,14 @@ function driverHandleCreateOrUpdate(string $action): void
             'form_mode' => $action,
         ]);
     } catch (PDOException $exception) {
+        if (isset($pdo) && $pdo instanceof PDO && $pdo->inTransaction()) {
+            $pdo->rollBack();
+        }
+
+        foreach ($newUploads as $newUpload) {
+            driverDeleteStoredUpload($newUpload);
+        }
+
         $message = $action === 'update'
             ? 'The driver could not be updated. Please try again.'
             : 'The driver could not be added. Please try again.';
@@ -467,6 +762,14 @@ function driverHandleCreateOrUpdate(string $action): void
             'form_mode' => $action,
         ]);
     } catch (Throwable $exception) {
+        if (isset($pdo) && $pdo instanceof PDO && $pdo->inTransaction()) {
+            $pdo->rollBack();
+        }
+
+        foreach ($newUploads as $newUpload) {
+            driverDeleteStoredUpload($newUpload);
+        }
+
         driverSetFlash([
             'notification' => [
                 'type' => 'error',
@@ -504,12 +807,19 @@ function driverHandleDelete(): void
     }
 
     try {
-        $statement = fleetDb()->prepare('DELETE FROM drivers WHERE id = :id');
+        $pdo = fleetDb();
+        $existingRecord = driverFetchExistingRecord($pdo, (int) $driverId);
+
+        $statement = $pdo->prepare('DELETE FROM drivers WHERE id = :id');
         $statement->execute(['id' => $driverId]);
 
         if ($statement->rowCount() === 0) {
             throw new RuntimeException('The selected driver no longer exists.');
         }
+
+        driverDeleteStoredUpload($existingRecord['driver_photo'] ?? null);
+        driverDeleteStoredUpload($existingRecord['national_id_photo'] ?? null);
+        driverDeleteStoredUpload($existingRecord['driving_license_scan'] ?? null);
 
         driverSetFlash([
             'notification' => [

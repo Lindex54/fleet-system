@@ -131,6 +131,10 @@ include __DIR__ . '/../../includes/sidebar.php';
                                 data-status="<?= htmlspecialchars($record['status_value'], ENT_QUOTES, 'UTF-8'); ?>"
                                 data-search="<?= htmlspecialchars(strtolower(implode(' ', [$record['date'], $record['vehicle'], $record['type'], $record['description'], $record['provider'], $record['status']])), ENT_QUOTES, 'UTF-8'); ?>"
                                 data-record-id="<?= htmlspecialchars((string) $record['id'], ENT_QUOTES, 'UTF-8'); ?>"
+                                data-vehicle="<?= htmlspecialchars($record['vehicle'], ENT_QUOTES, 'UTF-8'); ?>"
+                                data-date="<?= htmlspecialchars($record['date'], ENT_QUOTES, 'UTF-8'); ?>"
+                                data-provider="<?= htmlspecialchars($record['provider'], ENT_QUOTES, 'UTF-8'); ?>"
+                                data-cost="<?= htmlspecialchars($record['cost'], ENT_QUOTES, 'UTF-8'); ?>"
                                 data-vehicle-id="<?= htmlspecialchars((string) $record['vehicle_id'], ENT_QUOTES, 'UTF-8'); ?>"
                                 data-service-provider-id="<?= htmlspecialchars((string) ($record['service_provider_id'] ?? ''), ENT_QUOTES, 'UTF-8'); ?>"
                                 data-type="<?= htmlspecialchars($record['type_value'], ENT_QUOTES, 'UTF-8'); ?>"
@@ -164,7 +168,13 @@ include __DIR__ . '/../../includes/sidebar.php';
                                 <td class="px-5 py-4">
                                     <div class="flex justify-end gap-3">
                                         <button type="button" data-edit-maintenance-entry class="text-fleet-sidebar hover:text-fleet-primary" aria-label="Edit maintenance record">Edit</button>
-                                        <form action="<?= htmlspecialchars($maintenanceFormAction, ENT_QUOTES, 'UTF-8'); ?>" method="post" data-delete-maintenance-form>
+                                        <form
+                                            action="<?= htmlspecialchars($maintenanceFormAction, ENT_QUOTES, 'UTF-8'); ?>"
+                                            method="post"
+                                            data-delete-maintenance-form
+                                            data-delete-name="<?= htmlspecialchars($record['vehicle'], ENT_QUOTES, 'UTF-8'); ?>"
+                                            data-delete-detail="<?= htmlspecialchars(trim($record['date'] . ' - ' . $record['type'] . ' - ' . $record['cost']), ENT_QUOTES, 'UTF-8'); ?>"
+                                        >
                                             <!-- Delete uses a dedicated POST form so the action stays explicit and safe. -->
                                             <input type="hidden" name="maintenance_action" value="delete">
                                             <input type="hidden" name="record_id" value="<?= htmlspecialchars((string) $record['id'], ENT_QUOTES, 'UTF-8'); ?>">
@@ -304,10 +314,13 @@ include __DIR__ . '/../../includes/sidebar.php';
                 </div>
             </div>
             <div class="logbook-delete-body">
-                <!-- This custom confirmation modal replaces the browser popup for a cleaner delete flow. -->
-                <p class="logbook-delete-copy">
-                    This maintenance record will be removed from the system. This action cannot be undone.
-                </p>
+                <p class="logbook-delete-copy">You are about to permanently remove the selected maintenance record for this vehicle.</p>
+                <div class="mt-4 rounded-lg border border-fleet-line bg-fleet-surface-muted px-4 py-3">
+                    <p class="text-xs font-extrabold uppercase tracking-[0.18em] text-fleet-muted">Selected Record</p>
+                    <p class="mt-1 text-base font-extrabold text-fleet-ink" data-maintenance-delete-name>Selected vehicle</p>
+                    <p class="mt-1 text-sm text-fleet-muted" data-maintenance-delete-detail>Maintenance date, type, provider, and cost will appear here.</p>
+                </div>
+                <p class="mt-4 text-sm text-fleet-muted">This action cannot be undone.</p>
                 <div class="logbook-delete-actions">
                     <button type="button" data-cancel-maintenance-delete class="logbook-delete-button logbook-delete-button-secondary">
                         Keep Record

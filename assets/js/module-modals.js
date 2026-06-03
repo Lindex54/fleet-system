@@ -69,6 +69,9 @@ const driverModalTitle = document.querySelector('[data-driver-modal-title]');
 const driverSubmitButton = document.querySelector('[data-driver-submit-button]');
 const driverForm = document.querySelector('[data-driver-form]');
 const driverVehicleSelect = document.querySelector('[data-driver-vehicle-select]');
+const driverPhotoPathField = document.querySelector('[data-driver-photo-path-field]');
+const nationalIdPhotoPathField = document.querySelector('[data-national-id-photo-path-field]');
+const drivingLicenseScanPathField = document.querySelector('[data-driving-license-scan-path-field]');
 const driverDeleteModal = document.querySelector('#driver-delete-modal');
 const cancelDriverDeleteButton = document.querySelector('[data-cancel-driver-delete]');
 const confirmDriverDeleteButton = document.querySelector('[data-confirm-driver-delete]');
@@ -86,6 +89,21 @@ const maintenanceForm = document.querySelector('[data-maintenance-form]');
 const maintenanceDeleteModal = document.querySelector('#maintenance-delete-modal');
 const cancelMaintenanceDeleteButton = document.querySelector('[data-cancel-maintenance-delete]');
 const confirmMaintenanceDeleteButton = document.querySelector('[data-confirm-maintenance-delete]');
+
+function setDeletePreview(modal, nameSelector, detailSelector, form, fallbackName, fallbackDetail) {
+  const nameField = modal?.querySelector(nameSelector);
+  const detailField = modal?.querySelector(detailSelector);
+  const name = form?.dataset.deleteName || fallbackName;
+  const detail = form?.dataset.deleteDetail || fallbackDetail;
+
+  if (nameField) {
+    nameField.textContent = name;
+  }
+
+  if (detailField) {
+    detailField.textContent = detail;
+  }
+}
 
 // Opens or closes the pre-inspection modal and keeps focus/scroll state in sync.
 function setPreInspectionModalOpen(isOpen) {
@@ -253,6 +271,18 @@ function setPreInspectionDeleteModalOpen(isOpen, form = null) {
   }
 
   pendingPreInspectionDeleteForm = isOpen ? form : null;
+
+  if (isOpen) {
+    setDeletePreview(
+      preInspectionDeleteModal,
+      '[data-pre-inspection-delete-name]',
+      '[data-pre-inspection-delete-detail]',
+      form,
+      'This report',
+      'Vehicle, invoice, date, and inspector will appear here.'
+    );
+  }
+
   preInspectionDeleteModal.classList.toggle('is-open', isOpen);
   preInspectionDeleteModal.setAttribute('aria-hidden', String(!isOpen));
   document.body.classList.toggle('overflow-hidden', isOpen);
@@ -492,6 +522,18 @@ function setPostInspectionDeleteModalOpen(isOpen, form = null) {
   }
 
   pendingPostInspectionDeleteForm = isOpen ? form : null;
+
+  if (isOpen) {
+    setDeletePreview(
+      postInspectionDeleteModal,
+      '[data-post-inspection-delete-name]',
+      '[data-post-inspection-delete-detail]',
+      form,
+      'This report',
+      'Vehicle, invoice, date, and repair cost will appear here.'
+    );
+  }
+
   postInspectionDeleteModal.classList.toggle('is-open', isOpen);
   postInspectionDeleteModal.setAttribute('aria-hidden', String(!isOpen));
   document.body.classList.toggle('overflow-hidden', isOpen);
@@ -656,6 +698,30 @@ function setProviderDeleteModalOpen(isOpen, form = null) {
   }
 
   pendingProviderDeleteForm = isOpen ? form : null;
+
+  if (isOpen) {
+    const card = form?.closest('.provider-card');
+    const providerName = card?.dataset.name || form?.dataset.deleteName || 'Selected provider';
+    const providerSummary = [
+      card?.dataset.specialty || '',
+      card?.dataset.town || '',
+    ].filter((value) => value && value !== '-').join(' - ');
+
+    setDeletePreview(
+      providerDeleteModal,
+      '[data-provider-delete-name]',
+      '[data-provider-delete-detail]',
+      {
+        dataset: {
+          deleteName: providerName,
+          deleteDetail: providerSummary || form?.dataset.deleteDetail || 'Specialty and town details will appear here.',
+        },
+      },
+      'Selected provider',
+      'Specialty and town details will appear here.'
+    );
+  }
+
   providerDeleteModal.classList.toggle('is-open', isOpen);
   providerDeleteModal.setAttribute('aria-hidden', String(!isOpen));
   document.body.classList.toggle('overflow-hidden', isOpen);
@@ -762,6 +828,18 @@ function setLogbookDeleteModalOpen(isOpen, form = null) {
   }
 
   pendingLogbookDeleteForm = isOpen ? form : null;
+
+  if (isOpen) {
+    setDeletePreview(
+      logbookDeleteModal,
+      '[data-logbook-delete-name]',
+      '[data-logbook-delete-detail]',
+      form,
+      'This log entry',
+      'Vehicle, trip date, driver, and route will appear here.'
+    );
+  }
+
   logbookDeleteModal.classList.toggle('is-open', isOpen);
   logbookDeleteModal.setAttribute('aria-hidden', String(!isOpen));
   document.body.classList.toggle('overflow-hidden', isOpen);
@@ -991,6 +1069,27 @@ function setDriverFieldValue(selector, value) {
   }
 }
 
+// Shows or hides the current uploaded file block for one driver upload field.
+function setDriverUploadPreview(fieldName, storedPath = '', fileUrl = '', fileName = '', isImage = false) {
+  const preview = driverModal?.querySelector(`[data-driver-file-preview="${fieldName}"]`);
+  const link = driverModal?.querySelector(`[data-driver-file-link="${fieldName}"]`);
+  const image = driverModal?.querySelector(`[data-driver-file-image="${fieldName}"]`);
+
+  if (!preview || !link || !image) {
+    return;
+  }
+
+  const hasFile = storedPath.trim() !== '';
+
+  preview.classList.toggle('hidden', !hasFile);
+  preview.classList.toggle('block', hasFile);
+  link.textContent = hasFile ? fileName || storedPath.split('/').pop() || 'Current file' : '';
+  link.href = hasFile ? fileUrl : '#';
+  image.src = hasFile ? fileUrl : '';
+  image.classList.toggle('hidden', !(hasFile && isImage));
+  image.classList.toggle('block', hasFile && isImage);
+}
+
 // Disables vehicles already assigned to a different driver while leaving the current driver's vehicle selectable.
 function setDriverVehicleAvailability(currentDriverId = '') {
   if (!driverVehicleSelect) {
@@ -1020,6 +1119,22 @@ function resetDriverFormForCreate() {
   setDriverFormMode('create');
   setDriverFieldValue('select[name="assigned_vehicle"]', 'unassigned');
   setDriverFieldValue('select[name="status"]', 'active');
+  setDriverFieldValue('select[name="gender"]', '');
+  setDriverFieldValue('input[name="national_id_number"]', '');
+  setDriverFieldValue('input[name="license_issue_date"]', '');
+  setDriverFieldValue('input[name="license_issuing_authority"]', '');
+  if (driverPhotoPathField) {
+    driverPhotoPathField.value = '';
+  }
+  if (nationalIdPhotoPathField) {
+    nationalIdPhotoPathField.value = '';
+  }
+  if (drivingLicenseScanPathField) {
+    drivingLicenseScanPathField.value = '';
+  }
+  setDriverUploadPreview('driver_photo');
+  setDriverUploadPreview('national_id_photo');
+  setDriverUploadPreview('driving_license_scan');
   setDriverVehicleAvailability('');
 }
 
@@ -1040,12 +1155,46 @@ function populateDriverEditForm(button) {
   setDriverFieldValue('input[name="employee_id"]', row.dataset.employeeId || '');
   setDriverFieldValue('input[name="phone"]', row.dataset.phone || '');
   setDriverFieldValue('input[name="email"]', row.dataset.email || '');
+  setDriverFieldValue('select[name="gender"]', row.dataset.gender || '');
+  setDriverFieldValue('input[name="national_id_number"]', row.dataset.nationalIdNumber || '');
   setDriverFieldValue('input[name="license_number"]', row.dataset.licenseNumber || '');
   setDriverFieldValue('input[name="license_classes"]', row.dataset.licenseClasses || '');
+  setDriverFieldValue('input[name="license_issue_date"]', row.dataset.licenseIssueDate || '');
+  setDriverFieldValue('input[name="license_issuing_authority"]', row.dataset.licenseIssuingAuthority || '');
   setDriverFieldValue('input[name="license_expiry"]', row.dataset.licenseExpiry || '');
   setDriverFieldValue('input[name="department"]', row.dataset.department || '');
   setDriverFieldValue('select[name="assigned_vehicle"]', row.dataset.assignedVehicleId || 'unassigned');
   setDriverFieldValue('select[name="status"]', row.dataset.status || 'active');
+  if (driverPhotoPathField) {
+    driverPhotoPathField.value = row.dataset.driverPhoto || '';
+  }
+  if (nationalIdPhotoPathField) {
+    nationalIdPhotoPathField.value = row.dataset.nationalIdPhoto || '';
+  }
+  if (drivingLicenseScanPathField) {
+    drivingLicenseScanPathField.value = row.dataset.drivingLicenseScan || '';
+  }
+  setDriverUploadPreview(
+    'driver_photo',
+    row.dataset.driverPhoto || '',
+    row.dataset.driverPhotoUrl || '',
+    row.dataset.driverPhotoName || '',
+    row.dataset.driverPhotoIsImage === 'true'
+  );
+  setDriverUploadPreview(
+    'national_id_photo',
+    row.dataset.nationalIdPhoto || '',
+    row.dataset.nationalIdPhotoUrl || '',
+    row.dataset.nationalIdPhotoName || '',
+    row.dataset.nationalIdPhotoIsImage === 'true'
+  );
+  setDriverUploadPreview(
+    'driving_license_scan',
+    row.dataset.drivingLicenseScan || '',
+    row.dataset.drivingLicenseScanUrl || '',
+    row.dataset.drivingLicenseScanName || '',
+    row.dataset.drivingLicenseScanIsImage === 'true'
+  );
   setDriverVehicleAvailability(row.dataset.driverId || '');
 }
 
@@ -1058,6 +1207,18 @@ function setDriverDeleteModalOpen(isOpen, form = null) {
   }
 
   pendingDriverDeleteForm = isOpen ? form : null;
+
+  if (isOpen) {
+    setDeletePreview(
+      driverDeleteModal,
+      '[data-driver-delete-name]',
+      '[data-driver-delete-detail]',
+      form,
+      'This driver',
+      'License and assignment details will appear here.'
+    );
+  }
+
   driverDeleteModal.classList.toggle('is-open', isOpen);
   driverDeleteModal.setAttribute('aria-hidden', String(!isOpen));
   document.body.classList.toggle('overflow-hidden', isOpen);
@@ -1230,6 +1391,32 @@ function setMaintenanceDeleteModalOpen(isOpen, form = null) {
   }
 
   pendingMaintenanceDeleteForm = isOpen ? form : null;
+
+  if (isOpen) {
+    const row = form?.closest('.maintenance-row');
+    const vehicleName = row?.dataset.vehicle || form?.dataset.deleteName || 'Selected vehicle';
+    const maintenanceSummary = [
+      row?.dataset.date || '',
+      row?.dataset.type || '',
+      row?.dataset.provider || '',
+      row?.dataset.cost || '',
+    ].filter((value) => value && value !== '-').join(' - ');
+
+    setDeletePreview(
+      maintenanceDeleteModal,
+      '[data-maintenance-delete-name]',
+      '[data-maintenance-delete-detail]',
+      {
+        dataset: {
+          deleteName: vehicleName,
+          deleteDetail: maintenanceSummary || form?.dataset.deleteDetail || 'Maintenance date, type, provider, and cost will appear here.',
+        },
+      },
+      'Selected vehicle',
+      'Maintenance date, type, provider, and cost will appear here.'
+    );
+  }
+
   maintenanceDeleteModal.classList.toggle('is-open', isOpen);
   maintenanceDeleteModal.setAttribute('aria-hidden', String(!isOpen));
   document.body.classList.toggle('overflow-hidden', isOpen);

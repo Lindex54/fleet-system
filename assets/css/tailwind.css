@@ -287,6 +287,116 @@
       inset 0 1px 2px rgb(16 24 40 / 0.04);
   }
 
+  .logbook-delete-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 80;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    padding: 1rem;
+    background: rgb(15 23 42 / 0.68);
+    backdrop-filter: blur(4px);
+  }
+
+  .logbook-delete-overlay.is-open {
+    display: flex;
+  }
+
+  .logbook-delete-card {
+    width: min(100%, 32rem);
+    overflow: hidden;
+    border: 1px solid var(--app-line);
+    border-radius: 1rem;
+    background: var(--app-surface);
+    box-shadow: 0 25px 50px rgb(15 23 42 / 0.22);
+  }
+
+  .logbook-delete-header {
+    padding: 1.25rem 1.5rem 0;
+  }
+
+  .logbook-delete-icon {
+    display: inline-flex;
+    height: 3rem;
+    width: 3rem;
+    flex: 0 0 3rem;
+    align-items: center;
+    justify-content: center;
+    border-radius: 999px;
+    background: var(--app-danger-soft);
+    color: var(--app-danger);
+    font-size: 1.25rem;
+    font-weight: 800;
+  }
+
+  .logbook-delete-eyebrow {
+    color: var(--app-danger);
+    font-size: 0.75rem;
+    font-weight: 800;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+  }
+
+  .logbook-delete-title {
+    margin-top: 0.35rem;
+    color: var(--app-ink);
+    font-size: 1.35rem;
+    font-weight: 800;
+    line-height: 1.2;
+  }
+
+  .logbook-delete-body {
+    padding: 1rem 1.5rem 1.5rem;
+  }
+
+  .logbook-delete-copy {
+    color: var(--app-muted);
+    font-size: 0.95rem;
+    line-height: 1.65;
+  }
+
+  .logbook-delete-actions {
+    margin-top: 1.25rem;
+    display: flex;
+    justify-content: flex-end;
+    gap: 0.75rem;
+  }
+
+  .logbook-delete-button {
+    display: inline-flex;
+    min-height: 2.75rem;
+    align-items: center;
+    justify-content: center;
+    border-radius: 0.65rem;
+    padding: 0.7rem 1rem;
+    font-size: 0.875rem;
+    font-weight: 700;
+    transition:
+      background-color 140ms ease,
+      border-color 140ms ease,
+      color 140ms ease;
+  }
+
+  .logbook-delete-button-secondary {
+    border: 1px solid var(--app-line);
+    background: var(--app-surface);
+    color: var(--app-ink);
+  }
+
+  .logbook-delete-button-secondary:hover {
+    background: var(--app-surface-muted);
+  }
+
+  .logbook-delete-button-danger {
+    background: var(--app-danger);
+    color: #ffffff;
+  }
+
+  .logbook-delete-button-danger:hover {
+    background: var(--app-danger-strong);
+  }
+
   .form-section-title {
     display: flex;
     align-items: center;

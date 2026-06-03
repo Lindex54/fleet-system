@@ -148,6 +148,22 @@ function driverPanelFormatDate(?string $date): string
     return $timestamp ? date('d M Y', $timestamp) : $date;
 }
 
+function driverPanelBuildUploadUrl(?string $storedPath): string
+{
+    if ($storedPath === null || trim($storedPath) === '') {
+        return '';
+    }
+
+    return '/fleet-system/' . ltrim($storedPath, '/');
+}
+
+function driverPanelUploadIsImage(?string $storedPath): bool
+{
+    $extension = strtolower(pathinfo((string) $storedPath, PATHINFO_EXTENSION));
+
+    return in_array($extension, ['jpg', 'jpeg', 'png'], true);
+}
+
 function driverPanelFindCurrentDriver(PDO $pdo): ?array
 {
     driverPanelStartSession();
@@ -171,9 +187,14 @@ function driverPanelFindCurrentDriver(PDO $pdo): ?array
                 d.employee_id,
                 d.phone,
                 d.email,
+                d.gender,
+                d.national_id_number,
                 d.license_number,
                 d.license_classes,
+                d.license_issue_date,
+                d.license_issuing_authority,
                 d.license_expiry,
+                d.driver_photo,
                 d.status,
                 COALESCE(dep.name, \'Transport\') AS department_name
             FROM drivers d
@@ -197,9 +218,14 @@ function driverPanelFindCurrentDriver(PDO $pdo): ?array
             d.employee_id,
             d.phone,
             d.email,
+            d.gender,
+            d.national_id_number,
             d.license_number,
             d.license_classes,
+            d.license_issue_date,
+            d.license_issuing_authority,
             d.license_expiry,
+            d.driver_photo,
             d.status,
             COALESCE(dep.name, \'Transport\') AS department_name
         FROM drivers d
@@ -546,10 +572,16 @@ function driverPanelFetchCommonData(): array
                 'employee_id' => $driver['employee_id'] ?: 'Not assigned',
                 'phone' => $driver['phone'] ?: 'No phone on file',
                 'email' => $driver['email'] ?: 'No email on file',
+                'gender' => $driver['gender'] ? ucfirst((string) $driver['gender']) : 'Not specified',
+                'national_id_number' => $driver['national_id_number'] ?: 'Not available',
                 'department' => $driver['department_name'],
                 'license_number' => $driver['license_number'],
                 'license_classes' => $driver['license_classes'] ?: '-',
+                'license_issue_date' => driverPanelFormatDate($driver['license_issue_date']),
+                'license_issuing_authority' => $driver['license_issuing_authority'] ?: 'Not available',
                 'license_expiry' => driverPanelFormatDate($driver['license_expiry']),
+                'driver_photo_url' => driverPanelBuildUploadUrl($driver['driver_photo'] ?? ''),
+                'driver_photo_is_image' => driverPanelUploadIsImage($driver['driver_photo'] ?? ''),
                 'status' => ucfirst((string) $driver['status']),
                 'initial' => strtoupper(substr((string) $driver['full_name'], 0, 1)),
             ],

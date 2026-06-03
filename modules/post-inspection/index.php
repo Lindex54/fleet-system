@@ -159,7 +159,12 @@ include __DIR__ . '/../../includes/sidebar.php';
                                     <div class="flex justify-end gap-4">
                                         <button type="button" class="text-fleet-primary hover:text-fleet-primary-strong" aria-label="Print post inspection <?= $index + 1; ?>">Print</button>
                                         <button type="button" data-edit-post-inspection-entry class="text-fleet-sidebar hover:text-fleet-primary" aria-label="Edit post inspection report">Edit</button>
-                                        <form action="<?= htmlspecialchars($postInspectionFormAction, ENT_QUOTES, 'UTF-8'); ?>" method="post">
+                                        <form
+                                            action="<?= htmlspecialchars($postInspectionFormAction, ENT_QUOTES, 'UTF-8'); ?>"
+                                            method="post"
+                                            data-delete-name="<?= htmlspecialchars($report['vehicle'], ENT_QUOTES, 'UTF-8'); ?>"
+                                            data-delete-detail="<?= htmlspecialchars(trim($report['invoice'] . ' - ' . $report['date'] . ' - UGX ' . number_format((float) $report['repair_cost'])), ENT_QUOTES, 'UTF-8'); ?>"
+                                        >
                                             <!-- Delete uses a dedicated POST form so the action stays explicit and safe. -->
                                             <input type="hidden" name="inspection_scope" value="post">
                                             <input type="hidden" name="inspection_action" value="delete">
@@ -333,10 +338,13 @@ include __DIR__ . '/../../includes/sidebar.php';
                 </div>
             </div>
             <div class="logbook-delete-body">
-                <!-- This custom confirmation modal replaces the browser popup for a cleaner delete flow. -->
-                <p class="logbook-delete-copy">
-                    This post-inspection report will be removed from the official records. This action cannot be undone.
-                </p>
+                <p class="logbook-delete-copy">You are about to permanently remove this post-inspection report from the official records.</p>
+                <div class="mt-4 rounded-lg border border-fleet-line bg-fleet-surface-muted px-4 py-3">
+                    <p class="text-xs font-extrabold uppercase tracking-[0.18em] text-fleet-muted">Selected Report</p>
+                    <p class="mt-1 text-base font-extrabold text-fleet-ink" data-post-inspection-delete-name>This report</p>
+                    <p class="mt-1 text-sm text-fleet-muted" data-post-inspection-delete-detail>Vehicle, invoice, date, and repair cost will appear here.</p>
+                </div>
+                <p class="mt-4 text-sm text-fleet-muted">This action cannot be undone.</p>
                 <div class="logbook-delete-actions">
                     <button type="button" data-cancel-post-inspection-delete class="logbook-delete-button logbook-delete-button-secondary">
                         Keep Report

@@ -12,7 +12,7 @@ include __DIR__ . '/../../includes/sidebar.php';
         <div class="mb-7 flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
             <div>
                 <h1 class="text-2xl font-extrabold tracking-normal text-fleet-ink sm:text-3xl">Fleet Vehicles</h1>
-                <p class="mt-2 text-sm text-fleet-muted">University motor vehicle fleet registry - click any cell to edit</p>
+                <p class="mt-2 text-sm text-fleet-muted">University motor vehicle fleet registry</p>
             </div>
             <div class="flex flex-wrap items-center gap-3">
                 <button type="button" data-print-page class="inline-flex h-10 items-center gap-2 rounded-lg border border-fleet-line bg-fleet-surface px-4 text-sm font-semibold text-fleet-ink shadow-fleet-card hover:bg-fleet-surface-muted">
@@ -117,31 +117,59 @@ include __DIR__ . '/../../includes/sidebar.php';
                     </thead>
                     <tbody class="divide-y divide-fleet-line-soft">
                         <?php foreach ($vehicles as $vehicle): ?>
-                            <tr class="vehicle-row hover:bg-fleet-surface-muted/70" data-search="<?= htmlspecialchars(strtolower(implode(' ', $vehicle)), ENT_QUOTES, 'UTF-8'); ?>">
-                                <td class="px-5 py-4 font-extrabold text-fleet-ink" contenteditable="true"><?= htmlspecialchars($vehicle['reg'], ENT_QUOTES, 'UTF-8'); ?></td>
-                                <td class="px-5 py-4 text-fleet-ink" contenteditable="true">
+                            <tr
+                                class="vehicle-row hover:bg-fleet-surface-muted/70"
+                                data-search="<?= htmlspecialchars(strtolower(implode(' ', $vehicle)), ENT_QUOTES, 'UTF-8'); ?>"
+                                data-vehicle-id="<?= htmlspecialchars((string) $vehicle['id'], ENT_QUOTES, 'UTF-8'); ?>"
+                                data-registration-number="<?= htmlspecialchars($vehicle['reg'], ENT_QUOTES, 'UTF-8'); ?>"
+                                data-make="<?= htmlspecialchars($vehicle['make'], ENT_QUOTES, 'UTF-8'); ?>"
+                                data-model="<?= htmlspecialchars($vehicle['model'], ENT_QUOTES, 'UTF-8'); ?>"
+                                data-year="<?= htmlspecialchars($vehicle['year'] === '-' ? '' : (string) $vehicle['year'], ENT_QUOTES, 'UTF-8'); ?>"
+                                data-vehicle-type="<?= htmlspecialchars($vehicle['type_value'], ENT_QUOTES, 'UTF-8'); ?>"
+                                data-fuel-type="<?= htmlspecialchars($vehicle['fuel_type'], ENT_QUOTES, 'UTF-8'); ?>"
+                                data-department="<?= htmlspecialchars($vehicle['department'] === '-' ? '' : $vehicle['department'], ENT_QUOTES, 'UTF-8'); ?>"
+                                data-current-mileage="<?= htmlspecialchars($vehicle['mileage'], ENT_QUOTES, 'UTF-8'); ?>"
+                                data-insurance-expiry="<?= htmlspecialchars($vehicle['insurance_raw'], ENT_QUOTES, 'UTF-8'); ?>"
+                                data-status="<?= htmlspecialchars($vehicle['status_value'], ENT_QUOTES, 'UTF-8'); ?>"
+                                data-repairs-done="<?= htmlspecialchars($vehicle['repairs_raw'], ENT_QUOTES, 'UTF-8'); ?>"
+                            >
+                                <td class="px-5 py-4 font-extrabold text-fleet-ink"><?= htmlspecialchars($vehicle['reg'], ENT_QUOTES, 'UTF-8'); ?></td>
+                                <td class="px-5 py-4 text-fleet-ink">
                                     <span class="block"><?= htmlspecialchars($vehicle['make'], ENT_QUOTES, 'UTF-8'); ?></span>
                                     <span class="mt-2 block"><?= htmlspecialchars($vehicle['model'], ENT_QUOTES, 'UTF-8'); ?></span>
                                 </td>
-                                <td class="px-5 py-4 text-fleet-ink" contenteditable="true"><?= htmlspecialchars($vehicle['year'], ENT_QUOTES, 'UTF-8'); ?></td>
+                                <td class="px-5 py-4 text-fleet-ink"><?= htmlspecialchars($vehicle['year'], ENT_QUOTES, 'UTF-8'); ?></td>
                                 <td class="px-5 py-4">
-                                    <span class="rounded-lg bg-slate-200 px-3 py-1 text-xs font-medium text-slate-600" contenteditable="true"><?= htmlspecialchars($vehicle['type'], ENT_QUOTES, 'UTF-8'); ?></span>
+                                    <span class="rounded-lg bg-slate-200 px-3 py-1 text-xs font-medium text-slate-600"><?= htmlspecialchars($vehicle['type'], ENT_QUOTES, 'UTF-8'); ?></span>
                                 </td>
-                                <td class="px-5 py-4 text-fleet-ink" contenteditable="true"><?= htmlspecialchars($vehicle['department'], ENT_QUOTES, 'UTF-8'); ?></td>
-                                <td class="px-5 py-4 text-fleet-ink" contenteditable="true"><?= htmlspecialchars($vehicle['mileage'], ENT_QUOTES, 'UTF-8'); ?></td>
-                                <td class="px-5 py-4 text-fleet-muted" contenteditable="true"><?= htmlspecialchars($vehicle['insurance'], ENT_QUOTES, 'UTF-8'); ?></td>
-                                <td class="px-5 py-4 text-fleet-muted" contenteditable="true"><?= htmlspecialchars($vehicle['repairs'], ENT_QUOTES, 'UTF-8'); ?></td>
+                                <td class="px-5 py-4 text-fleet-ink"><?= htmlspecialchars($vehicle['department'], ENT_QUOTES, 'UTF-8'); ?></td>
+                                <td class="px-5 py-4 text-fleet-ink"><?= htmlspecialchars($vehicle['mileage'], ENT_QUOTES, 'UTF-8'); ?></td>
+                                <td class="px-5 py-4 text-fleet-muted"><?= htmlspecialchars($vehicle['insurance'], ENT_QUOTES, 'UTF-8'); ?></td>
+                                <td class="max-w-[18rem] px-5 py-4 text-fleet-muted"><?= htmlspecialchars($vehicle['repairs'], ENT_QUOTES, 'UTF-8'); ?></td>
                                 <td class="px-5 py-4">
                                     <?php if ($vehicle['status'] === 'Active'): ?>
                                         <span class="rounded-lg border border-green-200 bg-fleet-success-soft px-3 py-1 text-xs font-semibold text-fleet-success">Active</span>
+                                    <?php elseif ($vehicle['status'] === 'Grounded'): ?>
+                                        <span class="rounded-lg border border-red-200 bg-red-50 px-3 py-1 text-xs font-semibold text-red-600">Grounded</span>
+                                    <?php elseif ($vehicle['status'] === 'Disposed'): ?>
+                                        <span class="rounded-lg border border-slate-200 bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-600">Disposed</span>
                                     <?php else: ?>
                                         <span class="rounded-lg border border-orange-200 bg-fleet-warning-soft px-3 py-1 text-xs font-semibold text-fleet-warning-strong">Maintenance</span>
                                     <?php endif; ?>
                                 </td>
                                 <td class="px-5 py-4">
                                     <div class="flex justify-end gap-3">
-                                        <button type="button" class="text-fleet-sidebar hover:text-fleet-primary" aria-label="Edit <?= htmlspecialchars($vehicle['reg'], ENT_QUOTES, 'UTF-8'); ?>">Edit</button>
-                                        <button type="button" class="text-fleet-danger hover:text-fleet-danger-strong" aria-label="Delete <?= htmlspecialchars($vehicle['reg'], ENT_QUOTES, 'UTF-8'); ?>">Del</button>
+                                        <button type="button" data-open-vehicle-edit class="text-fleet-sidebar hover:text-fleet-primary" aria-label="Edit <?= htmlspecialchars($vehicle['reg'], ENT_QUOTES, 'UTF-8'); ?>">Edit</button>
+                                        <form
+                                            action="<?= htmlspecialchars($vehicleFormAction, ENT_QUOTES, 'UTF-8'); ?>"
+                                            method="post"
+                                            data-delete-name="<?= htmlspecialchars($vehicle['reg'], ENT_QUOTES, 'UTF-8'); ?>"
+                                            data-delete-detail="<?= htmlspecialchars(trim($vehicle['make'] . ' ' . $vehicle['model'] . ' - ' . $vehicle['department']), ENT_QUOTES, 'UTF-8'); ?>"
+                                        >
+                                            <input type="hidden" name="vehicle_action" value="delete">
+                                            <input type="hidden" name="vehicle_id" value="<?= htmlspecialchars((string) $vehicle['id'], ENT_QUOTES, 'UTF-8'); ?>">
+                                            <button type="submit" data-open-vehicle-delete class="text-fleet-danger hover:text-fleet-danger-strong" aria-label="Delete <?= htmlspecialchars($vehicle['reg'], ENT_QUOTES, 'UTF-8'); ?>">Del</button>
+                                        </form>
                                     </div>
                                 </td>
                             </tr>
@@ -161,8 +189,10 @@ include __DIR__ . '/../../includes/sidebar.php';
         <div class="w-full max-w-2xl rounded-lg border border-fleet-line bg-fleet-surface shadow-2xl" role="dialog" aria-modal="true" aria-labelledby="vehicle-modal-title">
             <!-- Failed submissions reopen this modal and refill the fields from flash form data. -->
             <form class="p-6" action="<?= htmlspecialchars($vehicleFormAction, ENT_QUOTES, 'UTF-8'); ?>" method="post">
+                <input type="hidden" name="vehicle_action" value="<?= $vehicleFormMode === 'update' ? 'update' : 'create'; ?>" data-vehicle-action-field>
+                <input type="hidden" name="vehicle_id" value="<?= htmlspecialchars($vehicleFormData['vehicle_id'] ?? '', ENT_QUOTES, 'UTF-8'); ?>" data-vehicle-id-field>
                 <div class="mb-5 flex items-center justify-between gap-4">
-                    <h2 id="vehicle-modal-title" class="text-xl font-extrabold text-fleet-ink">Add New Vehicle</h2>
+                    <h2 id="vehicle-modal-title" class="text-xl font-extrabold text-fleet-ink" data-vehicle-modal-title><?= $vehicleFormMode === 'update' ? 'Edit Vehicle' : 'Add New Vehicle'; ?></h2>
                     <button type="button" data-close-vehicle-modal class="flex h-8 w-8 items-center justify-center rounded-lg text-2xl leading-none text-fleet-muted hover:bg-fleet-surface-muted hover:text-fleet-ink" aria-label="Close add vehicle form">&times;</button>
                 </div>
 
@@ -222,6 +252,11 @@ include __DIR__ . '/../../includes/sidebar.php';
                         <input name="current_mileage" type="number" min="0" class="vehicle-form-control" value="<?= htmlspecialchars($vehicleFormData['current_mileage'] ?? '0', ENT_QUOTES, 'UTF-8'); ?>">
                     </label>
 
+                    <label class="block">
+                        <span class="mb-2 block text-sm font-semibold text-fleet-ink">Insurance Expiry Date</span>
+                        <input name="insurance_expiry" type="date" class="vehicle-form-control" value="<?= htmlspecialchars($vehicleFormData['insurance_expiry'] ?? '', ENT_QUOTES, 'UTF-8'); ?>">
+                    </label>
+
                     <label class="block md:col-span-1">
                         <span class="mb-2 block text-sm font-semibold text-fleet-ink">Status</span>
                         <select name="status" class="vehicle-form-control">
@@ -231,13 +266,51 @@ include __DIR__ . '/../../includes/sidebar.php';
                             <option value="disposed" <?= (($vehicleFormData['status'] ?? '') === 'disposed') ? 'selected' : ''; ?>>Disposed</option>
                         </select>
                     </label>
+
+                    <label class="<?= $vehicleFormMode === 'update' ? 'block' : 'hidden'; ?> md:col-span-2" data-vehicle-repairs-field>
+                        <span class="mb-2 block text-sm font-semibold text-fleet-ink">Repairs Done</span>
+                        <textarea name="repairs_done" class="vehicle-form-control min-h-24 resize-y py-3" placeholder="Summarize the repair work completed on this vehicle."><?= htmlspecialchars($vehicleFormData['repairs_done'] ?? '', ENT_QUOTES, 'UTF-8'); ?></textarea>
+                    </label>
                 </div>
 
                 <div class="mt-6 flex justify-end gap-3">
                     <button type="button" data-close-vehicle-modal class="h-10 rounded-lg border border-fleet-line bg-fleet-surface px-4 text-sm font-semibold text-fleet-ink shadow-sm hover:bg-fleet-surface-muted">Cancel</button>
-                    <button type="submit" class="h-10 rounded-lg bg-fleet-sidebar px-4 text-sm font-semibold text-white shadow-sm hover:bg-fleet-sidebar-active">Add Vehicle</button>
+                    <button type="submit" class="h-10 rounded-lg bg-fleet-sidebar px-4 text-sm font-semibold text-white shadow-sm hover:bg-fleet-sidebar-active" data-vehicle-submit-button><?= $vehicleFormMode === 'update' ? 'Save Changes' : 'Add Vehicle'; ?></button>
                 </div>
             </form>
+        </div>
+    </div>
+
+    <div id="vehicle-delete-modal" class="logbook-delete-overlay" aria-hidden="true">
+        <div class="logbook-delete-card" role="dialog" aria-modal="true" aria-labelledby="vehicle-delete-modal-title">
+            <div class="logbook-delete-header">
+                <div class="flex items-center gap-4">
+                    <div class="logbook-delete-icon">!</div>
+                    <div>
+                        <p class="logbook-delete-eyebrow">Delete Confirmation</p>
+                        <h2 id="vehicle-delete-modal-title" class="logbook-delete-title">Remove vehicle?</h2>
+                    </div>
+                </div>
+            </div>
+            <div class="logbook-delete-body">
+                <p class="logbook-delete-copy">
+                    You are about to permanently remove this vehicle from the fleet register.
+                </p>
+                <div class="mt-4 rounded-lg border border-fleet-line bg-fleet-surface-muted px-4 py-3">
+                    <p class="text-xs font-extrabold uppercase tracking-[0.18em] text-fleet-muted">Selected Vehicle</p>
+                    <p class="mt-1 text-base font-extrabold text-fleet-ink" data-vehicle-delete-name>This vehicle</p>
+                    <p class="mt-1 text-sm text-fleet-muted" data-vehicle-delete-detail>Registration and basic details will appear here.</p>
+                </div>
+                <p class="mt-4 text-sm text-fleet-muted">This action cannot be undone.</p>
+                <div class="logbook-delete-actions">
+                    <button type="button" data-cancel-vehicle-delete class="logbook-delete-button logbook-delete-button-secondary">
+                        Keep Vehicle
+                    </button>
+                    <button type="button" data-confirm-vehicle-delete class="logbook-delete-button logbook-delete-button-danger">
+                        Delete Vehicle
+                    </button>
+                </div>
+            </div>
         </div>
     </div>
 </main>

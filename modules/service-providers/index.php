@@ -136,7 +136,12 @@ include __DIR__ . '/../../includes/sidebar.php';
 
                     <div class="mt-5 flex justify-end gap-3 border-t border-fleet-line-soft pt-4">
                         <button type="button" data-edit-provider-entry class="text-sm font-semibold text-fleet-sidebar hover:text-fleet-primary">Edit</button>
-                        <form action="<?= htmlspecialchars($providerFormAction, ENT_QUOTES, 'UTF-8'); ?>" method="post">
+                        <form
+                            action="<?= htmlspecialchars($providerFormAction, ENT_QUOTES, 'UTF-8'); ?>"
+                            method="post"
+                            data-delete-name="<?= htmlspecialchars($provider['name'], ENT_QUOTES, 'UTF-8'); ?>"
+                            data-delete-detail="<?= htmlspecialchars(trim($provider['specialty'] . ' - ' . $provider['town']), ENT_QUOTES, 'UTF-8'); ?>"
+                        >
                             <!-- Delete uses a dedicated POST form so the action stays explicit and safe. -->
                             <input type="hidden" name="provider_action" value="delete">
                             <input type="hidden" name="provider_id" value="<?= htmlspecialchars((string) $provider['id'], ENT_QUOTES, 'UTF-8'); ?>">
@@ -229,10 +234,13 @@ include __DIR__ . '/../../includes/sidebar.php';
                 </div>
             </div>
             <div class="logbook-delete-body">
-                <!-- This custom confirmation modal replaces the browser popup for a cleaner delete flow. -->
-                <p class="logbook-delete-copy">
-                    This service provider will be removed from the system. This action cannot be undone.
-                </p>
+                <p class="logbook-delete-copy">You are about to permanently remove this service provider from the system.</p>
+                <div class="mt-4 rounded-lg border border-fleet-line bg-fleet-surface-muted px-4 py-3">
+                    <p class="text-xs font-extrabold uppercase tracking-[0.18em] text-fleet-muted">Selected Provider</p>
+                    <p class="mt-1 text-base font-extrabold text-fleet-ink" data-provider-delete-name>Selected provider</p>
+                    <p class="mt-1 text-sm text-fleet-muted" data-provider-delete-detail>Specialty and town details will appear here.</p>
+                </div>
+                <p class="mt-4 text-sm text-fleet-muted">This action cannot be undone.</p>
                 <div class="logbook-delete-actions">
                     <button type="button" data-cancel-provider-delete class="logbook-delete-button logbook-delete-button-secondary">
                         Keep Provider

@@ -115,9 +115,16 @@ CREATE TABLE `drivers` (
   `employee_id` varchar(60) DEFAULT NULL,
   `phone` varchar(30) DEFAULT NULL,
   `email` varchar(150) DEFAULT NULL,
+  `gender` enum('male','female','other') DEFAULT NULL,
+  `national_id_number` varchar(60) DEFAULT NULL,
   `license_number` varchar(100) NOT NULL,
   `license_classes` varchar(80) DEFAULT NULL,
+  `license_issue_date` date DEFAULT NULL,
+  `license_issuing_authority` varchar(150) DEFAULT NULL,
   `license_expiry` date DEFAULT NULL,
+  `driver_photo` varchar(255) DEFAULT NULL,
+  `national_id_photo` varchar(255) DEFAULT NULL,
+  `driving_license_scan` varchar(255) DEFAULT NULL,
   `status` enum('active','inactive','suspended') NOT NULL DEFAULT 'active',
   `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
   `updated_at` timestamp NULL DEFAULT NULL ON UPDATE current_timestamp()
@@ -127,10 +134,10 @@ CREATE TABLE `drivers` (
 -- Dumping data for table `drivers`
 --
 
-INSERT INTO `drivers` (`id`, `user_id`, `department_id`, `full_name`, `employee_id`, `phone`, `email`, `license_number`, `license_classes`, `license_expiry`, `status`, `created_at`, `updated_at`) VALUES
-(1, NULL, 2, 'Simali Habert', NULL, '+256 772 123 456', 'simalihabert@gmail.com', 'CM 78452', 'B', NULL, 'active', '2026-05-28 19:14:05', NULL),
-(2, NULL, 2, 'Moses Okello', NULL, '+256 701 450 220', 'moses.okello@busitema.ac.ug', 'CM 21984', 'B', NULL, 'active', '2026-05-28 19:14:05', NULL),
-(3, NULL, 2, 'Grace Namuli', NULL, '+256 758 802 114', 'grace.namuli@busitema.ac.ug', 'CM 66310', 'B', NULL, 'inactive', '2026-05-28 19:14:05', NULL);
+INSERT INTO `drivers` (`id`, `user_id`, `department_id`, `full_name`, `employee_id`, `phone`, `email`, `gender`, `national_id_number`, `license_number`, `license_classes`, `license_issue_date`, `license_issuing_authority`, `license_expiry`, `driver_photo`, `national_id_photo`, `driving_license_scan`, `status`, `created_at`, `updated_at`) VALUES
+(1, NULL, 2, 'Simali Habert', NULL, '+256 772 123 456', 'simalihabert@gmail.com', NULL, NULL, 'CM 78452', 'B', NULL, NULL, NULL, NULL, NULL, NULL, 'active', '2026-05-28 19:14:05', NULL),
+(2, NULL, 2, 'Moses Okello', NULL, '+256 701 450 220', 'moses.okello@busitema.ac.ug', NULL, NULL, 'CM 21984', 'B', NULL, NULL, NULL, NULL, NULL, NULL, 'active', '2026-05-28 19:14:05', NULL),
+(3, NULL, 2, 'Grace Namuli', NULL, '+256 758 802 114', 'grace.namuli@busitema.ac.ug', NULL, NULL, 'CM 66310', 'B', NULL, NULL, NULL, NULL, NULL, NULL, 'inactive', '2026-05-28 19:14:05', NULL);
 
 -- --------------------------------------------------------
 
