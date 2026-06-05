@@ -14,6 +14,8 @@ const preInspectionReportIdField = document.querySelector('[data-pre-inspection-
 const preInspectionModalTitle = document.querySelector('[data-pre-inspection-modal-title]');
 const preInspectionSubmitButton = document.querySelector('[data-pre-inspection-submit-button]');
 const preInspectionForm = document.querySelector('[data-pre-inspection-form]');
+const preInspectionVehicleSelect = document.querySelector('[data-pre-inspection-vehicle-select]');
+const preInspectionMileageField = document.querySelector('[data-pre-inspection-mileage-field]');
 const preInspectionItemsContainer = document.querySelector('[data-pre-inspection-items]');
 const preInspectionAddItemButton = document.querySelector('[data-add-pre-inspection-item]');
 const preInspectionItemTemplate = document.querySelector('#pre-inspection-item-template');
@@ -36,6 +38,8 @@ const postInspectionReportIdField = document.querySelector('[data-post-inspectio
 const postInspectionModalTitle = document.querySelector('[data-post-inspection-modal-title]');
 const postInspectionSubmitButton = document.querySelector('[data-post-inspection-submit-button]');
 const postInspectionForm = document.querySelector('[data-post-inspection-form]');
+const postInspectionVehicleSelect = document.querySelector('[data-post-inspection-vehicle-select]');
+const postInspectionMileageField = document.querySelector('[data-post-inspection-mileage-field]');
 const postInspectionDeleteModal = document.querySelector('#post-inspection-delete-modal');
 const cancelPostInspectionDeleteButton = document.querySelector('[data-cancel-post-inspection-delete]');
 const confirmPostInspectionDeleteButton = document.querySelector('[data-confirm-post-inspection-delete]');
@@ -208,6 +212,25 @@ function setPreInspectionFieldValue(selector, value) {
   }
 }
 
+// Pulls the stored vehicle mileage into the pre-inspection form when the vehicle changes.
+function syncPreInspectionMileageFromVehicle(force = false) {
+  if (!preInspectionVehicleSelect || !preInspectionMileageField) {
+    return;
+  }
+
+  const selectedOption = preInspectionVehicleSelect.selectedOptions[0];
+
+  if (!selectedOption) {
+    return;
+  }
+
+  if (!force && preInspectionMileageField.value.trim() !== '') {
+    return;
+  }
+
+  preInspectionMileageField.value = selectedOption.dataset.currentMileage || '';
+}
+
 function setPreInspectionViewModalOpen(isOpen) {
   if (!preInspectionViewModal) {
     return;
@@ -310,6 +333,7 @@ function resetPreInspectionFormForCreate() {
   setPreInspectionFieldValue('input[name="memo_thru_two"]', 'Programme Controller');
   setPreInspectionFieldValue('textarea[name="closing_note"]', 'The purpose of this report is to therefore request you authorize repair and maintenance works on this vehicle for full restoration.');
   setPreInspectionFieldValue('input[name="cc"]', 'Senior Estates Officer');
+  syncPreInspectionMileageFromVehicle(true);
   renderPreInspectionItems();
 }
 
@@ -423,6 +447,10 @@ closePreInspectionViewModalButtons.forEach((button) => {
   button.addEventListener('click', () => setPreInspectionViewModalOpen(false));
 });
 
+preInspectionVehicleSelect?.addEventListener('change', () => {
+  syncPreInspectionMileageFromVehicle(true);
+});
+
 preInspectionAddItemButton?.addEventListener('click', () => {
   appendPreInspectionItemRow();
 });
@@ -459,6 +487,7 @@ preInspectionViewModal?.addEventListener('click', (event) => {
 
 if (preInspectionModal?.dataset.openOnLoad === 'true') {
   document.body.classList.add('overflow-hidden');
+  syncPreInspectionMileageFromVehicle();
   updatePreInspectionItemLabels();
 }
 
@@ -543,6 +572,25 @@ function setPostInspectionFieldValue(selector, value) {
   }
 }
 
+// Pulls the stored vehicle mileage into the post-inspection form when the vehicle changes.
+function syncPostInspectionMileageFromVehicle(force = false) {
+  if (!postInspectionVehicleSelect || !postInspectionMileageField) {
+    return;
+  }
+
+  const selectedOption = postInspectionVehicleSelect.selectedOptions[0];
+
+  if (!selectedOption) {
+    return;
+  }
+
+  if (!force && postInspectionMileageField.value.trim() !== '') {
+    return;
+  }
+
+  postInspectionMileageField.value = selectedOption.dataset.currentMileage || '';
+}
+
 function setPostInspectionViewModalOpen(isOpen) {
   if (!postInspectionViewModal) {
     return;
@@ -620,6 +668,7 @@ function resetPostInspectionFormForCreate() {
   setPostInspectionFieldValue('input[name="inspection_date"]', new Date().toISOString().slice(0, 10));
   setPostInspectionFieldValue('input[name="amount_spent"]', '0');
   setPostInspectionFieldValue('textarea[name="recommendation"]', 'This is to request you authorise payment to the above service provider...');
+  syncPostInspectionMileageFromVehicle(true);
   applyPostInspectionSystemChecks([]);
 }
 
@@ -730,6 +779,10 @@ closePostInspectionViewModalButtons.forEach((button) => {
   button.addEventListener('click', () => setPostInspectionViewModalOpen(false));
 });
 
+postInspectionVehicleSelect?.addEventListener('change', () => {
+  syncPostInspectionMileageFromVehicle(true);
+});
+
 postInspectionModal?.addEventListener('click', (event) => {
   if (event.target === postInspectionModal) {
     setPostInspectionModalOpen(false);
@@ -744,6 +797,7 @@ postInspectionViewModal?.addEventListener('click', (event) => {
 
 if (postInspectionModal?.dataset.openOnLoad === 'true') {
   document.body.classList.add('overflow-hidden');
+  syncPostInspectionMileageFromVehicle();
 }
 
 confirmPostInspectionDeleteButton?.addEventListener('click', () => {

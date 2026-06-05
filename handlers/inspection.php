@@ -121,7 +121,7 @@ function inspectionFormatDate(?string $date): string
 function inspectionFetchVehicleOptions(PDO $pdo): array
 {
     $statement = $pdo->query(
-        "SELECT id, registration_no, make, model
+        "SELECT id, registration_no, make, model, current_mileage
         FROM vehicles
         WHERE status <> 'disposed'
         ORDER BY registration_no ASC"

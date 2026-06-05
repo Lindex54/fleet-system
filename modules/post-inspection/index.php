@@ -237,10 +237,14 @@ include __DIR__ . '/../../includes/sidebar.php';
                 <div class="grid gap-4 md:grid-cols-2">
                     <label class="block">
                         <span class="mb-2 block text-sm font-semibold text-fleet-ink">Vehicle *</span>
-                        <select name="vehicle" required class="vehicle-form-control">
+                        <select name="vehicle" required class="vehicle-form-control" data-post-inspection-vehicle-select>
                             <option value="">Select vehicle</option>
                             <?php foreach ($postInspectionVehicleOptions as $vehicleOption): ?>
-                                <option value="<?= htmlspecialchars((string) $vehicleOption['id'], ENT_QUOTES, 'UTF-8'); ?>" <?= (($postInspectionFormData['vehicle'] ?? '') === (string) $vehicleOption['id']) ? 'selected' : ''; ?>>
+                                <option
+                                    value="<?= htmlspecialchars((string) $vehicleOption['id'], ENT_QUOTES, 'UTF-8'); ?>"
+                                    data-current-mileage="<?= htmlspecialchars((string) ($vehicleOption['current_mileage'] ?? ''), ENT_QUOTES, 'UTF-8'); ?>"
+                                    <?= (($postInspectionFormData['vehicle'] ?? '') === (string) $vehicleOption['id']) ? 'selected' : ''; ?>
+                                >
                                     <?= htmlspecialchars($vehicleOption['registration_no'] . ' - ' . trim($vehicleOption['make'] . ' ' . $vehicleOption['model']), ENT_QUOTES, 'UTF-8'); ?>
                                 </option>
                             <?php endforeach; ?>
@@ -248,7 +252,7 @@ include __DIR__ . '/../../includes/sidebar.php';
                     </label>
                     <label class="block">
                         <span class="mb-2 block text-sm font-semibold text-fleet-ink">Mileage at Inspection (km)</span>
-                        <input name="mileage" type="number" min="0" class="vehicle-form-control" placeholder="e.g. 45230" value="<?= htmlspecialchars($postInspectionFormData['mileage'] ?? '', ENT_QUOTES, 'UTF-8'); ?>">
+                        <input name="mileage" type="number" min="0" class="vehicle-form-control cursor-not-allowed bg-fleet-surface-muted" placeholder="e.g. 45230" value="<?= htmlspecialchars($postInspectionFormData['mileage'] ?? '', ENT_QUOTES, 'UTF-8'); ?>" data-post-inspection-mileage-field readonly>
                     </label>
                 </div>
 
