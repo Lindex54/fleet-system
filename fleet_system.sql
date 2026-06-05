@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: 127.0.0.1
--- Generation Time: Jun 02, 2026 at 04:35 PM
+-- Generation Time: Jun 05, 2026 at 02:58 PM
 -- Server version: 10.4.32-MariaDB
 -- PHP Version: 8.1.25
 
@@ -73,6 +73,14 @@ CREATE TABLE `contractors` (
   `updated_at` timestamp NULL DEFAULT NULL ON UPDATE current_timestamp()
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
+--
+-- Dumping data for table `contractors`
+--
+
+INSERT INTO `contractors` (`id`, `name`, `contact_person`, `phone`, `email`, `town`, `created_at`, `updated_at`) VALUES
+(1, 'Eastern Build Contractors', 'Isaac Eregu', '+256 701 441 822', 'contact@easternbuild.ug', 'Mbale', '2026-06-03 10:10:16', NULL),
+(2, 'Campus Civil Works Ltd', 'Sarah Nakanwagi', '+256 782 909 550', 'projects@campuscivil.ug', 'Jinja', '2026-06-03 10:10:16', NULL);
+
 -- --------------------------------------------------------
 
 --
@@ -137,7 +145,29 @@ CREATE TABLE `drivers` (
 INSERT INTO `drivers` (`id`, `user_id`, `department_id`, `full_name`, `employee_id`, `phone`, `email`, `gender`, `national_id_number`, `license_number`, `license_classes`, `license_issue_date`, `license_issuing_authority`, `license_expiry`, `driver_photo`, `national_id_photo`, `driving_license_scan`, `status`, `created_at`, `updated_at`) VALUES
 (1, NULL, 2, 'Simali Habert', NULL, '+256 772 123 456', 'simalihabert@gmail.com', NULL, NULL, 'CM 78452', 'B', NULL, NULL, NULL, NULL, NULL, NULL, 'active', '2026-05-28 19:14:05', NULL),
 (2, NULL, 2, 'Moses Okello', NULL, '+256 701 450 220', 'moses.okello@busitema.ac.ug', NULL, NULL, 'CM 21984', 'B', NULL, NULL, NULL, NULL, NULL, NULL, 'active', '2026-05-28 19:14:05', NULL),
-(3, NULL, 2, 'Grace Namuli', NULL, '+256 758 802 114', 'grace.namuli@busitema.ac.ug', NULL, NULL, 'CM 66310', 'B', NULL, NULL, NULL, NULL, NULL, NULL, 'inactive', '2026-05-28 19:14:05', NULL);
+(3, NULL, 2, 'Grace Namuli', NULL, '+256 758 802 114', 'grace.namuli@busitema.ac.ug', NULL, NULL, 'CM 66310', 'B', NULL, NULL, NULL, NULL, NULL, NULL, 'inactive', '2026-05-28 19:14:05', NULL),
+(6, NULL, 3, 'Harriet Ayo', 'DRV-005', '+256 701 885 260', 'harriet.ayo@busitema.ac.ug', NULL, NULL, 'CM 91882', 'B', NULL, NULL, '2027-11-15', NULL, NULL, NULL, 'active', '2026-06-03 10:10:15', NULL),
+(7, NULL, 7, 'Peter Ekwaro', 'DRV-006', '+256 782 117 903', 'peter.ekwaro@busitema.ac.ug', NULL, NULL, 'CM 73015', 'B, DL', NULL, NULL, '2029-01-20', NULL, NULL, NULL, 'active', '2026-06-03 10:10:15', NULL);
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `driver_secondary_vehicles`
+--
+
+CREATE TABLE `driver_secondary_vehicles` (
+  `id` int(10) UNSIGNED NOT NULL,
+  `driver_id` int(10) UNSIGNED NOT NULL,
+  `vehicle_id` int(10) UNSIGNED NOT NULL,
+  `created_at` timestamp NOT NULL DEFAULT current_timestamp()
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+--
+-- Dumping data for table `driver_secondary_vehicles`
+--
+
+INSERT INTO `driver_secondary_vehicles` (`id`, `driver_id`, `vehicle_id`, `created_at`) VALUES
+(1, 1, 6, '2026-06-05 05:46:55');
 
 -- --------------------------------------------------------
 
@@ -165,6 +195,15 @@ CREATE TABLE `estate_projects` (
   `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
   `updated_at` timestamp NULL DEFAULT NULL ON UPDATE current_timestamp()
 ) ;
+
+--
+-- Dumping data for table `estate_projects`
+--
+
+INSERT INTO `estate_projects` (`id`, `contractor_id`, `created_by`, `project_name`, `project_code`, `location`, `category`, `funding_source`, `status`, `priority`, `start_date`, `deadline`, `budget`, `spent`, `progress_percent`, `description`, `created_at`, `updated_at`) VALUES
+(1, 1, NULL, 'Lecture Block Drainage Upgrade', 'EST-2026-004', 'Main Campus', 'Drainage', 'Government Development Grant', 'in_progress', 'high', '2026-05-20', '2026-07-10', 95000000.00, 38200000.00, 46, 'Improvement of storm water drainage around the lecture block to reduce flooding during heavy rain.', '2026-06-03 10:10:16', NULL),
+(2, 2, NULL, 'Library Solar Backup Installation', 'EST-2026-005', 'Library', 'Electrical', 'Donor Support', 'approved', 'critical', '2026-06-10', '2026-08-15', 128000000.00, 12000000.00, 10, 'Installation of solar backup infrastructure to maintain continuous library services during outages.', '2026-06-03 10:10:16', NULL),
+(3, 1, NULL, 'Hostel Access Road Rehabilitation', 'EST-2026-006', 'Nagongera Campus', 'Road Works', 'Maintenance Vote', 'planned', 'medium', '2026-06-20', '2026-09-05', 78000000.00, 0.00, 0, 'Re-grading and murram improvement of the hostel access road before the next semester intake.', '2026-06-03 10:10:16', NULL);
 
 -- --------------------------------------------------------
 
@@ -218,6 +257,17 @@ CREATE TABLE `inspections` (
   `updated_at` timestamp NULL DEFAULT NULL ON UPDATE current_timestamp()
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
+--
+-- Dumping data for table `inspections`
+--
+
+INSERT INTO `inspections` (`id`, `vehicle_id`, `driver_id`, `inspector_user_id`, `service_provider_id`, `inspection_type`, `invoice_number`, `post_invoice_number`, `inspection_date`, `inspector_name`, `inspector_title`, `mileage`, `overall_status`, `defects`, `works_done`, `repair_cost`, `memo_to`, `memo_thru_one`, `memo_thru_two`, `memo_from`, `vehicle_description`, `closing_note`, `recommendation`, `cc`, `created_at`, `updated_at`) VALUES
+(1, 13, NULL, NULL, NULL, 'pre', 'PRE-260601-01', NULL, '2026-06-01', 'Michael Waiswa', 'Transport Officer', 148230, 'good', 'No major defects noted.', NULL, 0.00, 'University Secretary', 'Senior Assistant Secretary', 'Transport Officer', 'Transport Unit', 'Toyota Hiace van for staff transport', 'Vehicle cleared for scheduled movement.', NULL, 'Chief Driver', '2026-06-03 10:10:16', NULL),
+(2, 15, 7, NULL, NULL, 'pre', 'PRE-260602-02', NULL, '2026-06-02', 'Miriam Auma', 'Fleet Inspector', 176540, 'fair', 'Minor steering vibration noted.', NULL, 0.00, 'University Librarian', 'Transport Officer', 'Fleet Supervisor', 'Transport Unit', 'Nissan Navara assigned to Library operations', 'Vehicle may proceed but steering should be monitored.', NULL, 'Maintenance Officer', '2026-06-03 10:10:16', NULL),
+(3, 4, NULL, NULL, NULL, 'post', 'POST-260603-01', 'JV-7781', '2026-06-03', 'Michael Waiswa', 'Transport Officer', 196230, 'completed', NULL, 'Fuel pump replaced, injectors calibrated, system road-tested.', 1850000.00, NULL, NULL, NULL, NULL, NULL, NULL, 'Approve payment and release vehicle back to operations.', NULL, '2026-06-03 10:10:16', NULL),
+(4, 13, NULL, NULL, 10, 'post', 'POST-260603-02', 'TSC-1142', '2026-06-03', 'Miriam Auma', 'Fleet Inspector', 148412, 'good', NULL, 'Routine service completed including oil, filters, coolant, and general inspection.', 740000.00, NULL, NULL, NULL, NULL, NULL, NULL, 'Vehicle is fit for normal transport duty.', NULL, '2026-06-03 10:10:16', NULL),
+(5, 1, NULL, NULL, NULL, 'pre', '586225', NULL, '2026-06-05', 'Godwin', 'Develop', 6666525, 'good', 'ggggggg', NULL, 0.00, 'University Secretary', 'University Bursar', 'Programme Controller', 'Kamgjk', NULL, 'The purpose of this report is to therefore request you authorize repair and maintenance works on this vehicle for full res', NULL, 'Senior Estates Officer', '2026-06-05 12:04:48', NULL);
+
 -- --------------------------------------------------------
 
 --
@@ -232,6 +282,18 @@ CREATE TABLE `inspection_items` (
   `action_point` text DEFAULT NULL,
   `created_at` timestamp NOT NULL DEFAULT current_timestamp()
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+--
+-- Dumping data for table `inspection_items`
+--
+
+INSERT INTO `inspection_items` (`id`, `inspection_id`, `inspection_point`, `findings`, `action_point`, `created_at`) VALUES
+(1, 1, 'Tyres', 'Pressure and tread acceptable', 'Proceed', '2026-06-03 10:10:16'),
+(2, 1, 'Lights', 'All lights functional', 'Proceed', '2026-06-03 10:10:16'),
+(3, 2, 'Steering', 'Slight vibration at low speed', 'Monitor and report', '2026-06-03 10:10:16'),
+(4, 2, 'Brakes', 'Responsive', 'Proceed', '2026-06-03 10:10:16'),
+(5, 5, 'dfdfd', 'effdfdfdfdf', 'fdfdfdfdfdfdf', '2026-06-05 12:04:48'),
+(6, 5, 'ererer', 'rererererere', 'rerererererererer', '2026-06-05 12:04:48');
 
 -- --------------------------------------------------------
 
@@ -279,7 +341,11 @@ CREATE TABLE `maintenance_records` (
 --
 
 INSERT INTO `maintenance_records` (`id`, `vehicle_id`, `service_provider_id`, `reported_by`, `approved_by`, `maintenance_type`, `date_reported`, `date_completed`, `description`, `parts_replaced`, `total_cost`, `mileage_at_service`, `invoice_number`, `status`, `remarks`, `created_at`, `updated_at`) VALUES
-(1, 4, NULL, NULL, NULL, 'repair', '2026-05-18', '2026-05-18', 'Engine overhaul, brakes, windscreen and related repairs', NULL, 4200000.00, NULL, NULL, 'completed', NULL, '2026-05-28 19:14:05', NULL);
+(1, 4, NULL, NULL, NULL, 'repair', '2026-05-18', '2026-05-18', 'Engine overhaul, brakes, windscreen and related repairs', NULL, 4200000.00, NULL, NULL, 'completed', NULL, '2026-05-28 19:14:05', NULL),
+(5, 4, NULL, NULL, NULL, 'repair', '2026-05-24', '2026-05-27', 'Fuel pump replacement and injector calibration after low engine power complaints.', 'Fuel pump, injector seals', 1850000.00, 196230, 'DUMMY-MNT-1001', 'completed', 'Seeded dummy record linked to a real provider for UI testing.', '2026-06-03 09:47:19', NULL),
+(6, 14, 9, NULL, NULL, 'brake_service', '2026-05-29', NULL, 'Front brake pads worn out and suspension bushings producing noise on rough roads.', 'Pending inspection parts list', 960000.00, 89310, 'DUMMY-MNT-1002', 'in_progress', 'Vehicle currently under workshop assessment.', '2026-06-03 09:47:19', NULL),
+(7, 13, 10, NULL, NULL, 'routine_service', '2026-05-30', '2026-05-31', 'Scheduled service including oil change, filter replacement, and coolant top-up.', 'Oil filter, air filter, engine oil', 740000.00, 148230, 'DUMMY-MNT-1003', 'completed', 'Routine service dummy data for dropdown and relational checks.', '2026-06-03 09:47:19', NULL),
+(8, 15, 3, NULL, NULL, 'inspection', '2026-06-01', NULL, 'Steering alignment inspection and tyre wear assessment requested before field deployment.', NULL, 250000.00, 176540, 'DUMMY-MNT-1004', 'reported', 'Awaiting approval to proceed with corrective work.', '2026-06-03 09:47:19', NULL);
 
 -- --------------------------------------------------------
 
@@ -295,6 +361,16 @@ CREATE TABLE `post_inspection_system_checks` (
   `remarks` text DEFAULT NULL,
   `created_at` timestamp NOT NULL DEFAULT current_timestamp()
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+--
+-- Dumping data for table `post_inspection_system_checks`
+--
+
+INSERT INTO `post_inspection_system_checks` (`id`, `inspection_id`, `system_name`, `condition_status`, `remarks`, `created_at`) VALUES
+(1, 3, 'Engine', 'good', 'Stable idle and power restored', '2026-06-03 10:10:16'),
+(2, 3, 'Fuel System', 'good', 'No leaks detected after replacement', '2026-06-03 10:10:16'),
+(3, 4, 'Engine', 'good', 'Service completed to standard', '2026-06-03 10:10:16'),
+(4, 4, 'Cooling System', 'good', 'Coolant level corrected', '2026-06-03 10:10:16');
 
 -- --------------------------------------------------------
 
@@ -321,8 +397,9 @@ CREATE TABLE `service_providers` (
 
 INSERT INTO `service_providers` (`id`, `name`, `town`, `contact_person`, `phone`, `email`, `specialty`, `status`, `created_at`, `updated_at`) VALUES
 (1, 'Tororo Auto Garage', 'Tororo', NULL, '+256 701 220 110', 'service@tororoauto.ug', 'General repairs', 'active', '2026-05-28 19:14:05', NULL),
-(2, 'Toyota Uganda Service Centre', 'Kampala', NULL, '+256 414 339 000', 'fleetservice@toyota.co.ug', 'Toyota service', 'active', '2026-05-28 19:14:05', NULL),
-(3, 'Mbale Fleet Mechanics', 'Mbale', NULL, '+256 772 431 980', 'info@mbalefleet.ug', 'Brakes and suspension', 'pending', '2026-05-28 19:14:05', NULL);
+(3, 'Mbale Fleet Mechanics', 'Mbale', NULL, '+256 772 431 980', 'info@mbalefleet.ug', 'Brakes and suspension', 'pending', '2026-05-28 19:14:05', NULL),
+(9, 'Soroti Brake and Suspension Hub', 'Soroti', 'Esther Acom', '+256 772 880 144', 'desk@sorotibrakes.ug', 'Brake service', 'active', '2026-06-03 09:47:19', NULL),
+(10, 'Toyota Uganda Service Centre', 'Kampala', 'Workshop Desk', '+256 414 339 000', 'fleetservice@toyota.co.ug', 'Toyota service', 'active', '2026-06-03 09:47:19', NULL);
 
 -- --------------------------------------------------------
 
@@ -376,7 +453,10 @@ INSERT INTO `vehicles` (`id`, `department_id`, `registration_no`, `make`, `model
 (3, 4, 'UBR 402Q', 'TOYOTA', 'HILLUX PICKUP', '2024', 'pickup', 'diesel', 65231, NULL, 'active', NULL, '2026-05-28 19:14:05', NULL),
 (4, 3, 'UAJ 433X', 'Ford', 'Ford ranger', '2009', 'pickup', 'diesel', 196002, NULL, 'active', NULL, '2026-05-28 19:14:05', NULL),
 (5, 5, 'UBP 401F', 'TOYOTA', 'LAND CRUISER', '2022', 'suv', 'diesel', 200808, NULL, 'maintenance', NULL, '2026-05-28 19:14:05', NULL),
-(6, 7, 'UAX 2342', 'Toyata', 'Land Cruiser2', '2012', 'sedan', 'diesel', 123, NULL, 'maintenance', NULL, '2026-05-28 19:47:45', NULL);
+(6, 7, 'UAX 2342', 'Toyata', 'Land Cruiser2', '2012', 'sedan', 'diesel', 123, NULL, 'maintenance', NULL, '2026-05-28 19:47:45', NULL),
+(13, 2, 'UBU 908K', 'Toyota', 'Hiace', '2019', 'van', 'diesel', 148230, '2026-12-31', 'active', 'Dummy seeded vehicle for maintenance-provider relationship testing.', '2026-06-03 09:47:19', NULL),
+(14, 3, 'UBU 771E', 'Isuzu', 'D-Max', '2021', 'pickup', 'diesel', 89210, '2027-03-15', 'maintenance', 'Dummy seeded Estates vehicle.', '2026-06-03 09:47:19', NULL),
+(15, 7, 'UBU 552L', 'Nissan', 'Navara', '2018', 'pickup', 'diesel', 176540, '2026-11-20', 'active', 'Dummy seeded Library support vehicle.', '2026-06-03 09:47:19', NULL);
 
 -- --------------------------------------------------------
 
@@ -401,7 +481,9 @@ CREATE TABLE `vehicle_assignments` (
 
 INSERT INTO `vehicle_assignments` (`id`, `vehicle_id`, `driver_id`, `assigned_by`, `assigned_at`, `released_at`, `notes`, `created_at`) VALUES
 (1, 4, 1, NULL, '2026-05-01', NULL, NULL, '2026-05-28 19:14:05'),
-(2, 2, 2, NULL, '2026-05-01', NULL, NULL, '2026-05-28 19:14:05');
+(2, 2, 2, NULL, '2026-05-01', NULL, NULL, '2026-05-28 19:14:05'),
+(5, 14, 6, NULL, '2026-05-29', NULL, 'Seeded assignment for Estates field work.', '2026-06-03 10:10:16'),
+(6, 15, 7, NULL, '2026-05-30', NULL, 'Seeded assignment for library support trips.', '2026-06-03 10:10:16');
 
 -- --------------------------------------------------------
 
@@ -433,17 +515,21 @@ CREATE TABLE `vehicle_logs` (
 --
 
 INSERT INTO `vehicle_logs` (`id`, `vehicle_id`, `driver_id`, `created_by`, `trip_date`, `departure_location`, `destination`, `purpose`, `odometer_start`, `odometer_end`, `fuel_litres`, `fuel_cost`, `remarks`, `created_at`, `updated_at`) VALUES
-(5, 4, 1, NULL, '2026-05-05', 'Busitema Main Campus', 'Tororo Town', 'Administrative follow-up meeting', 195120, 195168, 8.50, 51000.00, 'Assigned driver routine movement.', '2026-05-05 08:10:00', NULL),
-(6, 4, 2, NULL, '2026-05-12', 'Tororo Town', 'Jinja', 'Collection of workshop supplies', 195168, 195322, 21.40, 128000.00, 'Vehicle used by alternate driver for procurement run.', '2026-05-12 07:45:00', NULL),
-(7, 4, 1, NULL, '2026-05-26', 'Busitema Main Campus', 'Kampala', 'Senate documentation delivery', 195322, 195560, 30.00, 180000.00, 'Round trip with scheduled stopover.', '2026-05-26 06:30:00', NULL),
-(8, 4, 3, NULL, '2026-06-02', 'Busitema Main Campus', 'Mbale', 'Driver induction support visit', 195560, 195702, 18.60, 111600.00, 'Historical entry for reporting by another driver.', '2026-06-02 09:05:00', NULL),
-(9, 4, 1, NULL, '2026-06-04', 'Busitema Main Campus', 'Soroti', 'Field supervision and return', 195702, 196002, 36.00, 216000.00, 'Latest mileage reading for UAJ 433X.', '2026-06-04 05:55:00', NULL),
-(10, 2, 2, NULL, '2026-05-08', 'Kampala', 'Mbale', 'Vice Chancellor coordination visit', 851820, 851996, 24.00, 156000.00, 'Highway travel completed in one day.', '2026-05-08 06:40:00', NULL),
-(11, 2, 2, NULL, '2026-05-19', 'Mbale', 'Busia', 'Regional outreach transport', 851996, 852140, 19.50, 126750.00, 'Vehicle returned same evening.', '2026-05-19 07:25:00', NULL),
-(12, 2, 1, NULL, '2026-06-01', 'Busia', 'Kampala', 'Delegation transfer support', 852140, 852436, 38.00, 247000.00, 'Shared vehicle use across drivers.', '2026-06-01 06:15:00', NULL),
-(13, 3, 1, NULL, '2026-05-14', 'Busitema Main Campus', 'Pallisa', 'Stores pickup for estates unit', 64810, 64942, 16.00, 99200.00, 'Pickup truck used for materials collection.', '2026-05-14 10:15:00', NULL),
-(14, 3, 2, NULL, '2026-05-29', 'Pallisa', 'Iganga', 'Workshop transfer of tools', 64942, 65110, 22.00, 136400.00, 'Another driver used the same pickup.', '2026-05-29 08:35:00', NULL),
-(15, 3, 1, NULL, '2026-06-03', 'Iganga', 'Tororo', 'Maintenance follow-up and return', 65110, 65231, 14.80, 91760.00, 'Latest mileage reading for UBR 402Q.', '2026-06-03 09:00:00', NULL);
+(5, 4, NULL, NULL, '2026-05-31', 'USA', 'Virginia', 'Drugs', 200, 400, NULL, NULL, 'jhhkk', '2026-05-31 13:10:51', NULL),
+(6, 13, NULL, NULL, '2026-06-01', 'Main Campus', 'Jinja Campus', 'Routine transport coordination visit', 148230, 148412, 18.00, 126000.00, 'DLOG-2001 | Trip completed successfully.', '2026-06-03 10:10:16', NULL),
+(7, 14, 6, NULL, '2026-06-02', 'Estates Yard', 'Nagongera Site', 'Supervision of renovation materials delivery', 89210, 89356, 14.00, 98000.00, 'DLOG-2002 | Vehicle later booked for brake service follow-up.', '2026-06-03 10:10:16', NULL),
+(8, 15, 7, NULL, '2026-06-03', 'Library', 'Busitema Town', 'Collection of ordered reference materials', 176540, 176604, 8.00, 56000.00, 'DLOG-2003 | Short support trip.', '2026-06-03 10:10:16', NULL),
+(101, 4, 1, NULL, '2026-05-05', 'Busitema Main Campus', 'Tororo Town', 'Administrative follow-up meeting', 195120, 195168, 8.50, 51000.00, 'Assigned driver routine movement.', '2026-05-05 05:10:00', NULL),
+(102, 4, 2, NULL, '2026-05-12', 'Tororo Town', 'Jinja', 'Collection of workshop supplies', 195168, 195322, 21.40, 128000.00, 'Vehicle used by alternate driver for procurement run.', '2026-05-12 04:45:00', NULL),
+(103, 4, 1, NULL, '2026-05-26', 'Busitema Main Campus', 'Kampala', 'Senate documentation delivery', 195322, 195560, 30.00, 180000.00, 'Round trip with scheduled stopover.', '2026-05-26 03:30:00', NULL),
+(104, 4, 3, NULL, '2026-06-02', 'Busitema Main Campus', 'Mbale', 'Driver induction support visit', 195560, 195702, 18.60, 111600.00, 'Historical entry for reporting by another driver.', '2026-06-02 06:05:00', NULL),
+(105, 4, 1, NULL, '2026-06-04', 'Busitema Main Campus', 'Soroti', 'Field supervision and return', 195702, 196002, 36.00, 216000.00, 'Latest mileage reading for UAJ 433X.', '2026-06-04 02:55:00', NULL),
+(106, 2, 2, NULL, '2026-05-08', 'Kampala', 'Mbale', 'Vice Chancellor coordination visit', 851820, 851996, 24.00, 156000.00, 'Highway travel completed in one day.', '2026-05-08 03:40:00', NULL),
+(107, 2, 2, NULL, '2026-05-19', 'Mbale', 'Busia', 'Regional outreach transport', 851996, 852140, 19.50, 126750.00, 'Vehicle returned same evening.', '2026-05-19 04:25:00', NULL),
+(108, 2, 1, NULL, '2026-06-01', 'Busia', 'Kampala', 'Delegation transfer support', 852140, 852436, 38.00, 247000.00, 'Shared vehicle use across drivers.', '2026-06-01 03:15:00', NULL),
+(109, 3, 1, NULL, '2026-05-14', 'Busitema Main Campus', 'Pallisa', 'Stores pickup for estates unit', 64810, 64942, 16.00, 99200.00, 'Pickup truck used for materials collection.', '2026-05-14 07:15:00', NULL),
+(110, 3, 2, NULL, '2026-05-29', 'Pallisa', 'Iganga', 'Workshop transfer of tools', 64942, 65110, 22.00, 136400.00, 'Another driver used the same pickup.', '2026-05-29 05:35:00', NULL),
+(111, 3, 1, NULL, '2026-06-03', 'Iganga', 'Tororo', 'Maintenance follow-up and return', 65110, 65231, 14.80, 91760.00, 'Latest mileage reading for UBR 402Q.', '2026-06-03 06:00:00', NULL);
 
 --
 -- Indexes for dumped tables
@@ -489,6 +575,14 @@ ALTER TABLE `drivers`
   ADD UNIQUE KEY `uq_drivers_employee_id` (`employee_id`),
   ADD KEY `idx_drivers_user_id` (`user_id`),
   ADD KEY `idx_drivers_department_id` (`department_id`);
+
+--
+-- Indexes for table `driver_secondary_vehicles`
+--
+ALTER TABLE `driver_secondary_vehicles`
+  ADD PRIMARY KEY (`id`),
+  ADD UNIQUE KEY `uniq_driver_secondary_vehicle` (`driver_id`,`vehicle_id`),
+  ADD KEY `idx_driver_secondary_vehicle_vehicle` (`vehicle_id`);
 
 --
 -- Indexes for table `estate_projects`
@@ -617,7 +711,7 @@ ALTER TABLE `communication_recipients`
 -- AUTO_INCREMENT for table `contractors`
 --
 ALTER TABLE `contractors`
-  MODIFY `id` int(10) UNSIGNED NOT NULL AUTO_INCREMENT;
+  MODIFY `id` int(10) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=3;
 
 --
 -- AUTO_INCREMENT for table `departments`
@@ -629,7 +723,13 @@ ALTER TABLE `departments`
 -- AUTO_INCREMENT for table `drivers`
 --
 ALTER TABLE `drivers`
-  MODIFY `id` int(10) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=5;
+  MODIFY `id` int(10) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=8;
+
+--
+-- AUTO_INCREMENT for table `driver_secondary_vehicles`
+--
+ALTER TABLE `driver_secondary_vehicles`
+  MODIFY `id` int(10) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=2;
 
 --
 -- AUTO_INCREMENT for table `estate_projects`
@@ -647,13 +747,13 @@ ALTER TABLE `estate_project_updates`
 -- AUTO_INCREMENT for table `inspections`
 --
 ALTER TABLE `inspections`
-  MODIFY `id` int(10) UNSIGNED NOT NULL AUTO_INCREMENT;
+  MODIFY `id` int(10) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=6;
 
 --
 -- AUTO_INCREMENT for table `inspection_items`
 --
 ALTER TABLE `inspection_items`
-  MODIFY `id` int(10) UNSIGNED NOT NULL AUTO_INCREMENT;
+  MODIFY `id` int(10) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=7;
 
 --
 -- AUTO_INCREMENT for table `maintenance_parts`
@@ -665,19 +765,19 @@ ALTER TABLE `maintenance_parts`
 -- AUTO_INCREMENT for table `maintenance_records`
 --
 ALTER TABLE `maintenance_records`
-  MODIFY `id` int(10) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=2;
+  MODIFY `id` int(10) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=9;
 
 --
 -- AUTO_INCREMENT for table `post_inspection_system_checks`
 --
 ALTER TABLE `post_inspection_system_checks`
-  MODIFY `id` int(10) UNSIGNED NOT NULL AUTO_INCREMENT;
+  MODIFY `id` int(10) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=5;
 
 --
 -- AUTO_INCREMENT for table `service_providers`
 --
 ALTER TABLE `service_providers`
-  MODIFY `id` int(10) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=4;
+  MODIFY `id` int(10) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=11;
 
 --
 -- AUTO_INCREMENT for table `users`
@@ -689,19 +789,19 @@ ALTER TABLE `users`
 -- AUTO_INCREMENT for table `vehicles`
 --
 ALTER TABLE `vehicles`
-  MODIFY `id` int(10) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=7;
+  MODIFY `id` int(10) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=16;
 
 --
 -- AUTO_INCREMENT for table `vehicle_assignments`
 --
 ALTER TABLE `vehicle_assignments`
-  MODIFY `id` int(10) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=4;
+  MODIFY `id` int(10) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=7;
 
 --
 -- AUTO_INCREMENT for table `vehicle_logs`
 --
 ALTER TABLE `vehicle_logs`
-  MODIFY `id` int(10) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=16;
+  MODIFY `id` int(10) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=112;
 
 --
 -- Constraints for dumped tables
@@ -727,6 +827,13 @@ ALTER TABLE `communication_recipients`
 ALTER TABLE `drivers`
   ADD CONSTRAINT `fk_drivers_department` FOREIGN KEY (`department_id`) REFERENCES `departments` (`id`) ON DELETE SET NULL ON UPDATE CASCADE,
   ADD CONSTRAINT `fk_drivers_user` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE SET NULL ON UPDATE CASCADE;
+
+--
+-- Constraints for table `driver_secondary_vehicles`
+--
+ALTER TABLE `driver_secondary_vehicles`
+  ADD CONSTRAINT `fk_driver_secondary_vehicle_driver` FOREIGN KEY (`driver_id`) REFERENCES `drivers` (`id`) ON DELETE CASCADE ON UPDATE CASCADE,
+  ADD CONSTRAINT `fk_driver_secondary_vehicle_vehicle` FOREIGN KEY (`vehicle_id`) REFERENCES `vehicles` (`id`) ON DELETE CASCADE ON UPDATE CASCADE;
 
 --
 -- Constraints for table `estate_projects`
