@@ -123,6 +123,10 @@ include __DIR__ . '/../../includes/sidebar.php';
                                 data-search="<?= htmlspecialchars(strtolower(implode(' ', [$report['invoice'], $report['date'], $report['vehicle'], $report['make_model'], $report['inspector'], $report['overall'], $report['defects']])), ENT_QUOTES, 'UTF-8'); ?>"
                                 data-report-id="<?= htmlspecialchars((string) $report['id'], ENT_QUOTES, 'UTF-8'); ?>"
                                 data-vehicle-id="<?= htmlspecialchars((string) $report['vehicle_id'], ENT_QUOTES, 'UTF-8'); ?>"
+                                data-vehicle="<?= htmlspecialchars($report['vehicle'], ENT_QUOTES, 'UTF-8'); ?>"
+                                data-make-model="<?= htmlspecialchars($report['make_model'], ENT_QUOTES, 'UTF-8'); ?>"
+                                data-inspector="<?= htmlspecialchars($report['inspector'], ENT_QUOTES, 'UTF-8'); ?>"
+                                data-overall="<?= htmlspecialchars($report['overall'], ENT_QUOTES, 'UTF-8'); ?>"
                                 data-invoice-number="<?= htmlspecialchars($report['invoice_raw'], ENT_QUOTES, 'UTF-8'); ?>"
                                 data-inspection-date="<?= htmlspecialchars($report['date_raw'], ENT_QUOTES, 'UTF-8'); ?>"
                                 data-inspector-name="<?= htmlspecialchars($report['inspector_raw'], ENT_QUOTES, 'UTF-8'); ?>"
@@ -159,7 +163,7 @@ include __DIR__ . '/../../includes/sidebar.php';
                                 <td class="border border-fleet-line px-4 py-4 text-fleet-muted"><?= htmlspecialchars($report['defects'], ENT_QUOTES, 'UTF-8'); ?></td>
                                 <td class="border border-fleet-line px-4 py-4">
                                     <div class="flex justify-end gap-4">
-                                        <button type="button" class="text-fleet-primary hover:text-fleet-primary-strong" aria-label="Print inspection <?= $index + 1; ?>">Print</button>
+                                        <button type="button" data-view-pre-inspection-entry class="text-fleet-ink hover:text-fleet-primary" aria-label="View inspection <?= $index + 1; ?>">View</button>
                                         <button type="button" data-edit-pre-inspection-entry class="text-fleet-sidebar hover:text-fleet-primary" aria-label="Edit pre-inspection report">Edit</button>
                                         <form
                                             action="<?= htmlspecialchars($preInspectionFormAction, ENT_QUOTES, 'UTF-8'); ?>"
@@ -352,6 +356,8 @@ include __DIR__ . '/../../includes/sidebar.php';
             </form>
         </div>
     </div>
+
+    <?php include __DIR__ . '/view-modal.php'; ?>
 
     <div id="pre-inspection-delete-modal" class="logbook-delete-overlay" aria-hidden="true">
         <div class="logbook-delete-card" role="dialog" aria-modal="true" aria-labelledby="pre-inspection-delete-modal-title">

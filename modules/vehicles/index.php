@@ -131,6 +131,7 @@ include __DIR__ . '/../../includes/sidebar.php';
                                 data-current-mileage="<?= htmlspecialchars($vehicle['mileage'], ENT_QUOTES, 'UTF-8'); ?>"
                                 data-insurance-expiry="<?= htmlspecialchars($vehicle['insurance_raw'], ENT_QUOTES, 'UTF-8'); ?>"
                                 data-status="<?= htmlspecialchars($vehicle['status_value'], ENT_QUOTES, 'UTF-8'); ?>"
+                                data-status-label="<?= htmlspecialchars($vehicle['status'], ENT_QUOTES, 'UTF-8'); ?>"
                                 data-repairs-done="<?= htmlspecialchars($vehicle['repairs_raw'], ENT_QUOTES, 'UTF-8'); ?>"
                             >
                                 <td class="px-5 py-4 font-extrabold text-fleet-ink"><?= htmlspecialchars($vehicle['reg'], ENT_QUOTES, 'UTF-8'); ?></td>
@@ -159,6 +160,7 @@ include __DIR__ . '/../../includes/sidebar.php';
                                 </td>
                                 <td class="px-5 py-4">
                                     <div class="flex justify-end gap-3">
+                                        <button type="button" data-open-vehicle-view class="text-fleet-ink hover:text-fleet-primary" aria-label="View <?= htmlspecialchars($vehicle['reg'], ENT_QUOTES, 'UTF-8'); ?>">View</button>
                                         <button type="button" data-open-vehicle-edit class="text-fleet-sidebar hover:text-fleet-primary" aria-label="Edit <?= htmlspecialchars($vehicle['reg'], ENT_QUOTES, 'UTF-8'); ?>">Edit</button>
                                         <form
                                             action="<?= htmlspecialchars($vehicleFormAction, ENT_QUOTES, 'UTF-8'); ?>"
@@ -280,6 +282,8 @@ include __DIR__ . '/../../includes/sidebar.php';
             </form>
         </div>
     </div>
+
+    <?php include __DIR__ . '/view-modal.php'; ?>
 
     <div id="vehicle-delete-modal" class="logbook-delete-overlay" aria-hidden="true">
         <div class="logbook-delete-card" role="dialog" aria-modal="true" aria-labelledby="vehicle-delete-modal-title">

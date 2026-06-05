@@ -138,6 +138,7 @@ include __DIR__ . '/../../includes/sidebar.php';
                                 data-purpose="<?= htmlspecialchars($log['purpose'], ENT_QUOTES, 'UTF-8'); ?>"
                                 data-odo-start="<?= htmlspecialchars((string) $log['odo_start'], ENT_QUOTES, 'UTF-8'); ?>"
                                 data-odo-end="<?= htmlspecialchars((string) $log['odo_end'], ENT_QUOTES, 'UTF-8'); ?>"
+                                data-km="<?= htmlspecialchars((string) $log['km'], ENT_QUOTES, 'UTF-8'); ?>"
                                 data-fuel="<?= htmlspecialchars((string) $log['fuel'], ENT_QUOTES, 'UTF-8'); ?>"
                                 data-cost="<?= htmlspecialchars((string) $log['cost'], ENT_QUOTES, 'UTF-8'); ?>"
                                 data-remarks="<?= htmlspecialchars($log['remarks'], ENT_QUOTES, 'UTF-8'); ?>"
@@ -157,6 +158,7 @@ include __DIR__ . '/../../includes/sidebar.php';
                                 <td class="border border-fleet-line px-3 py-4 text-fleet-muted" contenteditable="true"><?= htmlspecialchars($log['remarks'], ENT_QUOTES, 'UTF-8'); ?></td>
                                 <td class="border border-fleet-line px-3 py-4">
                                     <div class="flex justify-end gap-3">
+                                        <button type="button" data-view-logbook-entry class="text-fleet-ink hover:text-fleet-primary" aria-label="View log <?= $index + 1; ?>">View</button>
                                         <button type="button" data-edit-logbook-entry class="text-fleet-sidebar hover:text-fleet-primary" aria-label="Edit log <?= $index + 1; ?>">Edit</button>
                                         <form
                                             action="<?= htmlspecialchars($logbookFormAction, ENT_QUOTES, 'UTF-8'); ?>"
@@ -297,6 +299,8 @@ include __DIR__ . '/../../includes/sidebar.php';
             </form>
         </div>
     </div>
+
+    <?php include __DIR__ . '/view-modal.php'; ?>
 
     <div id="logbook-delete-modal" class="logbook-delete-overlay" aria-hidden="true">
         <div class="logbook-delete-card" role="dialog" aria-modal="true" aria-labelledby="logbook-delete-modal-title">

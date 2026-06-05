@@ -130,8 +130,10 @@ include __DIR__ . '/../../includes/sidebar.php';
                                 data-license-issuing-authority="<?= htmlspecialchars($driver['license_issuing_authority'], ENT_QUOTES, 'UTF-8'); ?>"
                                 data-license-expiry="<?= htmlspecialchars($driver['license_expiry'], ENT_QUOTES, 'UTF-8'); ?>"
                                 data-department="<?= htmlspecialchars($driver['department'], ENT_QUOTES, 'UTF-8'); ?>"
+                                data-assigned-vehicle="<?= htmlspecialchars($driver['assigned'], ENT_QUOTES, 'UTF-8'); ?>"
                                 data-assigned-vehicle-id="<?= htmlspecialchars((string) ($driver['assigned_vehicle_id'] ?? ''), ENT_QUOTES, 'UTF-8'); ?>"
                                 data-status="<?= htmlspecialchars($driver['status_value'], ENT_QUOTES, 'UTF-8'); ?>"
+                                data-status-label="<?= htmlspecialchars($driver['status'], ENT_QUOTES, 'UTF-8'); ?>"
                                 data-driver-photo="<?= htmlspecialchars($driver['driver_photo'], ENT_QUOTES, 'UTF-8'); ?>"
                                 data-driver-photo-url="<?= htmlspecialchars($driver['driver_photo_url'], ENT_QUOTES, 'UTF-8'); ?>"
                                 data-driver-photo-name="<?= htmlspecialchars($driver['driver_photo_name'], ENT_QUOTES, 'UTF-8'); ?>"
@@ -179,6 +181,7 @@ include __DIR__ . '/../../includes/sidebar.php';
                                 </td>
                                 <td class="px-5 py-4">
                                     <div class="flex justify-end gap-3">
+                                        <button type="button" data-view-driver-entry class="text-fleet-ink hover:text-fleet-primary" aria-label="View <?= htmlspecialchars($driver['name'], ENT_QUOTES, 'UTF-8'); ?>">View</button>
                                         <button type="button" data-edit-driver-entry class="text-fleet-sidebar hover:text-fleet-primary" aria-label="Edit <?= htmlspecialchars($driver['name'], ENT_QUOTES, 'UTF-8'); ?>">Edit</button>
                                         <form
                                             action="<?= htmlspecialchars($driverFormAction, ENT_QUOTES, 'UTF-8'); ?>"
@@ -201,6 +204,8 @@ include __DIR__ . '/../../includes/sidebar.php';
             </div>
         </section>
     </div>
+
+    <?php include __DIR__ . '/view-modal.php'; ?>
 
     <div
         id="driver-modal"

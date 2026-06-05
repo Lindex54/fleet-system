@@ -146,6 +146,7 @@ include __DIR__ . '/../../includes/sidebar.php';
                                 data-mileage-at-service="<?= htmlspecialchars($record['mileage_raw'], ENT_QUOTES, 'UTF-8'); ?>"
                                 data-invoice-number="<?= htmlspecialchars($record['invoice_raw'], ENT_QUOTES, 'UTF-8'); ?>"
                                 data-status-value="<?= htmlspecialchars($record['status_value'], ENT_QUOTES, 'UTF-8'); ?>"
+                                data-status-label="<?= htmlspecialchars($record['status'], ENT_QUOTES, 'UTF-8'); ?>"
                                 data-remarks="<?= htmlspecialchars($record['remarks_raw'], ENT_QUOTES, 'UTF-8'); ?>"
                             >
                                 <td class="px-5 py-4 text-fleet-ink"><?= htmlspecialchars($record['date'], ENT_QUOTES, 'UTF-8'); ?></td>
@@ -167,6 +168,7 @@ include __DIR__ . '/../../includes/sidebar.php';
                                 </td>
                                 <td class="px-5 py-4">
                                     <div class="flex justify-end gap-3">
+                                        <button type="button" data-view-maintenance-entry class="text-fleet-ink hover:text-fleet-primary" aria-label="View maintenance record">View</button>
                                         <button type="button" data-edit-maintenance-entry class="text-fleet-sidebar hover:text-fleet-primary" aria-label="Edit maintenance record">Edit</button>
                                         <form
                                             action="<?= htmlspecialchars($maintenanceFormAction, ENT_QUOTES, 'UTF-8'); ?>"
@@ -301,6 +303,8 @@ include __DIR__ . '/../../includes/sidebar.php';
             </form>
         </div>
     </div>
+
+    <?php include __DIR__ . '/view-modal.php'; ?>
 
     <div id="maintenance-delete-modal" class="logbook-delete-overlay" aria-hidden="true">
         <div class="logbook-delete-card" role="dialog" aria-modal="true" aria-labelledby="maintenance-delete-modal-title">

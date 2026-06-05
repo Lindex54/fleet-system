@@ -259,6 +259,8 @@ updateCommunicationRecipientState();
 
 // Modal references for all module pages
 const vehicleModal = document.querySelector('#vehicle-modal');
+const vehicleViewModal = document.querySelector('#vehicle-view-modal');
+const vehicleDetailSheet = document.querySelector('[data-vehicle-detail-sheet]');
 const vehicleForm = vehicleModal?.querySelector('form');
 const vehicleActionField = vehicleModal?.querySelector('[data-vehicle-action-field]');
 const vehicleIdField = vehicleModal?.querySelector('[data-vehicle-id-field]');
@@ -266,9 +268,12 @@ const vehicleModalTitle = vehicleModal?.querySelector('[data-vehicle-modal-title
 const vehicleSubmitButton = vehicleModal?.querySelector('[data-vehicle-submit-button]');
 const vehicleRepairsField = vehicleModal?.querySelector('[data-vehicle-repairs-field]');
 const openVehicleModalButtons = document.querySelectorAll('[data-open-vehicle-modal]');
+const openVehicleViewButtons = document.querySelectorAll('[data-open-vehicle-view]');
 const openVehicleEditButtons = document.querySelectorAll('[data-open-vehicle-edit]');
 const closeVehicleModalButtons = document.querySelectorAll('[data-close-vehicle-modal]');
+const closeVehicleViewModalButtons = document.querySelectorAll('[data-close-vehicle-view-modal]');
 const openVehicleDeleteButtons = document.querySelectorAll('[data-open-vehicle-delete]');
+const printVehicleViewButton = document.querySelector('[data-print-vehicle-view]');
 const vehicleDeleteModal = document.querySelector('#vehicle-delete-modal');
 const cancelVehicleDeleteButton = document.querySelector('[data-cancel-vehicle-delete]');
 const confirmVehicleDeleteButton = document.querySelector('[data-confirm-vehicle-delete]');
@@ -333,6 +338,86 @@ function setVehicleFieldValue(selector, value) {
   if (field) {
     field.value = value;
   }
+}
+
+function setVehicleViewText(selector, value) {
+  const field = vehicleViewModal?.querySelector(selector);
+
+  if (field) {
+    field.textContent = value;
+  }
+}
+
+function setVehicleViewModalOpen(isOpen) {
+  if (!vehicleViewModal) {
+    return;
+  }
+
+  vehicleViewModal.classList.toggle('hidden', !isOpen);
+  vehicleViewModal.classList.toggle('flex', isOpen);
+  vehicleViewModal.setAttribute('aria-hidden', String(!isOpen));
+  document.body.classList.toggle('overflow-hidden', isOpen);
+
+  if (isOpen) {
+    vehicleViewModal.querySelector('button')?.focus();
+  } else {
+    openVehicleViewButtons[0]?.focus();
+  }
+}
+
+function populateVehicleViewModal(button) {
+  const row = button.closest('.vehicle-row');
+  if (!row) {
+    return;
+  }
+
+  const registration = row.dataset.registrationNumber || '-';
+  const make = row.dataset.make || '-';
+  const model = row.dataset.model || '-';
+  const year = row.dataset.year || '-';
+  const type = row.dataset.vehicleType || '-';
+  const fuel = row.dataset.fuelType || '-';
+  const department = row.dataset.department || '-';
+  const mileage = row.dataset.currentMileage ? `${row.dataset.currentMileage} km` : '-';
+  const insurance = row.dataset.insuranceExpiry || 'Not set';
+  const status = row.dataset.statusLabel || '-';
+  const repairs = row.dataset.repairsDone || 'No repairs recorded.';
+
+  setVehicleViewText('[data-vehicle-view-name]', registration);
+  setVehicleViewText('[data-vehicle-view-subtitle]', `${make} ${model}`.trim());
+  setVehicleViewText('[data-vehicle-view-registration]', registration);
+  setVehicleViewText('[data-vehicle-view-make]', make);
+  setVehicleViewText('[data-vehicle-view-model]', model);
+  setVehicleViewText('[data-vehicle-view-year]', year);
+  setVehicleViewText('[data-vehicle-view-type]', type);
+  setVehicleViewText('[data-vehicle-view-fuel]', fuel);
+  setVehicleViewText('[data-vehicle-view-department]', department);
+  setVehicleViewText('[data-vehicle-view-status]', status);
+  setVehicleViewText('[data-vehicle-view-mileage]', mileage);
+  setVehicleViewText('[data-vehicle-view-insurance]', insurance);
+  setVehicleViewText('[data-vehicle-view-repairs]', repairs);
+}
+
+function printVehicleDetailSheet() {
+  if (!vehicleDetailSheet) {
+    return;
+  }
+
+  const printWindow = window.open('', '_blank', 'width=960,height=720');
+  if (!printWindow) {
+    return;
+  }
+
+  const styles = Array.from(document.querySelectorAll('style, link[rel="stylesheet"]'))
+    .map((node) => node.outerHTML)
+    .join('');
+
+  printWindow.document.open();
+  printWindow.document.write(`<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><title>Vehicle Details</title>${styles}<style>body{background:#fff;padding:24px;}button{display:none !important;}</style></head><body>${vehicleDetailSheet.outerHTML}</body></html>`);
+  printWindow.document.close();
+  printWindow.focus();
+  printWindow.print();
+  printWindow.close();
 }
 
 function resetVehicleFormForCreate() {
@@ -437,6 +522,13 @@ openVehicleEditButtons.forEach((button) => {
   });
 });
 
+openVehicleViewButtons.forEach((button) => {
+  button.addEventListener('click', () => {
+    populateVehicleViewModal(button);
+    setVehicleViewModalOpen(true);
+  });
+});
+
 openVehicleDeleteButtons.forEach((button) => {
   button.addEventListener('click', (event) => {
     event.preventDefault();
@@ -452,9 +544,19 @@ closeVehicleModalButtons.forEach((button) => {
   button.addEventListener('click', () => setVehicleModalOpen(false));
 });
 
+closeVehicleViewModalButtons.forEach((button) => {
+  button.addEventListener('click', () => setVehicleViewModalOpen(false));
+});
+
 vehicleModal?.addEventListener('click', (event) => {
   if (event.target === vehicleModal) {
     setVehicleModalOpen(false);
+  }
+});
+
+vehicleViewModal?.addEventListener('click', (event) => {
+  if (event.target === vehicleViewModal) {
+    setVehicleViewModalOpen(false);
   }
 });
 
@@ -484,7 +586,13 @@ if (vehicleModal?.dataset.openOnLoad === 'true') {
   document.body.classList.add('overflow-hidden');
 }
 
+printVehicleViewButton?.addEventListener('click', printVehicleDetailSheet);
+
 document.addEventListener('keydown', (event) => {
+  if (event.key === 'Escape' && vehicleViewModal && !vehicleViewModal.classList.contains('hidden')) {
+    setVehicleViewModalOpen(false);
+  }
+
   if (event.key === 'Escape' && vehicleDeleteModal && vehicleDeleteModal.classList.contains('is-open')) {
     setVehicleDeleteModalOpen(false);
   }

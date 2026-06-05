@@ -135,6 +135,7 @@ include __DIR__ . '/../../includes/sidebar.php';
                     </div>
 
                     <div class="mt-5 flex justify-end gap-3 border-t border-fleet-line-soft pt-4">
+                        <button type="button" data-view-provider-entry class="text-sm font-semibold text-fleet-ink hover:text-fleet-primary">View</button>
                         <button type="button" data-edit-provider-entry class="text-sm font-semibold text-fleet-sidebar hover:text-fleet-primary">Edit</button>
                         <form
                             action="<?= htmlspecialchars($providerFormAction, ENT_QUOTES, 'UTF-8'); ?>"
@@ -221,6 +222,8 @@ include __DIR__ . '/../../includes/sidebar.php';
             </form>
         </div>
     </div>
+
+    <?php include __DIR__ . '/view-modal.php'; ?>
 
     <div id="provider-delete-modal" class="logbook-delete-overlay" aria-hidden="true">
         <div class="logbook-delete-card" role="dialog" aria-modal="true" aria-labelledby="provider-delete-modal-title">

@@ -122,6 +122,10 @@ include __DIR__ . '/../../includes/sidebar.php';
                                 data-report-id="<?= htmlspecialchars((string) $report['id'], ENT_QUOTES, 'UTF-8'); ?>"
                                 data-vehicle-id="<?= htmlspecialchars((string) $report['vehicle_id'], ENT_QUOTES, 'UTF-8'); ?>"
                                 data-service-provider-id="<?= htmlspecialchars((string) ($report['service_provider_id'] ?? ''), ENT_QUOTES, 'UTF-8'); ?>"
+                                data-vehicle="<?= htmlspecialchars($report['vehicle'], ENT_QUOTES, 'UTF-8'); ?>"
+                                data-make-model="<?= htmlspecialchars($report['make_model'], ENT_QUOTES, 'UTF-8'); ?>"
+                                data-inspector="<?= htmlspecialchars($report['inspector'], ENT_QUOTES, 'UTF-8'); ?>"
+                                data-overall="<?= htmlspecialchars($report['overall'], ENT_QUOTES, 'UTF-8'); ?>"
                                 data-invoice-number="<?= htmlspecialchars($report['invoice_raw'], ENT_QUOTES, 'UTF-8'); ?>"
                                 data-post-invoice-number="<?= htmlspecialchars($report['post_invoice_raw'], ENT_QUOTES, 'UTF-8'); ?>"
                                 data-inspection-date="<?= htmlspecialchars($report['date_raw'], ENT_QUOTES, 'UTF-8'); ?>"
@@ -157,7 +161,7 @@ include __DIR__ . '/../../includes/sidebar.php';
                                 <td class="border border-fleet-line px-4 py-4 font-extrabold text-fleet-ink"><?= $report['repair_cost'] > 0 ? number_format((float) $report['repair_cost']) : '&mdash;'; ?></td>
                                 <td class="border border-fleet-line px-4 py-4">
                                     <div class="flex justify-end gap-4">
-                                        <button type="button" class="text-fleet-primary hover:text-fleet-primary-strong" aria-label="Print post inspection <?= $index + 1; ?>">Print</button>
+                                        <button type="button" data-view-post-inspection-entry class="text-fleet-ink hover:text-fleet-primary" aria-label="View post inspection <?= $index + 1; ?>">View</button>
                                         <button type="button" data-edit-post-inspection-entry class="text-fleet-sidebar hover:text-fleet-primary" aria-label="Edit post inspection report">Edit</button>
                                         <form
                                             action="<?= htmlspecialchars($postInspectionFormAction, ENT_QUOTES, 'UTF-8'); ?>"
@@ -325,6 +329,8 @@ include __DIR__ . '/../../includes/sidebar.php';
             </form>
         </div>
     </div>
+
+    <?php include __DIR__ . '/view-modal.php'; ?>
 
     <div id="post-inspection-delete-modal" class="logbook-delete-overlay" aria-hidden="true">
         <div class="logbook-delete-card" role="dialog" aria-modal="true" aria-labelledby="post-inspection-delete-modal-title">

@@ -1,7 +1,12 @@
 // Module modal references for pre-inspection, post-inspection, providers, logbook, drivers, and maintenance pages
 const preInspectionModal = document.querySelector('#pre-inspection-modal');
+const preInspectionViewModal = document.querySelector('#pre-inspection-view-modal');
+const preInspectionDetailSheet = document.querySelector('[data-pre-inspection-detail-sheet]');
 const openPreInspectionModalButtons = document.querySelectorAll('[data-open-pre-inspection-modal]');
 const closePreInspectionModalButtons = document.querySelectorAll('[data-close-pre-inspection-modal]');
+const openPreInspectionViewButtons = document.querySelectorAll('[data-view-pre-inspection-entry]');
+const closePreInspectionViewModalButtons = document.querySelectorAll('[data-close-pre-inspection-view-modal]');
+const printPreInspectionViewButton = document.querySelector('[data-print-pre-inspection-view]');
 const editPreInspectionEntryButtons = document.querySelectorAll('[data-edit-pre-inspection-entry]');
 const openPreInspectionDeleteButtons = document.querySelectorAll('[data-open-pre-inspection-delete]');
 const preInspectionActionField = document.querySelector('[data-pre-inspection-action-field]');
@@ -17,8 +22,13 @@ const cancelPreInspectionDeleteButton = document.querySelector('[data-cancel-pre
 const confirmPreInspectionDeleteButton = document.querySelector('[data-confirm-pre-inspection-delete]');
 
 const postInspectionModal = document.querySelector('#post-inspection-modal');
+const postInspectionViewModal = document.querySelector('#post-inspection-view-modal');
+const postInspectionDetailSheet = document.querySelector('[data-post-inspection-detail-sheet]');
 const openPostInspectionModalButtons = document.querySelectorAll('[data-open-post-inspection-modal]');
 const closePostInspectionModalButtons = document.querySelectorAll('[data-close-post-inspection-modal]');
+const openPostInspectionViewButtons = document.querySelectorAll('[data-view-post-inspection-entry]');
+const closePostInspectionViewModalButtons = document.querySelectorAll('[data-close-post-inspection-view-modal]');
+const printPostInspectionViewButton = document.querySelector('[data-print-post-inspection-view]');
 const editPostInspectionEntryButtons = document.querySelectorAll('[data-edit-post-inspection-entry]');
 const openPostInspectionDeleteButtons = document.querySelectorAll('[data-open-post-inspection-delete]');
 const postInspectionActionField = document.querySelector('[data-post-inspection-action-field]');
@@ -31,8 +41,13 @@ const cancelPostInspectionDeleteButton = document.querySelector('[data-cancel-po
 const confirmPostInspectionDeleteButton = document.querySelector('[data-confirm-post-inspection-delete]');
 
 const providerModal = document.querySelector('#provider-modal');
+const providerViewModal = document.querySelector('#provider-view-modal');
+const providerDetailSheet = document.querySelector('[data-provider-detail-sheet]');
 const openProviderModalButtons = document.querySelectorAll('[data-open-provider-modal]');
 const closeProviderModalButtons = document.querySelectorAll('[data-close-provider-modal]');
+const openProviderViewButtons = document.querySelectorAll('[data-view-provider-entry]');
+const closeProviderViewModalButtons = document.querySelectorAll('[data-close-provider-view-modal]');
+const printProviderViewButton = document.querySelector('[data-print-provider-view]');
 const editProviderEntryButtons = document.querySelectorAll('[data-edit-provider-entry]');
 const openProviderDeleteButtons = document.querySelectorAll('[data-open-provider-delete]');
 const providerActionField = document.querySelector('[data-provider-action-field]');
@@ -45,8 +60,13 @@ const cancelProviderDeleteButton = document.querySelector('[data-cancel-provider
 const confirmProviderDeleteButton = document.querySelector('[data-confirm-provider-delete]');
 
 const logbookModal = document.querySelector('#logbook-modal');
+const logbookViewModal = document.querySelector('#logbook-view-modal');
+const logbookDetailSheet = document.querySelector('[data-logbook-detail-sheet]');
 const openLogbookModalButtons = document.querySelectorAll('[data-open-logbook-modal]');
 const closeLogbookModalButtons = document.querySelectorAll('[data-close-logbook-modal]');
+const openLogbookViewButtons = document.querySelectorAll('[data-view-logbook-entry]');
+const closeLogbookViewModalButtons = document.querySelectorAll('[data-close-logbook-view-modal]');
+const printLogbookViewButton = document.querySelector('[data-print-logbook-view]');
 const editLogbookEntryButtons = document.querySelectorAll('[data-edit-logbook-entry]');
 const logbookActionField = document.querySelector('[data-logbook-action-field]');
 const logbookEntryIdField = document.querySelector('[data-logbook-entry-id-field]');
@@ -59,6 +79,11 @@ const cancelLogbookDeleteButton = document.querySelector('[data-cancel-logbook-d
 const confirmLogbookDeleteButton = document.querySelector('[data-confirm-logbook-delete]');
 
 const driverModal = document.querySelector('#driver-modal');
+const driverViewModal = document.querySelector('#driver-view-modal');
+const openDriverViewButtons = document.querySelectorAll('[data-view-driver-entry]');
+const closeDriverViewModalButtons = document.querySelectorAll('[data-close-driver-view-modal]');
+const printDriverViewButton = document.querySelector('[data-print-driver-view]');
+const driverDetailSheet = document.querySelector('[data-driver-detail-sheet]');
 const openDriverModalButtons = document.querySelectorAll('[data-open-driver-modal]');
 const closeDriverModalButtons = document.querySelectorAll('[data-close-driver-modal]');
 const editDriverEntryButtons = document.querySelectorAll('[data-edit-driver-entry]');
@@ -77,8 +102,13 @@ const cancelDriverDeleteButton = document.querySelector('[data-cancel-driver-del
 const confirmDriverDeleteButton = document.querySelector('[data-confirm-driver-delete]');
 
 const maintenanceModal = document.querySelector('#maintenance-modal');
+const maintenanceViewModal = document.querySelector('#maintenance-view-modal');
+const maintenanceDetailSheet = document.querySelector('[data-maintenance-detail-sheet]');
 const openMaintenanceModalButtons = document.querySelectorAll('[data-open-maintenance-modal]');
 const closeMaintenanceModalButtons = document.querySelectorAll('[data-close-maintenance-modal]');
+const openMaintenanceViewButtons = document.querySelectorAll('[data-view-maintenance-entry]');
+const closeMaintenanceViewModalButtons = document.querySelectorAll('[data-close-maintenance-view-modal]');
+const printMaintenanceViewButton = document.querySelector('[data-print-maintenance-view]');
 const editMaintenanceEntryButtons = document.querySelectorAll('[data-edit-maintenance-entry]');
 const openMaintenanceDeleteButtons = document.querySelectorAll('[data-open-maintenance-delete]');
 const maintenanceActionField = document.querySelector('[data-maintenance-action-field]');
@@ -103,6 +133,36 @@ function setDeletePreview(modal, nameSelector, detailSelector, form, fallbackNam
   if (detailField) {
     detailField.textContent = detail;
   }
+}
+
+function setModalText(modal, selector, value) {
+  const element = modal?.querySelector(selector);
+
+  if (element) {
+    element.textContent = value;
+  }
+}
+
+function printDetailSheet(sheet, title) {
+  if (!sheet) {
+    return;
+  }
+
+  const printWindow = window.open('', '_blank', 'width=960,height=720');
+  if (!printWindow) {
+    return;
+  }
+
+  const styles = Array.from(document.querySelectorAll('style, link[rel="stylesheet"]'))
+    .map((node) => node.outerHTML)
+    .join('');
+
+  printWindow.document.open();
+  printWindow.document.write(`<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><title>${title}</title>${styles}<style>body{background:#fff;padding:24px;}button{display:none !important;}</style></head><body>${sheet.outerHTML}</body></html>`);
+  printWindow.document.close();
+  printWindow.focus();
+  printWindow.print();
+  printWindow.close();
 }
 
 // Opens or closes the pre-inspection modal and keeps focus/scroll state in sync.
@@ -145,6 +205,36 @@ function setPreInspectionFieldValue(selector, value) {
   if (field) {
     field.value = value;
   }
+}
+
+function setPreInspectionViewModalOpen(isOpen) {
+  if (!preInspectionViewModal) {
+    return;
+  }
+
+  preInspectionViewModal.classList.toggle('hidden', !isOpen);
+  preInspectionViewModal.classList.toggle('flex', isOpen);
+  preInspectionViewModal.setAttribute('aria-hidden', String(!isOpen));
+  document.body.classList.toggle('overflow-hidden', isOpen);
+}
+
+function populatePreInspectionViewModal(button) {
+  const row = button.closest('.pre-inspection-row');
+  if (!row) {
+    return;
+  }
+
+  setModalText(preInspectionViewModal, '[data-pre-inspection-view-title]', row.dataset.vehicle || 'Pre-inspection report');
+  setModalText(preInspectionViewModal, '[data-pre-inspection-view-subtitle]', `${row.dataset.invoiceNumber || '-'} - ${row.dataset.date || row.dataset.inspectionDate || '-'}`);
+  setModalText(preInspectionViewModal, '[data-pre-inspection-view-invoice]', row.dataset.invoiceNumber || '-');
+  setModalText(preInspectionViewModal, '[data-pre-inspection-view-date]', row.dataset.inspectionDate || '-');
+  setModalText(preInspectionViewModal, '[data-pre-inspection-view-vehicle]', row.dataset.vehicle || '-');
+  setModalText(preInspectionViewModal, '[data-pre-inspection-view-make-model]', row.dataset.makeModel || '-');
+  setModalText(preInspectionViewModal, '[data-pre-inspection-view-inspector]', row.dataset.inspector || '-');
+  setModalText(preInspectionViewModal, '[data-pre-inspection-view-inspector-title]', row.dataset.inspectorTitle || '-');
+  setModalText(preInspectionViewModal, '[data-pre-inspection-view-mileage]', row.dataset.mileage || '-');
+  setModalText(preInspectionViewModal, '[data-pre-inspection-view-overall]', row.dataset.overall || '-');
+  setModalText(preInspectionViewModal, '[data-pre-inspection-view-defects]', row.dataset.defects || 'No defects summary recorded.');
 }
 
 // Re-numbers the repeated inspection item cards so the labels stay clear after edits.
@@ -299,6 +389,13 @@ openPreInspectionModalButtons.forEach((button) => {
   });
 });
 
+openPreInspectionViewButtons.forEach((button) => {
+  button.addEventListener('click', () => {
+    populatePreInspectionViewModal(button);
+    setPreInspectionViewModalOpen(true);
+  });
+});
+
 editPreInspectionEntryButtons.forEach((button) => {
   button.addEventListener('click', () => {
     populatePreInspectionEditForm(button);
@@ -319,6 +416,10 @@ openPreInspectionDeleteButtons.forEach((button) => {
 
 closePreInspectionModalButtons.forEach((button) => {
   button.addEventListener('click', () => setPreInspectionModalOpen(false));
+});
+
+closePreInspectionViewModalButtons.forEach((button) => {
+  button.addEventListener('click', () => setPreInspectionViewModalOpen(false));
 });
 
 preInspectionAddItemButton?.addEventListener('click', () => {
@@ -349,6 +450,12 @@ preInspectionModal?.addEventListener('click', (event) => {
   }
 });
 
+preInspectionViewModal?.addEventListener('click', (event) => {
+  if (event.target === preInspectionViewModal) {
+    setPreInspectionViewModalOpen(false);
+  }
+});
+
 if (preInspectionModal?.dataset.openOnLoad === 'true') {
   document.body.classList.add('overflow-hidden');
   updatePreInspectionItemLabels();
@@ -369,6 +476,10 @@ cancelPreInspectionDeleteButton?.addEventListener('click', () => {
   setPreInspectionDeleteModalOpen(false);
 });
 
+printPreInspectionViewButton?.addEventListener('click', () => {
+  printDetailSheet(preInspectionDetailSheet, 'Pre-Inspection Details');
+});
+
 preInspectionDeleteModal?.addEventListener('click', (event) => {
   if (event.target === preInspectionDeleteModal) {
     setPreInspectionDeleteModalOpen(false);
@@ -378,6 +489,10 @@ preInspectionDeleteModal?.addEventListener('click', (event) => {
 document.addEventListener('keydown', (event) => {
   if (event.key === 'Escape' && preInspectionModal && !preInspectionModal.classList.contains('hidden')) {
     setPreInspectionModalOpen(false);
+  }
+
+  if (event.key === 'Escape' && preInspectionViewModal && !preInspectionViewModal.classList.contains('hidden')) {
+    setPreInspectionViewModalOpen(false);
   }
 
   if (event.key === 'Escape' && preInspectionDeleteModal && preInspectionDeleteModal.classList.contains('is-open')) {
@@ -425,6 +540,37 @@ function setPostInspectionFieldValue(selector, value) {
   if (field) {
     field.value = value;
   }
+}
+
+function setPostInspectionViewModalOpen(isOpen) {
+  if (!postInspectionViewModal) {
+    return;
+  }
+
+  postInspectionViewModal.classList.toggle('hidden', !isOpen);
+  postInspectionViewModal.classList.toggle('flex', isOpen);
+  postInspectionViewModal.setAttribute('aria-hidden', String(!isOpen));
+  document.body.classList.toggle('overflow-hidden', isOpen);
+}
+
+function populatePostInspectionViewModal(button) {
+  const row = button.closest('.post-inspection-row');
+  if (!row) {
+    return;
+  }
+
+  setModalText(postInspectionViewModal, '[data-post-inspection-view-title]', row.dataset.vehicle || 'Post-inspection report');
+  setModalText(postInspectionViewModal, '[data-post-inspection-view-subtitle]', `${row.dataset.invoiceNumber || '-'} - ${row.dataset.inspectionDate || '-'}`);
+  setModalText(postInspectionViewModal, '[data-post-inspection-view-invoice]', row.dataset.invoiceNumber || '-');
+  setModalText(postInspectionViewModal, '[data-post-inspection-view-post-invoice]', row.dataset.postInvoiceNumber || '-');
+  setModalText(postInspectionViewModal, '[data-post-inspection-view-date]', row.dataset.inspectionDate || '-');
+  setModalText(postInspectionViewModal, '[data-post-inspection-view-vehicle]', row.dataset.vehicle || '-');
+  setModalText(postInspectionViewModal, '[data-post-inspection-view-make-model]', row.dataset.makeModel || '-');
+  setModalText(postInspectionViewModal, '[data-post-inspection-view-inspector]', row.dataset.inspector || '-');
+  setModalText(postInspectionViewModal, '[data-post-inspection-view-overall]', row.dataset.overall || '-');
+  setModalText(postInspectionViewModal, '[data-post-inspection-view-repair-cost]', row.dataset.repairCost ? `UGX ${row.dataset.repairCost}` : '-');
+  setModalText(postInspectionViewModal, '[data-post-inspection-view-works-done]', row.dataset.worksDone || 'No works summary recorded.');
+  setModalText(postInspectionViewModal, '[data-post-inspection-view-recommendation]', row.dataset.recommendation || 'No recommendation recorded.');
 }
 
 // Applies saved system condition and remarks back into the post-inspection checklist.
@@ -550,6 +696,13 @@ openPostInspectionModalButtons.forEach((button) => {
   });
 });
 
+openPostInspectionViewButtons.forEach((button) => {
+  button.addEventListener('click', () => {
+    populatePostInspectionViewModal(button);
+    setPostInspectionViewModalOpen(true);
+  });
+});
+
 editPostInspectionEntryButtons.forEach((button) => {
   button.addEventListener('click', () => {
     populatePostInspectionEditForm(button);
@@ -572,9 +725,19 @@ closePostInspectionModalButtons.forEach((button) => {
   button.addEventListener('click', () => setPostInspectionModalOpen(false));
 });
 
+closePostInspectionViewModalButtons.forEach((button) => {
+  button.addEventListener('click', () => setPostInspectionViewModalOpen(false));
+});
+
 postInspectionModal?.addEventListener('click', (event) => {
   if (event.target === postInspectionModal) {
     setPostInspectionModalOpen(false);
+  }
+});
+
+postInspectionViewModal?.addEventListener('click', (event) => {
+  if (event.target === postInspectionViewModal) {
+    setPostInspectionViewModalOpen(false);
   }
 });
 
@@ -597,6 +760,10 @@ cancelPostInspectionDeleteButton?.addEventListener('click', () => {
   setPostInspectionDeleteModalOpen(false);
 });
 
+printPostInspectionViewButton?.addEventListener('click', () => {
+  printDetailSheet(postInspectionDetailSheet, 'Post-Inspection Details');
+});
+
 postInspectionDeleteModal?.addEventListener('click', (event) => {
   if (event.target === postInspectionDeleteModal) {
     setPostInspectionDeleteModalOpen(false);
@@ -606,6 +773,10 @@ postInspectionDeleteModal?.addEventListener('click', (event) => {
 document.addEventListener('keydown', (event) => {
   if (event.key === 'Escape' && postInspectionModal && !postInspectionModal.classList.contains('hidden')) {
     setPostInspectionModalOpen(false);
+  }
+
+  if (event.key === 'Escape' && postInspectionViewModal && !postInspectionViewModal.classList.contains('hidden')) {
+    setPostInspectionViewModalOpen(false);
   }
 
   if (event.key === 'Escape' && postInspectionDeleteModal && postInspectionDeleteModal.classList.contains('is-open')) {
@@ -653,6 +824,34 @@ function setProviderFieldValue(selector, value) {
   if (field) {
     field.value = value;
   }
+}
+
+function setProviderViewModalOpen(isOpen) {
+  if (!providerViewModal) {
+    return;
+  }
+
+  providerViewModal.classList.toggle('hidden', !isOpen);
+  providerViewModal.classList.toggle('flex', isOpen);
+  providerViewModal.setAttribute('aria-hidden', String(!isOpen));
+  document.body.classList.toggle('overflow-hidden', isOpen);
+}
+
+function populateProviderViewModal(button) {
+  const card = button.closest('.provider-card');
+  if (!card) {
+    return;
+  }
+
+  setModalText(providerViewModal, '[data-provider-view-name]', card.dataset.name || 'Service provider');
+  setModalText(providerViewModal, '[data-provider-view-subtitle]', `${card.dataset.specialty || '-'} - ${card.dataset.town || '-'}`);
+  setModalText(providerViewModal, '[data-provider-view-company]', card.dataset.name || '-');
+  setModalText(providerViewModal, '[data-provider-view-specialty]', card.dataset.specialty || '-');
+  setModalText(providerViewModal, '[data-provider-view-town]', card.dataset.town || '-');
+  setModalText(providerViewModal, '[data-provider-view-status]', card.dataset.status || '-');
+  setModalText(providerViewModal, '[data-provider-view-contact-person]', card.dataset.contactPerson || '-');
+  setModalText(providerViewModal, '[data-provider-view-phone]', card.dataset.phone || '-');
+  setModalText(providerViewModal, '[data-provider-view-email]', card.dataset.email || '-');
 }
 
 // Resets the shared provider modal back to a clean create state.
@@ -738,6 +937,13 @@ openProviderModalButtons.forEach((button) => {
   });
 });
 
+openProviderViewButtons.forEach((button) => {
+  button.addEventListener('click', () => {
+    populateProviderViewModal(button);
+    setProviderViewModalOpen(true);
+  });
+});
+
 editProviderEntryButtons.forEach((button) => {
   button.addEventListener('click', () => {
     populateProviderEditForm(button);
@@ -760,9 +966,19 @@ closeProviderModalButtons.forEach((button) => {
   button.addEventListener('click', () => setProviderModalOpen(false));
 });
 
+closeProviderViewModalButtons.forEach((button) => {
+  button.addEventListener('click', () => setProviderViewModalOpen(false));
+});
+
 providerModal?.addEventListener('click', (event) => {
   if (event.target === providerModal) {
     setProviderModalOpen(false);
+  }
+});
+
+providerViewModal?.addEventListener('click', (event) => {
+  if (event.target === providerViewModal) {
+    setProviderViewModalOpen(false);
   }
 });
 
@@ -785,6 +1001,10 @@ cancelProviderDeleteButton?.addEventListener('click', () => {
   setProviderDeleteModalOpen(false);
 });
 
+printProviderViewButton?.addEventListener('click', () => {
+  printDetailSheet(providerDetailSheet, 'Provider Details');
+});
+
 providerDeleteModal?.addEventListener('click', (event) => {
   if (event.target === providerDeleteModal) {
     setProviderDeleteModalOpen(false);
@@ -794,6 +1014,10 @@ providerDeleteModal?.addEventListener('click', (event) => {
 document.addEventListener('keydown', (event) => {
   if (event.key === 'Escape' && providerModal && !providerModal.classList.contains('hidden')) {
     setProviderModalOpen(false);
+  }
+
+  if (event.key === 'Escape' && providerViewModal && !providerViewModal.classList.contains('hidden')) {
+    setProviderViewModalOpen(false);
   }
 
   if (event.key === 'Escape' && providerDeleteModal && providerDeleteModal.classList.contains('is-open')) {
@@ -928,6 +1152,39 @@ function convertDisplayNumber(value) {
   return String(value).replace(/[^\d.]/g, '');
 }
 
+function setLogbookViewModalOpen(isOpen) {
+  if (!logbookViewModal) {
+    return;
+  }
+
+  logbookViewModal.classList.toggle('hidden', !isOpen);
+  logbookViewModal.classList.toggle('flex', isOpen);
+  logbookViewModal.setAttribute('aria-hidden', String(!isOpen));
+  document.body.classList.toggle('overflow-hidden', isOpen);
+}
+
+function populateLogbookViewModal(button) {
+  const row = button.closest('.logbook-row');
+  if (!row) {
+    return;
+  }
+
+  setModalText(logbookViewModal, '[data-logbook-view-title]', row.dataset.vehicle || 'Vehicle log entry');
+  setModalText(logbookViewModal, '[data-logbook-view-subtitle]', `${row.dataset.date || '-'} - ${row.dataset.driver || 'Unassigned'}`);
+  setModalText(logbookViewModal, '[data-logbook-view-date]', row.dataset.date || '-');
+  setModalText(logbookViewModal, '[data-logbook-view-vehicle]', row.dataset.vehicle || '-');
+  setModalText(logbookViewModal, '[data-logbook-view-driver]', row.dataset.driver || 'Unassigned');
+  setModalText(logbookViewModal, '[data-logbook-view-purpose]', row.dataset.purpose || '-');
+  setModalText(logbookViewModal, '[data-logbook-view-from]', row.dataset.from || '-');
+  setModalText(logbookViewModal, '[data-logbook-view-to]', row.dataset.to || '-');
+  setModalText(logbookViewModal, '[data-logbook-view-km]', row.dataset.km ? `${row.dataset.km} km` : '-');
+  setModalText(logbookViewModal, '[data-logbook-view-odo-start]', row.dataset.odoStart || '-');
+  setModalText(logbookViewModal, '[data-logbook-view-odo-end]', row.dataset.odoEnd || '-');
+  setModalText(logbookViewModal, '[data-logbook-view-fuel]', row.dataset.fuel || '-');
+  setModalText(logbookViewModal, '[data-logbook-view-cost]', row.dataset.cost || '-');
+  setModalText(logbookViewModal, '[data-logbook-view-remarks]', row.dataset.remarks || '-');
+}
+
 // Reads the clicked logbook row and pre-fills the shared modal for editing.
 function populateLogbookEditForm(button) {
   const row = button.closest('.logbook-row');
@@ -961,6 +1218,13 @@ openLogbookModalButtons.forEach((button) => {
   });
 });
 
+openLogbookViewButtons.forEach((button) => {
+  button.addEventListener('click', () => {
+    populateLogbookViewModal(button);
+    setLogbookViewModalOpen(true);
+  });
+});
+
 editLogbookEntryButtons.forEach((button) => {
   button.addEventListener('click', () => {
     populateLogbookEditForm(button);
@@ -982,9 +1246,19 @@ closeLogbookModalButtons.forEach((button) => {
   button.addEventListener('click', () => setLogbookModalOpen(false));
 });
 
+closeLogbookViewModalButtons.forEach((button) => {
+  button.addEventListener('click', () => setLogbookViewModalOpen(false));
+});
+
 logbookModal?.addEventListener('click', (event) => {
   if (event.target === logbookModal) {
     setLogbookModalOpen(false);
+  }
+});
+
+logbookViewModal?.addEventListener('click', (event) => {
+  if (event.target === logbookViewModal) {
+    setLogbookViewModalOpen(false);
   }
 });
 
@@ -1011,6 +1285,10 @@ cancelLogbookDeleteButton?.addEventListener('click', () => {
   setLogbookDeleteModalOpen(false);
 });
 
+printLogbookViewButton?.addEventListener('click', () => {
+  printDetailSheet(logbookDetailSheet, 'Logbook Entry Details');
+});
+
 logbookDeleteModal?.addEventListener('click', (event) => {
   if (event.target === logbookDeleteModal) {
     setLogbookDeleteModalOpen(false);
@@ -1020,6 +1298,10 @@ logbookDeleteModal?.addEventListener('click', (event) => {
 document.addEventListener('keydown', (event) => {
   if (event.key === 'Escape' && logbookModal && !logbookModal.classList.contains('hidden')) {
     setLogbookModalOpen(false);
+  }
+
+  if (event.key === 'Escape' && logbookViewModal && !logbookViewModal.classList.contains('hidden')) {
+    setLogbookViewModalOpen(false);
   }
 
   if (event.key === 'Escape' && logbookDeleteModal && logbookDeleteModal.classList.contains('is-open')) {
@@ -1067,6 +1349,167 @@ function setDriverFieldValue(selector, value) {
   if (field) {
     field.value = value;
   }
+}
+
+// Writes text into the driver details modal when the target exists.
+function setDriverViewText(selector, value) {
+  const element = driverViewModal?.querySelector(selector);
+
+  if (element) {
+    element.textContent = value;
+  }
+}
+
+// Shows one optional upload link in the driver details modal.
+function setDriverViewUploadLink(selector, url, label) {
+  const link = driverViewModal?.querySelector(selector);
+
+  if (!link) {
+    return false;
+  }
+
+  const hasUpload = (url || '').trim() !== '';
+  link.classList.toggle('hidden', !hasUpload);
+  link.href = hasUpload ? url : '#';
+  link.textContent = label || 'View file';
+
+  return hasUpload;
+}
+
+// Opens or closes the read-only driver details modal.
+function setDriverViewModalOpen(isOpen) {
+  if (!driverViewModal) {
+    return;
+  }
+
+  driverViewModal.classList.toggle('hidden', !isOpen);
+  driverViewModal.classList.toggle('flex', isOpen);
+  driverViewModal.setAttribute('aria-hidden', String(!isOpen));
+  document.body.classList.toggle('overflow-hidden', isOpen);
+
+  if (isOpen) {
+    driverViewModal.querySelector('button')?.focus();
+  } else {
+    openDriverViewButtons[0]?.focus();
+  }
+}
+
+// Maps the selected driver row into the view-only detail modal.
+function populateDriverViewModal(button) {
+  const row = button.closest('.driver-row');
+  if (!row) {
+    return;
+  }
+
+  const fullName = row.dataset.fullName || 'Driver';
+  const department = row.dataset.department || 'No department recorded';
+  const gender = row.dataset.gender ? `${row.dataset.gender.charAt(0).toUpperCase()}${row.dataset.gender.slice(1)}` : 'Not specified';
+  const employeeId = row.dataset.employeeId || 'Not assigned';
+  const phone = row.dataset.phone || 'No phone on file';
+  const email = row.dataset.email || 'No email on file';
+  const nationalIdNumber = row.dataset.nationalIdNumber || 'Not available';
+  const assignedVehicle = row.dataset.assignedVehicle || 'Unassigned';
+  const statusLabel = row.dataset.statusLabel || 'Unknown';
+  const licenseNumber = row.dataset.licenseNumber || '-';
+  const licenseClasses = row.dataset.licenseClasses || '-';
+  const licenseIssueDate = row.dataset.licenseIssueDate || '-';
+  const licenseExpiry = row.dataset.licenseExpiry || '-';
+  const licenseIssuingAuthority = row.dataset.licenseIssuingAuthority || 'Not available';
+  const initial = (fullName.trim().charAt(0) || 'D').toUpperCase();
+  const photoUrl = row.dataset.driverPhotoUrl || '';
+  const photoIsImage = row.dataset.driverPhotoIsImage === 'true';
+  const photoElement = driverViewModal?.querySelector('[data-driver-view-photo]');
+  const photoFallback = driverViewModal?.querySelector('[data-driver-view-photo-fallback]');
+
+  setDriverViewText('[data-driver-view-name]', fullName);
+  setDriverViewText('[data-driver-view-subtitle]', `${licenseNumber} - ${assignedVehicle}`);
+  setDriverViewText('[data-driver-view-full-name]', fullName);
+  setDriverViewText('[data-driver-view-department]', department);
+  setDriverViewText('[data-driver-view-status-label]', statusLabel);
+  setDriverViewText('[data-driver-view-assigned-vehicle]', assignedVehicle);
+  setDriverViewText('[data-driver-view-employee-id]', employeeId);
+  setDriverViewText('[data-driver-view-gender]', gender);
+  setDriverViewText('[data-driver-view-national-id-number]', nationalIdNumber);
+  setDriverViewText('[data-driver-view-department-detail]', department);
+  setDriverViewText('[data-driver-view-phone]', phone);
+  setDriverViewText('[data-driver-view-email]', email);
+  setDriverViewText('[data-driver-view-license-number]', licenseNumber);
+  setDriverViewText('[data-driver-view-license-classes]', licenseClasses);
+  setDriverViewText('[data-driver-view-license-issue-date]', licenseIssueDate);
+  setDriverViewText('[data-driver-view-license-expiry]', licenseExpiry);
+  setDriverViewText('[data-driver-view-license-issuing-authority]', licenseIssuingAuthority);
+  setDriverViewText('[data-driver-view-initial]', initial);
+  setDriverViewText('[data-driver-view-status]', statusLabel);
+
+  const statusBadge = driverViewModal?.querySelector('[data-driver-view-status]');
+  if (statusBadge) {
+    statusBadge.className = 'mt-4 inline-flex rounded-lg border px-3 py-1 text-xs font-semibold';
+
+    if (statusLabel === 'Active') {
+      statusBadge.classList.add('border-green-200', 'bg-fleet-success-soft', 'text-fleet-success');
+    } else if (statusLabel === 'Suspended') {
+      statusBadge.classList.add('border-orange-200', 'bg-fleet-warning-soft', 'text-fleet-warning-strong');
+    } else {
+      statusBadge.classList.add('border-fleet-line', 'bg-slate-100', 'text-fleet-muted');
+    }
+  }
+
+  if (photoElement && photoFallback) {
+    const showImage = photoUrl !== '' && photoIsImage;
+    photoElement.src = showImage ? photoUrl : '';
+    photoElement.classList.toggle('hidden', !showImage);
+    photoElement.classList.toggle('block', showImage);
+    photoFallback.classList.toggle('hidden', showImage);
+    photoFallback.classList.toggle('flex', !showImage);
+  }
+
+  const hasDriverPhoto = setDriverViewUploadLink('[data-driver-view-driver-photo-link]', row.dataset.driverPhotoUrl || '', row.dataset.driverPhotoName || 'Driver Photo');
+  const hasNationalIdPhoto = setDriverViewUploadLink('[data-driver-view-national-id-photo-link]', row.dataset.nationalIdPhotoUrl || '', row.dataset.nationalIdPhotoName || 'National ID Photo');
+  const hasLicenseScan = setDriverViewUploadLink('[data-driver-view-license-scan-link]', row.dataset.drivingLicenseScanUrl || '', row.dataset.drivingLicenseScanName || 'Driving License Scan');
+  const noUploads = driverViewModal?.querySelector('[data-driver-view-no-uploads]');
+
+  if (noUploads) {
+    noUploads.classList.toggle('hidden', hasDriverPhoto || hasNationalIdPhoto || hasLicenseScan);
+  }
+}
+
+// Prints only the selected driver's detail sheet in a temporary window.
+function printDriverDetailSheet() {
+  if (!driverDetailSheet) {
+    return;
+  }
+
+  const printWindow = window.open('', '_blank', 'width=960,height=720');
+  if (!printWindow) {
+    return;
+  }
+
+  const styles = Array.from(document.querySelectorAll('style, link[rel="stylesheet"]'))
+    .map((node) => node.outerHTML)
+    .join('');
+
+  printWindow.document.open();
+  printWindow.document.write(`
+    <!DOCTYPE html>
+    <html lang="en">
+      <head>
+        <meta charset="utf-8">
+        <title>Driver Details</title>
+        ${styles}
+        <style>
+          body { background: #ffffff; padding: 24px; }
+          button { display: none !important; }
+        </style>
+      </head>
+      <body>
+        ${driverDetailSheet.outerHTML}
+      </body>
+    </html>
+  `);
+  printWindow.document.close();
+  printWindow.focus();
+  printWindow.print();
+  printWindow.close();
 }
 
 // Shows or hides the current uploaded file block for one driver upload field.
@@ -1235,6 +1678,13 @@ openDriverModalButtons.forEach((button) => {
   });
 });
 
+openDriverViewButtons.forEach((button) => {
+  button.addEventListener('click', () => {
+    populateDriverViewModal(button);
+    setDriverViewModalOpen(true);
+  });
+});
+
 editDriverEntryButtons.forEach((button) => {
   button.addEventListener('click', () => {
     populateDriverEditForm(button);
@@ -1257,9 +1707,19 @@ closeDriverModalButtons.forEach((button) => {
   button.addEventListener('click', () => setDriverModalOpen(false));
 });
 
+closeDriverViewModalButtons.forEach((button) => {
+  button.addEventListener('click', () => setDriverViewModalOpen(false));
+});
+
 driverModal?.addEventListener('click', (event) => {
   if (event.target === driverModal) {
     setDriverModalOpen(false);
+  }
+});
+
+driverViewModal?.addEventListener('click', (event) => {
+  if (event.target === driverViewModal) {
+    setDriverViewModalOpen(false);
   }
 });
 
@@ -1267,6 +1727,8 @@ if (driverModal?.dataset.openOnLoad === 'true') {
   document.body.classList.add('overflow-hidden');
   setDriverVehicleAvailability(driverIdField?.value || '');
 }
+
+printDriverViewButton?.addEventListener('click', printDriverDetailSheet);
 
 confirmDriverDeleteButton?.addEventListener('click', () => {
   if (!pendingDriverDeleteForm) {
@@ -1292,6 +1754,10 @@ driverDeleteModal?.addEventListener('click', (event) => {
 document.addEventListener('keydown', (event) => {
   if (event.key === 'Escape' && driverModal && !driverModal.classList.contains('hidden')) {
     setDriverModalOpen(false);
+  }
+
+  if (event.key === 'Escape' && driverViewModal && !driverViewModal.classList.contains('hidden')) {
+    setDriverViewModalOpen(false);
   }
 
   if (event.key === 'Escape' && driverDeleteModal && driverDeleteModal.classList.contains('is-open')) {
@@ -1339,6 +1805,39 @@ function setMaintenanceFieldValue(selector, value) {
   if (field) {
     field.value = value;
   }
+}
+
+function setMaintenanceViewModalOpen(isOpen) {
+  if (!maintenanceViewModal) {
+    return;
+  }
+
+  maintenanceViewModal.classList.toggle('hidden', !isOpen);
+  maintenanceViewModal.classList.toggle('flex', isOpen);
+  maintenanceViewModal.setAttribute('aria-hidden', String(!isOpen));
+  document.body.classList.toggle('overflow-hidden', isOpen);
+}
+
+function populateMaintenanceViewModal(button) {
+  const row = button.closest('.maintenance-row');
+  if (!row) {
+    return;
+  }
+
+  setModalText(maintenanceViewModal, '[data-maintenance-view-title]', row.dataset.vehicle || 'Maintenance record');
+  setModalText(maintenanceViewModal, '[data-maintenance-view-subtitle]', `${row.dataset.date || '-'} - ${row.dataset.provider || '-'}`);
+  setModalText(maintenanceViewModal, '[data-maintenance-view-vehicle]', row.dataset.vehicle || '-');
+  setModalText(maintenanceViewModal, '[data-maintenance-view-type]', row.dataset.type || '-');
+  setModalText(maintenanceViewModal, '[data-maintenance-view-status]', row.dataset.statusLabel || '-');
+  setModalText(maintenanceViewModal, '[data-maintenance-view-provider]', row.dataset.provider || '-');
+  setModalText(maintenanceViewModal, '[data-maintenance-view-date-reported]', row.dataset.dateReported || '-');
+  setModalText(maintenanceViewModal, '[data-maintenance-view-date-completed]', row.dataset.dateCompleted || '-');
+  setModalText(maintenanceViewModal, '[data-maintenance-view-mileage]', row.dataset.mileageAtService || '-');
+  setModalText(maintenanceViewModal, '[data-maintenance-view-cost]', row.dataset.cost || '-');
+  setModalText(maintenanceViewModal, '[data-maintenance-view-description]', row.dataset.description || '-');
+  setModalText(maintenanceViewModal, '[data-maintenance-view-parts]', row.dataset.partsReplaced || '-');
+  setModalText(maintenanceViewModal, '[data-maintenance-view-invoice]', row.dataset.invoiceNumber || '-');
+  setModalText(maintenanceViewModal, '[data-maintenance-view-remarks]', row.dataset.remarks || '-');
 }
 
 // Resets the shared maintenance modal back to a clean create state.
@@ -1433,6 +1932,13 @@ openMaintenanceModalButtons.forEach((button) => {
   });
 });
 
+openMaintenanceViewButtons.forEach((button) => {
+  button.addEventListener('click', () => {
+    populateMaintenanceViewModal(button);
+    setMaintenanceViewModalOpen(true);
+  });
+});
+
 editMaintenanceEntryButtons.forEach((button) => {
   button.addEventListener('click', () => {
     populateMaintenanceEditForm(button);
@@ -1455,9 +1961,19 @@ closeMaintenanceModalButtons.forEach((button) => {
   button.addEventListener('click', () => setMaintenanceModalOpen(false));
 });
 
+closeMaintenanceViewModalButtons.forEach((button) => {
+  button.addEventListener('click', () => setMaintenanceViewModalOpen(false));
+});
+
 maintenanceModal?.addEventListener('click', (event) => {
   if (event.target === maintenanceModal) {
     setMaintenanceModalOpen(false);
+  }
+});
+
+maintenanceViewModal?.addEventListener('click', (event) => {
+  if (event.target === maintenanceViewModal) {
+    setMaintenanceViewModalOpen(false);
   }
 });
 
@@ -1480,6 +1996,10 @@ cancelMaintenanceDeleteButton?.addEventListener('click', () => {
   setMaintenanceDeleteModalOpen(false);
 });
 
+printMaintenanceViewButton?.addEventListener('click', () => {
+  printDetailSheet(maintenanceDetailSheet, 'Maintenance Record Details');
+});
+
 maintenanceDeleteModal?.addEventListener('click', (event) => {
   if (event.target === maintenanceDeleteModal) {
     setMaintenanceDeleteModalOpen(false);
@@ -1489,6 +2009,10 @@ maintenanceDeleteModal?.addEventListener('click', (event) => {
 document.addEventListener('keydown', (event) => {
   if (event.key === 'Escape' && maintenanceModal && !maintenanceModal.classList.contains('hidden')) {
     setMaintenanceModalOpen(false);
+  }
+
+  if (event.key === 'Escape' && maintenanceViewModal && !maintenanceViewModal.classList.contains('hidden')) {
+    setMaintenanceViewModalOpen(false);
   }
 
   if (event.key === 'Escape' && maintenanceDeleteModal && maintenanceDeleteModal.classList.contains('is-open')) {
