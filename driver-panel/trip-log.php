@@ -56,6 +56,10 @@ include __DIR__ . '/includes/sidebar.php';
                 <p class="mt-2 text-2xl font-extrabold text-fleet-ink"><?= htmlspecialchars($assignedVehicle['registration_no'] ?? 'Not assigned', ENT_QUOTES, 'UTF-8'); ?></p>
             </article>
             <article class="driver-stat-card rounded-lg border border-fleet-line bg-fleet-surface p-5 shadow-fleet-card">
+                <p class="text-sm font-medium text-fleet-muted">Other Vehicles</p>
+                <p class="mt-2 text-2xl font-extrabold text-fleet-ink"><?= count($otherVehicles); ?></p>
+            </article>
+            <article class="driver-stat-card rounded-lg border border-fleet-line bg-fleet-surface p-5 shadow-fleet-card">
                 <p class="text-sm font-medium text-fleet-muted">Driver</p>
                 <p class="mt-2 text-2xl font-extrabold text-fleet-ink"><?= htmlspecialchars($driverProfile['name'] ?? 'Unavailable', ENT_QUOTES, 'UTF-8'); ?></p>
             </article>
@@ -82,14 +86,28 @@ include __DIR__ . '/includes/sidebar.php';
                         </span>
                     </div>
 
-                    <?php if ($assignedVehicle === null): ?>
+                    <?php if ($tripVehicleOptions === []): ?>
                         <div class="rounded-lg border border-dashed border-fleet-line px-5 py-8 text-center text-sm text-fleet-muted">
-                            You need an assigned vehicle before you can start a trip.
+                            No trip vehicle has been enabled for this driver yet.
                         </div>
                     <?php elseif ($activeTrip === null): ?>
                         <form action="<?= htmlspecialchars($tripFormAction, ENT_QUOTES, 'UTF-8'); ?>" method="post" class="space-y-5">
                             <input type="hidden" name="driver_panel_action" value="start_trip">
                             <div class="grid gap-4 md:grid-cols-2">
+                                <label class="block">
+                                    <span class="mb-2 block text-sm font-semibold text-fleet-ink">Trip Vehicle *</span>
+                                    <select name="vehicle_id" class="vehicle-form-control" required>
+                                        <?php foreach ($tripVehicleOptions as $vehicleOption): ?>
+                                            <option
+                                                value="<?= htmlspecialchars((string) $vehicleOption['id'], ENT_QUOTES, 'UTF-8'); ?>"
+                                                data-current-mileage="<?= htmlspecialchars((string) $vehicleOption['current_mileage_raw'], ENT_QUOTES, 'UTF-8'); ?>"
+                                                <?= ((string) ($tripStartFormData['vehicle_id'] ?? '') === (string) $vehicleOption['id']) ? 'selected' : ''; ?>
+                                            >
+                                                <?= htmlspecialchars($vehicleOption['registration_no'] . ' - ' . $vehicleOption['option_label'] . ' - ' . $vehicleOption['current_mileage'], ENT_QUOTES, 'UTF-8'); ?>
+                                            </option>
+                                        <?php endforeach; ?>
+                                    </select>
+                                </label>
                                 <label class="block">
                                     <span class="mb-2 block text-sm font-semibold text-fleet-ink">Trip Date *</span>
                                     <input name="trip_date" type="date" class="vehicle-form-control" value="<?= htmlspecialchars($tripStartFormData['trip_date'] ?? date('Y-m-d'), ENT_QUOTES, 'UTF-8'); ?>" required>
@@ -121,7 +139,7 @@ include __DIR__ . '/includes/sidebar.php';
                     <?php else: ?>
                         <div class="rounded-lg border border-blue-200 bg-fleet-primary-soft p-4 text-fleet-primary">
                             <p class="text-sm font-extrabold">Trip in progress</p>
-                            <p class="mt-2 text-sm leading-6"><?= htmlspecialchars($activeTrip['from'] . ' to ' . $activeTrip['to'] . ' on ' . $activeTrip['date'], ENT_QUOTES, 'UTF-8'); ?></p>
+                            <p class="mt-2 text-sm leading-6"><?= htmlspecialchars($activeTrip['vehicle'] . ' - ' . $activeTrip['from'] . ' to ' . $activeTrip['to'] . ' on ' . $activeTrip['date'], ENT_QUOTES, 'UTF-8'); ?></p>
                             <p class="mt-1 text-sm">Purpose: <span class="font-semibold"><?= htmlspecialchars($activeTrip['purpose'], ENT_QUOTES, 'UTF-8'); ?></span></p>
                             <p class="mt-1 text-sm">Odometer start: <span class="font-semibold"><?= htmlspecialchars($activeTrip['odometer_start_label'], ENT_QUOTES, 'UTF-8'); ?></span></p>
                         </div>
@@ -221,4 +239,30 @@ include __DIR__ . '/includes/sidebar.php';
         </div>
     </div>
 </main>
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    const tripVehicleSelect = document.querySelector('select[name="vehicle_id"]');
+    const odometerStartField = document.querySelector('input[name="odometer_start"]');
+
+    if (!tripVehicleSelect || !odometerStartField) {
+        return;
+    }
+
+    let lastSuggestedMileage = odometerStartField.value;
+
+    const syncSuggestedMileage = function () {
+        const selectedOption = tripVehicleSelect.options[tripVehicleSelect.selectedIndex];
+        const suggestedMileage = selectedOption ? (selectedOption.dataset.currentMileage || '') : '';
+
+        if (odometerStartField.value === '' || odometerStartField.value === lastSuggestedMileage) {
+            odometerStartField.value = suggestedMileage;
+        }
+
+        lastSuggestedMileage = suggestedMileage;
+    };
+
+    tripVehicleSelect.addEventListener('change', syncSuggestedMileage);
+    syncSuggestedMileage();
+});
+</script>
 <?php include __DIR__ . '/../includes/footer.php'; ?>

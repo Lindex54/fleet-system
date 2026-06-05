@@ -116,7 +116,7 @@ include __DIR__ . '/../../includes/sidebar.php';
                         <?php foreach ($drivers as $driver): ?>
                             <tr
                                 class="driver-row hover:bg-fleet-surface-muted/70"
-                                data-search="<?= htmlspecialchars(strtolower(implode(' ', array_filter([$driver['name'], $driver['email'], $driver['phone'], $driver['license'], $driver['assigned'], $driver['department'], $driver['gender'], $driver['national_id_number']]))), ENT_QUOTES, 'UTF-8'); ?>"
+                                data-search="<?= htmlspecialchars(strtolower(implode(' ', array_filter([$driver['name'], $driver['email'], $driver['phone'], $driver['license'], $driver['assigned'], $driver['other_vehicles'], $driver['department'], $driver['gender'], $driver['national_id_number']]))), ENT_QUOTES, 'UTF-8'); ?>"
                                 data-driver-id="<?= htmlspecialchars((string) $driver['id'], ENT_QUOTES, 'UTF-8'); ?>"
                                 data-full-name="<?= htmlspecialchars($driver['name'], ENT_QUOTES, 'UTF-8'); ?>"
                                 data-employee-id="<?= htmlspecialchars($driver['employee_id'], ENT_QUOTES, 'UTF-8'); ?>"
@@ -132,6 +132,8 @@ include __DIR__ . '/../../includes/sidebar.php';
                                 data-department="<?= htmlspecialchars($driver['department'], ENT_QUOTES, 'UTF-8'); ?>"
                                 data-assigned-vehicle="<?= htmlspecialchars($driver['assigned'], ENT_QUOTES, 'UTF-8'); ?>"
                                 data-assigned-vehicle-id="<?= htmlspecialchars((string) ($driver['assigned_vehicle_id'] ?? ''), ENT_QUOTES, 'UTF-8'); ?>"
+                                data-other-vehicles="<?= htmlspecialchars($driver['other_vehicles'], ENT_QUOTES, 'UTF-8'); ?>"
+                                data-other-vehicle-ids="<?= htmlspecialchars(implode(',', $driver['other_vehicle_ids']), ENT_QUOTES, 'UTF-8'); ?>"
                                 data-status="<?= htmlspecialchars($driver['status_value'], ENT_QUOTES, 'UTF-8'); ?>"
                                 data-status-label="<?= htmlspecialchars($driver['status'], ENT_QUOTES, 'UTF-8'); ?>"
                                 data-driver-photo="<?= htmlspecialchars($driver['driver_photo'], ENT_QUOTES, 'UTF-8'); ?>"
@@ -320,6 +322,21 @@ include __DIR__ . '/../../includes/sidebar.php';
                             <?php endforeach; ?>
                         </select>
                         <span class="mt-2 block text-xs text-fleet-muted">Only vehicles available in the database can be assigned.</span>
+                    </label>
+
+                    <label class="block md:col-span-2">
+                        <span class="mb-2 block text-sm font-semibold text-fleet-ink">Other Vehicles</span>
+                        <select name="other_vehicles[]" multiple size="5" class="vehicle-form-control" data-driver-other-vehicles-select>
+                            <?php foreach ($driverVehicleOptions as $vehicleOption): ?>
+                                <option
+                                    value="<?= htmlspecialchars((string) $vehicleOption['id'], ENT_QUOTES, 'UTF-8'); ?>"
+                                    <?= in_array((string) $vehicleOption['id'], $driverFormData['other_vehicles'] ?? [], true) ? 'selected' : ''; ?>
+                                >
+                                    <?= htmlspecialchars($vehicleOption['registration_no'], ENT_QUOTES, 'UTF-8'); ?>
+                                </option>
+                            <?php endforeach; ?>
+                        </select>
+                        <span class="mt-2 block text-xs text-fleet-muted">Hold Ctrl or Cmd to select more than one additional vehicle this driver may use.</span>
                     </label>
 
                     <label class="block md:col-span-1">

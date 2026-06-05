@@ -28,6 +28,10 @@
                             <p class="mt-1 font-semibold text-fleet-ink" data-driver-view-assigned-vehicle>-</p>
                         </div>
                         <div class="rounded-xl border border-fleet-line bg-white px-4 py-3">
+                            <p class="text-xs font-extrabold uppercase tracking-[0.18em] text-fleet-muted">Other Vehicles</p>
+                            <p class="mt-1 font-semibold text-fleet-ink" data-driver-view-other-vehicles>-</p>
+                        </div>
+                        <div class="rounded-xl border border-fleet-line bg-white px-4 py-3">
                             <p class="text-xs font-extrabold uppercase tracking-[0.18em] text-fleet-muted">Uploads</p>
                             <div class="mt-2 space-y-2">
                                 <a href="#" target="_blank" rel="noopener noreferrer" class="hidden text-sm font-semibold text-fleet-primary hover:underline" data-driver-view-driver-photo-link>Driver Photo</a>

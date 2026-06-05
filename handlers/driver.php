@@ -185,6 +185,26 @@ function driverFetchVehicleOptions(PDO $pdo): array
     return $statement->fetchAll();
 }
 
+function driverEnsureSecondaryVehicleTable(PDO $pdo): void
+{
+    $pdo->exec(
+        "CREATE TABLE IF NOT EXISTS driver_secondary_vehicles (
+            id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+            driver_id INT UNSIGNED NOT NULL,
+            vehicle_id INT UNSIGNED NOT NULL,
+            created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            UNIQUE KEY uniq_driver_secondary_vehicle (driver_id, vehicle_id),
+            KEY idx_driver_secondary_vehicle_vehicle (vehicle_id),
+            CONSTRAINT fk_driver_secondary_vehicle_driver
+                FOREIGN KEY (driver_id) REFERENCES drivers(id)
+                ON DELETE CASCADE ON UPDATE CASCADE,
+            CONSTRAINT fk_driver_secondary_vehicle_vehicle
+                FOREIGN KEY (vehicle_id) REFERENCES vehicles(id)
+                ON DELETE CASCADE ON UPDATE CASCADE
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci"
+    );
+}
+
 // Page data loader for the drivers table and modal
 // Loads driver rows, vehicle dropdown options, and flash state for the page.
 function driverFetchPageData(): array
@@ -201,6 +221,7 @@ function driverFetchPageData(): array
 
     try {
         $pdo = fleetDb();
+        driverEnsureSecondaryVehicleTable($pdo);
         $vehicleOptions = driverFetchVehicleOptions($pdo);
         $statement = $pdo->query(
             'SELECT
@@ -222,7 +243,19 @@ function driverFetchPageData(): array
                 d.status,
                 COALESCE(dep.name, \'-\') AS department_name,
                 v.id AS assigned_vehicle_id,
-                v.registration_no AS assigned_vehicle_reg
+                v.registration_no AS assigned_vehicle_reg,
+                (
+                    SELECT GROUP_CONCAT(dsv.vehicle_id ORDER BY sv.registration_no ASC SEPARATOR \',\')
+                    FROM driver_secondary_vehicles dsv
+                    INNER JOIN vehicles sv ON sv.id = dsv.vehicle_id
+                    WHERE dsv.driver_id = d.id
+                ) AS other_vehicle_ids,
+                (
+                    SELECT GROUP_CONCAT(sv.registration_no ORDER BY sv.registration_no ASC SEPARATOR \', \')
+                    FROM driver_secondary_vehicles dsv
+                    INNER JOIN vehicles sv ON sv.id = dsv.vehicle_id
+                    WHERE dsv.driver_id = d.id
+                ) AS other_vehicle_regs
             FROM drivers d
             LEFT JOIN departments dep ON dep.id = d.department_id
             LEFT JOIN vehicle_assignments active_assignment
@@ -262,6 +295,10 @@ function driverFetchPageData(): array
                 'department' => $row['department_name'] === '-' ? '' : $row['department_name'],
                 'assigned' => $row['assigned_vehicle_reg'] ?: '-',
                 'assigned_vehicle_id' => $row['assigned_vehicle_id'] !== null ? (int) $row['assigned_vehicle_id'] : null,
+                'other_vehicle_ids' => $row['other_vehicle_ids'] !== null && $row['other_vehicle_ids'] !== ''
+                    ? array_map('intval', explode(',', (string) $row['other_vehicle_ids']))
+                    : [],
+                'other_vehicles' => $row['other_vehicle_regs'] ?: '-',
                 'status' => driverNormalizeStatus((string) $row['status']),
                 'status_value' => (string) $row['status'],
             ];
@@ -306,6 +343,10 @@ function driverBuildFormDataFromPost(): array
         'license_expiry' => trim((string) ($_POST['license_expiry'] ?? '')),
         'department' => trim((string) ($_POST['department'] ?? '')),
         'assigned_vehicle' => trim((string) ($_POST['assigned_vehicle'] ?? '')),
+        'other_vehicles' => array_map(
+            static fn ($value): string => trim((string) $value),
+            is_array($_POST['other_vehicles'] ?? null) ? $_POST['other_vehicles'] : []
+        ),
         'status' => strtolower(trim((string) ($_POST['status'] ?? 'active'))),
         'driver_photo' => trim((string) ($_POST['existing_driver_photo'] ?? '')),
         'national_id_photo' => trim((string) ($_POST['existing_national_id_photo'] ?? '')),
@@ -365,6 +406,29 @@ function driverValidateFormData(array $formData): array
         }
     }
 
+    $otherVehicleIds = [];
+    foreach ($formData['other_vehicles'] as $vehicleIdValue) {
+        if ($vehicleIdValue === '') {
+            continue;
+        }
+
+        $otherVehicleId = filter_var($vehicleIdValue, FILTER_VALIDATE_INT, ['options' => ['min_range' => 1]]);
+        if ($otherVehicleId === false) {
+            throw new RuntimeException('Please choose only valid other vehicles.');
+        }
+
+        $otherVehicleIds[] = (int) $otherVehicleId;
+    }
+
+    $otherVehicleIds = array_values(array_unique($otherVehicleIds));
+
+    if ($assignedVehicleId !== null) {
+        $otherVehicleIds = array_values(array_filter(
+            $otherVehicleIds,
+            static fn (int $vehicleId): bool => $vehicleId !== (int) $assignedVehicleId
+        ));
+    }
+
     return [
         'full_name' => $formData['full_name'],
         'employee_id' => $formData['employee_id'] === '' ? null : $formData['employee_id'],
@@ -379,6 +443,7 @@ function driverValidateFormData(array $formData): array
         'license_expiry' => $licenseExpiry,
         'department' => $formData['department'],
         'assigned_vehicle_id' => $assignedVehicleId === null ? null : (int) $assignedVehicleId,
+        'other_vehicle_ids' => $otherVehicleIds,
         'status' => $formData['status'],
         'driver_photo' => $formData['driver_photo'] === '' ? null : $formData['driver_photo'],
         'national_id_photo' => $formData['national_id_photo'] === '' ? null : $formData['national_id_photo'],
@@ -493,6 +558,22 @@ function driverAssertVehicleCanBeAssigned(PDO $pdo, int $vehicleId, ?int $curren
     }
 }
 
+function driverAssertVehicleCanBeUsedAsSecondary(PDO $pdo, int $vehicleId): void
+{
+    $statement = $pdo->prepare(
+        'SELECT id
+        FROM vehicles
+        WHERE id = :id
+            AND status <> \'disposed\'
+        LIMIT 1'
+    );
+    $statement->execute(['id' => $vehicleId]);
+
+    if (!$statement->fetchColumn()) {
+        throw new RuntimeException('One of the selected other vehicles is not available.');
+    }
+}
+
 // Updates active vehicle assignments so they match the saved driver form.
 function driverSyncVehicleAssignment(PDO $pdo, int $driverId, ?int $vehicleId): void
 {
@@ -548,6 +629,42 @@ function driverSyncVehicleAssignment(PDO $pdo, int $driverId, ?int $vehicleId): 
     ]);
 }
 
+function driverSyncSecondaryVehicles(PDO $pdo, int $driverId, array $vehicleIds, ?int $assignedVehicleId): void
+{
+    driverEnsureSecondaryVehicleTable($pdo);
+
+    $normalizedVehicleIds = array_values(array_unique(array_map('intval', $vehicleIds)));
+    if ($assignedVehicleId !== null) {
+        $normalizedVehicleIds = array_values(array_filter(
+            $normalizedVehicleIds,
+            static fn (int $vehicleId): bool => $vehicleId !== $assignedVehicleId
+        ));
+    }
+
+    foreach ($normalizedVehicleIds as $vehicleId) {
+        driverAssertVehicleCanBeUsedAsSecondary($pdo, $vehicleId);
+    }
+
+    $delete = $pdo->prepare('DELETE FROM driver_secondary_vehicles WHERE driver_id = :driver_id');
+    $delete->execute(['driver_id' => $driverId]);
+
+    if ($normalizedVehicleIds === []) {
+        return;
+    }
+
+    $insert = $pdo->prepare(
+        'INSERT INTO driver_secondary_vehicles (driver_id, vehicle_id)
+        VALUES (:driver_id, :vehicle_id)'
+    );
+
+    foreach ($normalizedVehicleIds as $vehicleId) {
+        $insert->execute([
+            'driver_id' => $driverId,
+            'vehicle_id' => $vehicleId,
+        ]);
+    }
+}
+
 // POST handler for create/update actions
 // Handles both create and update requests for driver records.
 function driverHandleCreateOrUpdate(string $action): void
@@ -559,6 +676,7 @@ function driverHandleCreateOrUpdate(string $action): void
     try {
         $validated = driverValidateFormData($formData);
         $pdo = fleetDb();
+        driverEnsureSecondaryVehicleTable($pdo);
         $pdo->beginTransaction();
         $departmentId = driverFindOrCreateDepartmentId($pdo, $validated['department']);
         $existingRecord = null;
@@ -699,6 +817,7 @@ function driverHandleCreateOrUpdate(string $action): void
 
         $driverId = $action === 'update' ? (int) $formData['driver_id'] : (int) $pdo->lastInsertId();
         driverSyncVehicleAssignment($pdo, $driverId, $validated['assigned_vehicle_id']);
+        driverSyncSecondaryVehicles($pdo, $driverId, $validated['other_vehicle_ids'], $validated['assigned_vehicle_id']);
         $pdo->commit();
 
         foreach ($oldUploadsToDelete as $oldUpload) {

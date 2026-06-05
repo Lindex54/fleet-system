@@ -94,6 +94,7 @@ const driverModalTitle = document.querySelector('[data-driver-modal-title]');
 const driverSubmitButton = document.querySelector('[data-driver-submit-button]');
 const driverForm = document.querySelector('[data-driver-form]');
 const driverVehicleSelect = document.querySelector('[data-driver-vehicle-select]');
+const driverOtherVehiclesSelect = document.querySelector('[data-driver-other-vehicles-select]');
 const driverPhotoPathField = document.querySelector('[data-driver-photo-path-field]');
 const nationalIdPhotoPathField = document.querySelector('[data-national-id-photo-path-field]');
 const drivingLicenseScanPathField = document.querySelector('[data-driving-license-scan-path-field]');
@@ -1360,6 +1361,17 @@ function setDriverViewText(selector, value) {
   }
 }
 
+function setDriverMultiSelectValues(selectElement, values) {
+  if (!selectElement) {
+    return;
+  }
+
+  const normalizedValues = new Set(values.map((value) => String(value)));
+  Array.from(selectElement.options).forEach((option) => {
+    option.selected = normalizedValues.has(option.value);
+  });
+}
+
 // Shows one optional upload link in the driver details modal.
 function setDriverViewUploadLink(selector, url, label) {
   const link = driverViewModal?.querySelector(selector);
@@ -1409,6 +1421,7 @@ function populateDriverViewModal(button) {
   const email = row.dataset.email || 'No email on file';
   const nationalIdNumber = row.dataset.nationalIdNumber || 'Not available';
   const assignedVehicle = row.dataset.assignedVehicle || 'Unassigned';
+  const otherVehicles = row.dataset.otherVehicles || '-';
   const statusLabel = row.dataset.statusLabel || 'Unknown';
   const licenseNumber = row.dataset.licenseNumber || '-';
   const licenseClasses = row.dataset.licenseClasses || '-';
@@ -1427,6 +1440,7 @@ function populateDriverViewModal(button) {
   setDriverViewText('[data-driver-view-department]', department);
   setDriverViewText('[data-driver-view-status-label]', statusLabel);
   setDriverViewText('[data-driver-view-assigned-vehicle]', assignedVehicle);
+  setDriverViewText('[data-driver-view-other-vehicles]', otherVehicles);
   setDriverViewText('[data-driver-view-employee-id]', employeeId);
   setDriverViewText('[data-driver-view-gender]', gender);
   setDriverViewText('[data-driver-view-national-id-number]', nationalIdNumber);
@@ -1551,6 +1565,23 @@ function setDriverVehicleAvailability(currentDriverId = '') {
   });
 }
 
+function syncDriverOtherVehicleChoices() {
+  if (!driverVehicleSelect || !driverOtherVehiclesSelect) {
+    return;
+  }
+
+  const assignedVehicleId = driverVehicleSelect.value;
+
+  Array.from(driverOtherVehiclesSelect.options).forEach((option) => {
+    const shouldDisable = assignedVehicleId !== '' && assignedVehicleId !== 'unassigned' && option.value === assignedVehicleId;
+    option.disabled = shouldDisable;
+
+    if (shouldDisable) {
+      option.selected = false;
+    }
+  });
+}
+
 // Resets the shared driver modal back to a clean create state.
 function resetDriverFormForCreate() {
   driverForm?.reset();
@@ -1561,6 +1592,7 @@ function resetDriverFormForCreate() {
 
   setDriverFormMode('create');
   setDriverFieldValue('select[name="assigned_vehicle"]', 'unassigned');
+  setDriverMultiSelectValues(driverOtherVehiclesSelect, []);
   setDriverFieldValue('select[name="status"]', 'active');
   setDriverFieldValue('select[name="gender"]', '');
   setDriverFieldValue('input[name="national_id_number"]', '');
@@ -1579,6 +1611,7 @@ function resetDriverFormForCreate() {
   setDriverUploadPreview('national_id_photo');
   setDriverUploadPreview('driving_license_scan');
   setDriverVehicleAvailability('');
+  syncDriverOtherVehicleChoices();
 }
 
 // Reads the clicked driver row and pre-fills the shared modal for editing.
@@ -1607,6 +1640,13 @@ function populateDriverEditForm(button) {
   setDriverFieldValue('input[name="license_expiry"]', row.dataset.licenseExpiry || '');
   setDriverFieldValue('input[name="department"]', row.dataset.department || '');
   setDriverFieldValue('select[name="assigned_vehicle"]', row.dataset.assignedVehicleId || 'unassigned');
+  setDriverMultiSelectValues(
+    driverOtherVehiclesSelect,
+    (row.dataset.otherVehicleIds || '')
+      .split(',')
+      .map((value) => value.trim())
+      .filter((value) => value !== '')
+  );
   setDriverFieldValue('select[name="status"]', row.dataset.status || 'active');
   if (driverPhotoPathField) {
     driverPhotoPathField.value = row.dataset.driverPhoto || '';
@@ -1639,6 +1679,7 @@ function populateDriverEditForm(button) {
     row.dataset.drivingLicenseScanIsImage === 'true'
   );
   setDriverVehicleAvailability(row.dataset.driverId || '');
+  syncDriverOtherVehicleChoices();
 }
 
 let pendingDriverDeleteForm = null;
@@ -1711,6 +1752,8 @@ closeDriverViewModalButtons.forEach((button) => {
   button.addEventListener('click', () => setDriverViewModalOpen(false));
 });
 
+driverVehicleSelect?.addEventListener('change', syncDriverOtherVehicleChoices);
+
 driverModal?.addEventListener('click', (event) => {
   if (event.target === driverModal) {
     setDriverModalOpen(false);
@@ -1726,6 +1769,7 @@ driverViewModal?.addEventListener('click', (event) => {
 if (driverModal?.dataset.openOnLoad === 'true') {
   document.body.classList.add('overflow-hidden');
   setDriverVehicleAvailability(driverIdField?.value || '');
+  syncDriverOtherVehicleChoices();
 }
 
 printDriverViewButton?.addEventListener('click', printDriverDetailSheet);

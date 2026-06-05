@@ -280,6 +280,31 @@ function driverPanelFetchAssignedVehicle(PDO $pdo, int $driverId): ?array
         return null;
     }
 
+    return driverPanelMapVehicleRow($vehicle);
+}
+
+function driverPanelEnsureSecondaryVehicleTable(PDO $pdo): void
+{
+    $pdo->exec(
+        "CREATE TABLE IF NOT EXISTS driver_secondary_vehicles (
+            id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+            driver_id INT UNSIGNED NOT NULL,
+            vehicle_id INT UNSIGNED NOT NULL,
+            created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            UNIQUE KEY uniq_driver_secondary_vehicle (driver_id, vehicle_id),
+            KEY idx_driver_secondary_vehicle_vehicle (vehicle_id),
+            CONSTRAINT fk_driver_secondary_vehicle_driver
+                FOREIGN KEY (driver_id) REFERENCES drivers(id)
+                ON DELETE CASCADE ON UPDATE CASCADE,
+            CONSTRAINT fk_driver_secondary_vehicle_vehicle
+                FOREIGN KEY (vehicle_id) REFERENCES vehicles(id)
+                ON DELETE CASCADE ON UPDATE CASCADE
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci"
+    );
+}
+
+function driverPanelMapVehicleRow(array $vehicle): array
+{
     $status = driverPanelNormalizeVehicleStatus((string) $vehicle['status']);
 
     return [
@@ -299,6 +324,72 @@ function driverPanelFetchAssignedVehicle(PDO $pdo, int $driverId): ?array
         'status_label' => $status['label'],
         'status_classes' => $status['classes'],
     ];
+}
+
+function driverPanelFetchOtherVehicles(PDO $pdo, int $driverId, ?int $assignedVehicleId): array
+{
+    driverPanelEnsureSecondaryVehicleTable($pdo);
+
+    $statement = $pdo->prepare(
+        'SELECT
+            v.id,
+            v.registration_no,
+            v.make,
+            v.model,
+            v.manufacture_year,
+            v.vehicle_type,
+            v.fuel_type,
+            v.current_mileage,
+            v.insurance_expiry,
+            v.status,
+            v.notes,
+            COALESCE(dep.name, \'Unassigned\') AS department_name,
+            NULL AS assigned_at
+        FROM driver_secondary_vehicles dsv
+        INNER JOIN vehicles v ON v.id = dsv.vehicle_id
+        LEFT JOIN departments dep ON dep.id = v.department_id
+        WHERE dsv.driver_id = :driver_id
+        ORDER BY v.registration_no ASC'
+    );
+    $statement->execute(['driver_id' => $driverId]);
+
+    $vehicles = [];
+
+    foreach ($statement->fetchAll() as $vehicle) {
+        if ($assignedVehicleId !== null && (int) $vehicle['id'] === $assignedVehicleId) {
+            continue;
+        }
+
+        $vehicles[] = driverPanelMapVehicleRow($vehicle);
+    }
+
+    return $vehicles;
+}
+
+function driverPanelBuildTripVehicleOptions(?array $assignedVehicle, array $otherVehicles): array
+{
+    $vehicles = [];
+
+    if ($assignedVehicle !== null) {
+        $vehicles[] = $assignedVehicle + ['option_label' => 'Assigned vehicle'];
+    }
+
+    foreach ($otherVehicles as $vehicle) {
+        $vehicles[] = $vehicle + ['option_label' => 'Other vehicle'];
+    }
+
+    return $vehicles;
+}
+
+function driverPanelFindTripVehicleOption(array $tripVehicleOptions, int $vehicleId): ?array
+{
+    foreach ($tripVehicleOptions as $vehicle) {
+        if ((int) $vehicle['id'] === $vehicleId) {
+            return $vehicle;
+        }
+    }
+
+    return null;
 }
 
 function driverPanelFetchLatestTrip(PDO $pdo, int $driverId): ?array
@@ -385,7 +476,7 @@ function driverPanelFetchLatestPreInspection(PDO $pdo, int $driverId, ?int $vehi
     ];
 }
 
-function driverPanelBuildAlerts(?array $driver, ?array $vehicle, ?array $latestTrip, ?array $latestPreInspection): array
+function driverPanelBuildAlerts(?array $driver, ?array $vehicle, array $tripVehicleOptions, ?array $latestTrip, ?array $latestPreInspection): array
 {
     $alerts = [];
     $today = date('Y-m-d');
@@ -398,11 +489,17 @@ function driverPanelBuildAlerts(?array $driver, ?array $vehicle, ?array $latestT
         ]];
     }
 
-    if ($vehicle === null) {
+    if ($vehicle === null && $tripVehicleOptions === []) {
         $alerts[] = [
             'tone' => 'warning',
             'title' => 'No vehicle assigned',
             'message' => 'You do not currently have an active vehicle assignment. Please contact transport office.',
+        ];
+    } elseif ($vehicle === null && $tripVehicleOptions !== []) {
+        $alerts[] = [
+            'tone' => 'info',
+            'title' => 'Using linked vehicles',
+            'message' => 'No primary vehicle is assigned, but other approved vehicles are available for trip work.',
         ];
     }
 
@@ -483,13 +580,21 @@ function driverPanelBuildAlerts(?array $driver, ?array $vehicle, ?array $latestT
     return $alerts;
 }
 
-function driverPanelBuildTripStatus(?array $vehicle, ?array $latestTrip, ?array $latestPreInspection): array
+function driverPanelBuildTripStatus(?array $vehicle, array $tripVehicleOptions, ?array $latestTrip, ?array $latestPreInspection): array
 {
-    if ($vehicle === null) {
+    if ($vehicle === null && $tripVehicleOptions === []) {
         return [
             'label' => 'No vehicle assigned',
             'detail' => 'Transport office needs to assign a vehicle before trip work can begin.',
             'classes' => 'border-orange-200 bg-fleet-warning-soft text-fleet-warning-strong',
+        ];
+    }
+
+    if ($vehicle === null && $tripVehicleOptions !== []) {
+        return [
+            'label' => 'Other vehicle available',
+            'detail' => 'You can start a trip with one of the other vehicles linked to your profile.',
+            'classes' => 'border-blue-200 bg-fleet-primary-soft text-fleet-primary',
         ];
     }
 
@@ -537,6 +642,8 @@ function driverPanelFetchCommonData(): array
     $emptyState = [
         'driverProfile' => null,
         'assignedVehicle' => null,
+        'otherVehicles' => [],
+        'tripVehicleOptions' => [],
         'tripStatus' => [
             'label' => 'Unavailable',
             'detail' => 'Driver panel data could not be loaded.',
@@ -560,10 +667,12 @@ function driverPanelFetchCommonData(): array
         }
 
         $assignedVehicle = driverPanelFetchAssignedVehicle($pdo, (int) $driver['id']);
+        $otherVehicles = driverPanelFetchOtherVehicles($pdo, (int) $driver['id'], $assignedVehicle['id'] ?? null);
         $latestTrip = driverPanelFetchLatestTrip($pdo, (int) $driver['id']);
         $latestPreInspection = driverPanelFetchLatestPreInspection($pdo, (int) $driver['id'], $assignedVehicle['id'] ?? null);
-        $alerts = driverPanelBuildAlerts($driver, $assignedVehicle, $latestTrip, $latestPreInspection);
-        $tripStatus = driverPanelBuildTripStatus($assignedVehicle, $latestTrip, $latestPreInspection);
+        $tripVehicleOptions = driverPanelBuildTripVehicleOptions($assignedVehicle, $otherVehicles);
+        $alerts = driverPanelBuildAlerts($driver, $assignedVehicle, $tripVehicleOptions, $latestTrip, $latestPreInspection);
+        $tripStatus = driverPanelBuildTripStatus($assignedVehicle, $tripVehicleOptions, $latestTrip, $latestPreInspection);
 
         return [
             'driverProfile' => [
@@ -586,6 +695,8 @@ function driverPanelFetchCommonData(): array
                 'initial' => strtoupper(substr((string) $driver['full_name'], 0, 1)),
             ],
             'assignedVehicle' => $assignedVehicle,
+            'otherVehicles' => $otherVehicles,
+            'tripVehicleOptions' => $tripVehicleOptions,
             'tripStatus' => $tripStatus,
             'latestTrip' => $latestTrip,
             'latestPreInspection' => $latestPreInspection,
@@ -617,9 +728,9 @@ function driverPanelFetchDashboardData(): array
             'icon' => 'T',
         ],
         [
-            'label' => 'License Expiry',
-            'value' => $commonData['driverProfile']['license_expiry'] ?? '-',
-            'icon' => 'L',
+            'label' => 'Other Vehicles',
+            'value' => (string) count($commonData['otherVehicles']),
+            'icon' => 'O',
         ],
     ];
 
@@ -647,8 +758,8 @@ function driverPanelFetchVehiclePageData(): array
             'value' => $vehicle['current_mileage'] ?? '-',
         ],
         [
-            'label' => 'Vehicle Condition',
-            'value' => $vehicle['status_label'] ?? 'Unknown',
+            'label' => 'Other Vehicles',
+            'value' => (string) count($commonData['otherVehicles']),
         ],
     ];
 
@@ -966,6 +1077,7 @@ function driverPanelFetchPreTripPageData(): array
 function driverPanelBuildTripStartFormDataFromPost(): array
 {
     return [
+        'vehicle_id' => trim((string) ($_POST['vehicle_id'] ?? '')),
         'trip_date' => trim((string) ($_POST['trip_date'] ?? date('Y-m-d'))),
         'departure_location' => trim((string) ($_POST['departure_location'] ?? '')),
         'destination' => trim((string) ($_POST['destination'] ?? '')),
@@ -990,6 +1102,7 @@ function driverPanelFetchOpenTrip(PDO $pdo, int $driverId): ?array
     $statement = $pdo->prepare(
         "SELECT
             vl.id,
+            vl.vehicle_id,
             vl.trip_date,
             vl.departure_location,
             vl.destination,
@@ -1016,6 +1129,7 @@ function driverPanelFetchOpenTrip(PDO $pdo, int $driverId): ?array
 
     return [
         'id' => (int) $trip['id'],
+        'vehicle_id' => (int) $trip['vehicle_id'],
         'date' => driverPanelFormatDate($trip['trip_date']),
         'date_raw' => $trip['trip_date'],
         'vehicle' => $trip['registration_no'],
@@ -1072,7 +1186,34 @@ function driverPanelFetchRecentTrips(PDO $pdo, int $driverId): array
     return $trips;
 }
 
-function driverPanelValidateTripStart(array $formData, array $assignedVehicle): array
+function driverPanelValidateTripVehicleSelection(array $formData, array $tripVehicleOptions): array
+{
+    if ($tripVehicleOptions === []) {
+        throw new RuntimeException('No trip vehicle is available for this driver.');
+    }
+
+    $defaultVehicleId = (int) $tripVehicleOptions[0]['id'];
+    $selectedVehicleId = $formData['vehicle_id'] === ''
+        ? $defaultVehicleId
+        : filter_var($formData['vehicle_id'], FILTER_VALIDATE_INT, ['options' => ['min_range' => 1]]);
+
+    if ($selectedVehicleId === false) {
+        throw new RuntimeException('Please choose a valid trip vehicle.');
+    }
+
+    $selectedVehicle = driverPanelFindTripVehicleOption($tripVehicleOptions, (int) $selectedVehicleId);
+    if ($selectedVehicle === null) {
+        throw new RuntimeException('The selected trip vehicle is not available to this driver.');
+    }
+
+    if (in_array($selectedVehicle['status_label'], ['Maintenance', 'Grounded', 'Disposed'], true)) {
+        throw new RuntimeException('The selected trip vehicle is not currently available for travel.');
+    }
+
+    return $selectedVehicle;
+}
+
+function driverPanelValidateTripStart(array $formData, array $selectedVehicle): array
 {
     if ($formData['departure_location'] === '' || $formData['destination'] === '' || $formData['purpose'] === '') {
         throw new RuntimeException('Departure location, destination, and purpose are required to start a trip.');
@@ -1085,7 +1226,7 @@ function driverPanelValidateTripStart(array $formData, array $assignedVehicle): 
     }
 
     $odometerStart = $formData['odometer_start'] === ''
-        ? $assignedVehicle['current_mileage_raw']
+        ? $selectedVehicle['current_mileage_raw']
         : filter_var($formData['odometer_start'], FILTER_VALIDATE_INT, ['options' => ['min_range' => 0]]);
 
     if ($odometerStart === false) {
@@ -1093,6 +1234,7 @@ function driverPanelValidateTripStart(array $formData, array $assignedVehicle): 
     }
 
     return [
+        'vehicle_id' => (int) $selectedVehicle['id'],
         'trip_date' => $date->format('Y-m-d'),
         'departure_location' => $formData['departure_location'],
         'destination' => $formData['destination'],
@@ -1109,17 +1251,18 @@ function driverPanelHandleStartTrip(): void
         $pdo = fleetDb();
         $commonData = driverPanelFetchCommonData();
         $driverProfile = $commonData['driverProfile'];
-        $assignedVehicle = $commonData['assignedVehicle'];
+        $tripVehicleOptions = $commonData['tripVehicleOptions'];
 
-        if ($driverProfile === null || $assignedVehicle === null) {
-            throw new RuntimeException('A driver profile and assigned vehicle are required before starting a trip.');
+        if ($driverProfile === null || $tripVehicleOptions === []) {
+            throw new RuntimeException('A driver profile and at least one trip vehicle are required before starting a trip.');
         }
 
         if (driverPanelFetchOpenTrip($pdo, (int) $driverProfile['id']) !== null) {
             throw new RuntimeException('Finish the current trip before starting a new one.');
         }
 
-        $validated = driverPanelValidateTripStart($formData, $assignedVehicle);
+        $selectedVehicle = driverPanelValidateTripVehicleSelection($formData, $tripVehicleOptions);
+        $validated = driverPanelValidateTripStart($formData, $selectedVehicle);
         $statement = $pdo->prepare(
             "INSERT INTO vehicle_logs (
                 vehicle_id,
@@ -1140,7 +1283,7 @@ function driverPanelHandleStartTrip(): void
             )"
         );
         $statement->execute([
-            'vehicle_id' => (int) $assignedVehicle['id'],
+            'vehicle_id' => $validated['vehicle_id'],
             'driver_id' => (int) $driverProfile['id'],
             'trip_date' => $validated['trip_date'],
             'departure_location' => $validated['departure_location'],
@@ -1220,10 +1363,9 @@ function driverPanelHandleEndTrip(): void
         $pdo = fleetDb();
         $commonData = driverPanelFetchCommonData();
         $driverProfile = $commonData['driverProfile'];
-        $assignedVehicle = $commonData['assignedVehicle'];
 
-        if ($driverProfile === null || $assignedVehicle === null) {
-            throw new RuntimeException('A driver profile and assigned vehicle are required before ending a trip.');
+        if ($driverProfile === null) {
+            throw new RuntimeException('A driver profile is required before ending a trip.');
         }
 
         $openTrip = driverPanelFetchOpenTrip($pdo, (int) $driverProfile['id']);
@@ -1256,7 +1398,7 @@ function driverPanelHandleEndTrip(): void
         );
         $mileageStatement->execute([
             'odometer_end' => $validated['odometer_end'],
-            'vehicle_id' => (int) $assignedVehicle['id'],
+            'vehicle_id' => (int) $openTrip['vehicle_id'],
         ]);
 
         $pdo->commit();
@@ -1307,6 +1449,7 @@ function driverPanelFetchTripLogPageData(): array
     $notification = $flash['notification'] ?? null;
     $driverProfile = $commonData['driverProfile'];
     $assignedVehicle = $commonData['assignedVehicle'];
+    $tripVehicleOptions = $commonData['tripVehicleOptions'];
     $activeTrip = null;
     $recentTrips = [];
 
@@ -1325,11 +1468,12 @@ function driverPanelFetchTripLogPageData(): array
     }
 
     $startFormData = $flash['start_form_data'] ?? [
+        'vehicle_id' => $tripVehicleOptions[0]['id'] ?? '',
         'trip_date' => date('Y-m-d'),
         'departure_location' => '',
         'destination' => '',
         'purpose' => '',
-        'odometer_start' => $assignedVehicle['current_mileage_raw'] ?? '',
+        'odometer_start' => $tripVehicleOptions[0]['current_mileage_raw'] ?? $assignedVehicle['current_mileage_raw'] ?? '',
     ];
 
     $endFormData = $flash['end_form_data'] ?? [
@@ -1344,6 +1488,7 @@ function driverPanelFetchTripLogPageData(): array
         'tripLogNotification' => $notification,
         'activeTrip' => $activeTrip,
         'recentTrips' => $recentTrips,
+        'tripVehicleOptions' => $tripVehicleOptions,
         'tripStartFormData' => $startFormData,
         'tripEndFormData' => $endFormData,
         'tripFormAction' => driverPanelHandlerUrl(),
@@ -1535,7 +1680,7 @@ function driverPanelBuildReminderNotifications(array $commonData): array
     $latestPreInspection = $commonData['latestPreInspection'];
     $assignedVehicle = $commonData['assignedVehicle'];
 
-    if ($assignedVehicle === null) {
+    if ($assignedVehicle === null && $commonData['tripVehicleOptions'] === []) {
         $reminders[] = [
             'title' => 'Vehicle assignment reminder',
             'message' => 'You need an assigned vehicle before normal trip workflow can continue.',

@@ -253,6 +253,39 @@ include __DIR__ . '/includes/sidebar.php';
                         <?php endif; ?>
                     </section>
 
+                    <section class="dashboard-panel driver-card rounded-lg border border-fleet-line bg-fleet-surface shadow-fleet-card">
+                        <div class="dashboard-panel-head">
+                            <div>
+                                <h2 class="text-lg font-extrabold text-fleet-ink">Other Vehicles</h2>
+                                <p class="mt-1 text-sm text-fleet-muted">Extra vehicles this driver may also use for trips</p>
+                            </div>
+                            <span class="rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold text-fleet-sidebar"><?= count($otherVehicles); ?> vehicle(s)</span>
+                        </div>
+
+                        <?php if ($otherVehicles === []): ?>
+                            <div class="driver-subcard rounded-[1.25rem] border border-dashed border-fleet-line px-5 py-8 text-center text-sm text-fleet-muted">
+                                No other vehicles have been linked to this driver yet.
+                            </div>
+                        <?php else: ?>
+                            <div class="space-y-4">
+                                <?php foreach ($otherVehicles as $vehicle): ?>
+                                    <div class="driver-subcard rounded-[1.25rem] border border-fleet-line-soft bg-fleet-surface-muted p-4">
+                                        <div class="flex items-start justify-between gap-4">
+                                            <div>
+                                                <p class="text-sm font-extrabold text-fleet-ink"><?= htmlspecialchars($vehicle['registration_no'], ENT_QUOTES, 'UTF-8'); ?></p>
+                                                <p class="mt-1 text-sm text-fleet-muted"><?= htmlspecialchars($vehicle['make_model'], ENT_QUOTES, 'UTF-8'); ?></p>
+                                            </div>
+                                            <span class="inline-flex rounded-lg border px-3 py-1 text-xs font-semibold <?= htmlspecialchars($vehicle['status_classes'], ENT_QUOTES, 'UTF-8'); ?>">
+                                                <?= htmlspecialchars($vehicle['status_label'], ENT_QUOTES, 'UTF-8'); ?>
+                                            </span>
+                                        </div>
+                                        <p class="mt-3 text-sm text-fleet-muted">Mileage: <span class="font-semibold text-fleet-ink"><?= htmlspecialchars($vehicle['current_mileage'], ENT_QUOTES, 'UTF-8'); ?></span></p>
+                                    </div>
+                                <?php endforeach; ?>
+                            </div>
+                        <?php endif; ?>
+                    </section>
+
                     <section class="dashboard-panel dashboard-panel-alerts driver-card rounded-lg border border-fleet-line bg-fleet-surface shadow-fleet-card">
                         <div class="dashboard-panel-head">
                             <div>
