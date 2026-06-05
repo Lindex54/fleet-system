@@ -8,7 +8,7 @@ include __DIR__ . '/../../includes/header.php';
 include __DIR__ . '/../../includes/sidebar.php';
 ?>
 <main class="min-h-screen lg:pl-64">
-    <div class="mx-auto max-w-[1320px] px-4 py-8 sm:px-6 lg:px-8">
+    <div class="mx-auto max-w-[1536px] px-4 py-8 sm:px-6 lg:px-8 2xl:max-w-[1800px]">
         <div class="mb-7 flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
             <div>
                 <h1 class="text-2xl font-extrabold tracking-normal text-fleet-ink sm:text-3xl">Vehicle Log Book</h1>

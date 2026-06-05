@@ -433,7 +433,17 @@ CREATE TABLE `vehicle_logs` (
 --
 
 INSERT INTO `vehicle_logs` (`id`, `vehicle_id`, `driver_id`, `created_by`, `trip_date`, `departure_location`, `destination`, `purpose`, `odometer_start`, `odometer_end`, `fuel_litres`, `fuel_cost`, `remarks`, `created_at`, `updated_at`) VALUES
-(5, 4, NULL, NULL, '2026-05-31', 'USA', 'Virginia', 'Drugs', 200, 400, NULL, NULL, 'jhhkk', '2026-05-31 13:10:51', NULL);
+(5, 4, 1, NULL, '2026-05-05', 'Busitema Main Campus', 'Tororo Town', 'Administrative follow-up meeting', 195120, 195168, 8.50, 51000.00, 'Assigned driver routine movement.', '2026-05-05 08:10:00', NULL),
+(6, 4, 2, NULL, '2026-05-12', 'Tororo Town', 'Jinja', 'Collection of workshop supplies', 195168, 195322, 21.40, 128000.00, 'Vehicle used by alternate driver for procurement run.', '2026-05-12 07:45:00', NULL),
+(7, 4, 1, NULL, '2026-05-26', 'Busitema Main Campus', 'Kampala', 'Senate documentation delivery', 195322, 195560, 30.00, 180000.00, 'Round trip with scheduled stopover.', '2026-05-26 06:30:00', NULL),
+(8, 4, 3, NULL, '2026-06-02', 'Busitema Main Campus', 'Mbale', 'Driver induction support visit', 195560, 195702, 18.60, 111600.00, 'Historical entry for reporting by another driver.', '2026-06-02 09:05:00', NULL),
+(9, 4, 1, NULL, '2026-06-04', 'Busitema Main Campus', 'Soroti', 'Field supervision and return', 195702, 196002, 36.00, 216000.00, 'Latest mileage reading for UAJ 433X.', '2026-06-04 05:55:00', NULL),
+(10, 2, 2, NULL, '2026-05-08', 'Kampala', 'Mbale', 'Vice Chancellor coordination visit', 851820, 851996, 24.00, 156000.00, 'Highway travel completed in one day.', '2026-05-08 06:40:00', NULL),
+(11, 2, 2, NULL, '2026-05-19', 'Mbale', 'Busia', 'Regional outreach transport', 851996, 852140, 19.50, 126750.00, 'Vehicle returned same evening.', '2026-05-19 07:25:00', NULL),
+(12, 2, 1, NULL, '2026-06-01', 'Busia', 'Kampala', 'Delegation transfer support', 852140, 852436, 38.00, 247000.00, 'Shared vehicle use across drivers.', '2026-06-01 06:15:00', NULL),
+(13, 3, 1, NULL, '2026-05-14', 'Busitema Main Campus', 'Pallisa', 'Stores pickup for estates unit', 64810, 64942, 16.00, 99200.00, 'Pickup truck used for materials collection.', '2026-05-14 10:15:00', NULL),
+(14, 3, 2, NULL, '2026-05-29', 'Pallisa', 'Iganga', 'Workshop transfer of tools', 64942, 65110, 22.00, 136400.00, 'Another driver used the same pickup.', '2026-05-29 08:35:00', NULL),
+(15, 3, 1, NULL, '2026-06-03', 'Iganga', 'Tororo', 'Maintenance follow-up and return', 65110, 65231, 14.80, 91760.00, 'Latest mileage reading for UBR 402Q.', '2026-06-03 09:00:00', NULL);
 
 --
 -- Indexes for dumped tables
@@ -691,7 +701,7 @@ ALTER TABLE `vehicle_assignments`
 -- AUTO_INCREMENT for table `vehicle_logs`
 --
 ALTER TABLE `vehicle_logs`
-  MODIFY `id` int(10) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=6;
+  MODIFY `id` int(10) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=16;
 
 --
 -- Constraints for dumped tables
