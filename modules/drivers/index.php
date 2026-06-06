@@ -72,6 +72,51 @@ include __DIR__ . '/../../includes/sidebar.php';
             </section>
         <?php endif; ?>
 
+        <section class="mb-6 rounded-2xl border border-fleet-line bg-fleet-surface p-5 shadow-fleet-card print:hidden">
+            <form action="<?= htmlspecialchars($driverPageUrl, ENT_QUOTES, 'UTF-8'); ?>" method="get" class="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+                <label class="block">
+                    <span class="mb-2 block text-sm font-semibold text-fleet-ink">Driver</span>
+                    <select name="driver_id" class="vehicle-form-control">
+                        <option value="">All drivers</option>
+                        <?php foreach ($driverFilterOptions as $driverOption): ?>
+                            <option value="<?= htmlspecialchars((string) $driverOption['id'], ENT_QUOTES, 'UTF-8'); ?>" <?= ($driverFilters['driver_id'] ?? '') === (string) $driverOption['id'] ? 'selected' : ''; ?>>
+                                <?= htmlspecialchars($driverOption['full_name'], ENT_QUOTES, 'UTF-8'); ?>
+                            </option>
+                        <?php endforeach; ?>
+                    </select>
+                </label>
+
+                <label class="block">
+                    <span class="mb-2 block text-sm font-semibold text-fleet-ink">Department</span>
+                    <select name="department" class="vehicle-form-control">
+                        <option value="">All departments</option>
+                        <?php foreach ($driverDepartmentOptions as $departmentOption): ?>
+                            <option value="<?= htmlspecialchars($departmentOption, ENT_QUOTES, 'UTF-8'); ?>" <?= ($driverFilters['department'] ?? '') === $departmentOption ? 'selected' : ''; ?>>
+                                <?= htmlspecialchars($departmentOption, ENT_QUOTES, 'UTF-8'); ?>
+                            </option>
+                        <?php endforeach; ?>
+                    </select>
+                </label>
+
+                <label class="block">
+                    <span class="mb-2 block text-sm font-semibold text-fleet-ink">Vehicle</span>
+                    <select name="vehicle_id" class="vehicle-form-control">
+                        <option value="">All vehicles</option>
+                        <?php foreach ($driverVehicleOptions as $vehicleOption): ?>
+                            <option value="<?= htmlspecialchars((string) $vehicleOption['id'], ENT_QUOTES, 'UTF-8'); ?>" <?= ($driverFilters['vehicle_id'] ?? '') === (string) $vehicleOption['id'] ? 'selected' : ''; ?>>
+                                <?= htmlspecialchars($vehicleOption['registration_no'], ENT_QUOTES, 'UTF-8'); ?>
+                            </option>
+                        <?php endforeach; ?>
+                    </select>
+                </label>
+
+                <div class="flex items-end gap-3">
+                    <button type="submit" class="inline-flex h-10 items-center rounded-lg bg-fleet-sidebar px-5 text-sm font-semibold text-white shadow-sm hover:bg-fleet-sidebar-active">Apply Filters</button>
+                    <a href="<?= htmlspecialchars($driverPageUrl, ENT_QUOTES, 'UTF-8'); ?>" class="inline-flex h-10 items-center rounded-lg border border-fleet-line bg-fleet-surface px-4 text-sm font-semibold text-fleet-ink shadow-sm hover:bg-fleet-surface-muted">Reset</a>
+                </div>
+            </form>
+        </section>
+
         <section class="<?= $hasDrivers ? 'hidden' : 'flex'; ?> min-h-[420px] items-center justify-center">
             <div class="text-center">
                 <div class="mx-auto flex h-16 w-16 items-center justify-center rounded-2xl bg-slate-200 text-fleet-muted">
@@ -99,15 +144,6 @@ include __DIR__ . '/../../includes/sidebar.php';
                         <span class="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-fleet-muted">Q</span>
                         <input id="driver-search" type="search" class="h-11 w-full rounded-lg border border-fleet-line bg-fleet-surface py-2 pl-11 pr-4 text-sm text-fleet-ink shadow-sm outline-none transition placeholder:text-fleet-muted focus:border-fleet-primary focus:ring-4 focus:ring-blue-100" placeholder="Search drivers...">
                     </label>
-
-                    <div class="flex flex-wrap items-center gap-3">
-                        <label class="inline-flex items-center gap-2 text-sm text-fleet-ink">
-                            <input type="checkbox" class="h-4 w-4 rounded border-fleet-line text-fleet-primary focus:ring-fleet-primary" data-driver-select-all>
-                            <span>Select all visible</span>
-                        </label>
-                        <span class="rounded-full bg-fleet-surface-muted px-3 py-1 text-sm font-semibold text-fleet-ink" data-driver-selected-count>0 selected</span>
-                        <span class="hidden rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm font-semibold text-red-700" data-driver-print-warning>Please select at least one driver before printing.</span>
-                    </div>
                 </div>
             </div>
 
@@ -115,9 +151,6 @@ include __DIR__ . '/../../includes/sidebar.php';
                 <table class="w-full min-w-[920px] text-left text-sm" data-driver-table>
                     <thead class="bg-fleet-surface-muted text-fleet-muted">
                         <tr>
-                            <th class="px-5 py-4 font-semibold">
-                                <span class="sr-only">Select</span>
-                            </th>
                             <th class="px-5 py-4 font-semibold">Driver</th>
                             <th class="px-5 py-4 font-semibold">Contact</th>
                             <th class="px-5 py-4 font-semibold">License No.</th>
@@ -163,14 +196,6 @@ include __DIR__ . '/../../includes/sidebar.php';
                                 data-driving-license-scan-name="<?= htmlspecialchars($driver['driving_license_scan_name'], ENT_QUOTES, 'UTF-8'); ?>"
                                 data-driving-license-scan-is-image="<?= $driver['driving_license_scan_is_image'] ? 'true' : 'false'; ?>"
                             >
-                                <td class="px-5 py-4">
-                                    <input
-                                        type="checkbox"
-                                        class="h-4 w-4 rounded border-fleet-line text-fleet-primary focus:ring-fleet-primary"
-                                        data-driver-select-row
-                                        aria-label="Select <?= htmlspecialchars($driver['name'], ENT_QUOTES, 'UTF-8'); ?>"
-                                    >
-                                </td>
                                 <td class="px-5 py-4">
                                     <div class="flex items-center gap-3">
                                         <?php if ($driver['driver_photo_url'] !== '' && $driver['driver_photo_is_image']): ?>

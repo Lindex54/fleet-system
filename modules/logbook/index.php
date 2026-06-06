@@ -9,7 +9,7 @@ include __DIR__ . '/../../includes/sidebar.php';
 ?>
 <main class="min-h-screen lg:pl-64">
     <div class="mx-auto max-w-[1536px] px-4 py-8 sm:px-6 lg:px-8 2xl:max-w-[1800px]">
-        <div class="mb-7 flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+        <div class="mb-7 flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between print:hidden">
             <div>
                 <h1 class="text-2xl font-extrabold tracking-normal text-fleet-ink sm:text-3xl">Vehicle Log Book</h1>
                 <p class="mt-2 text-sm text-fleet-muted">Daily motor vehicle movement records - Official University Log</p>
@@ -32,6 +32,69 @@ include __DIR__ . '/../../includes/sidebar.php';
         <section class="mb-6 rounded-lg border border-fleet-line bg-slate-100 px-5 py-4">
             <h2 class="text-sm font-extrabold uppercase tracking-wide text-fleet-sidebar">Busitema University - Official Motor Vehicle Log Book</h2>
             <p class="mt-1 text-xs text-fleet-muted">All vehicle movements must be recorded. Authorized by the University Transport Officer.</p>
+        </section>
+
+        <section class="mb-6 rounded-2xl border border-fleet-line bg-fleet-surface p-5 shadow-fleet-card print:hidden">
+            <form action="<?= htmlspecialchars($logbookPageUrl, ENT_QUOTES, 'UTF-8'); ?>" method="get" class="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+                <label class="block">
+                    <span class="mb-2 block text-sm font-semibold text-fleet-ink">Vehicle</span>
+                    <select name="vehicle_id" class="vehicle-form-control">
+                        <option value="">All vehicles</option>
+                        <?php foreach ($logbookVehicleOptions as $vehicleOption): ?>
+                            <option value="<?= htmlspecialchars((string) $vehicleOption['id'], ENT_QUOTES, 'UTF-8'); ?>" <?= ($logbookFilters['vehicle_id'] ?? '') === (string) $vehicleOption['id'] ? 'selected' : ''; ?>>
+                                <?= htmlspecialchars($vehicleOption['registration_no'] . ' - ' . ($vehicleOption['make_model'] ?? ''), ENT_QUOTES, 'UTF-8'); ?>
+                            </option>
+                        <?php endforeach; ?>
+                    </select>
+                </label>
+
+                <label class="block">
+                    <span class="mb-2 block text-sm font-semibold text-fleet-ink">Driver</span>
+                    <select name="driver_id" class="vehicle-form-control">
+                        <option value="">All drivers</option>
+                        <?php foreach ($logbookDriverOptions as $driverOption): ?>
+                            <option value="<?= htmlspecialchars((string) $driverOption['id'], ENT_QUOTES, 'UTF-8'); ?>" <?= ($logbookFilters['driver_id'] ?? '') === (string) $driverOption['id'] ? 'selected' : ''; ?>>
+                                <?= htmlspecialchars($driverOption['full_name'], ENT_QUOTES, 'UTF-8'); ?>
+                            </option>
+                        <?php endforeach; ?>
+                    </select>
+                </label>
+
+                <label class="block">
+                    <span class="mb-2 block text-sm font-semibold text-fleet-ink">Period</span>
+                    <select name="period" class="vehicle-form-control" data-logbook-period-select>
+                        <option value="all" <?= ($logbookFilters['period'] ?? 'all') === 'all' ? 'selected' : ''; ?>>All time</option>
+                        <option value="week" <?= ($logbookFilters['period'] ?? '') === 'week' ? 'selected' : ''; ?>>Particular week</option>
+                        <option value="month" <?= ($logbookFilters['period'] ?? '') === 'month' ? 'selected' : ''; ?>>Particular month</option>
+                        <option value="custom" <?= ($logbookFilters['period'] ?? '') === 'custom' ? 'selected' : ''; ?>>Custom range</option>
+                    </select>
+                </label>
+
+                <div class="flex items-end gap-3">
+                    <button type="submit" class="inline-flex h-10 items-center rounded-lg bg-fleet-sidebar px-5 text-sm font-semibold text-white shadow-sm hover:bg-fleet-sidebar-active">Apply Filters</button>
+                    <a href="<?= htmlspecialchars($logbookPageUrl, ENT_QUOTES, 'UTF-8'); ?>" class="inline-flex h-10 items-center rounded-lg border border-fleet-line bg-fleet-surface px-4 text-sm font-semibold text-fleet-ink shadow-sm hover:bg-fleet-surface-muted">Reset</a>
+                </div>
+
+                <label class="block <?= ($logbookFilters['period'] ?? '') === 'week' ? '' : 'hidden'; ?>" data-logbook-week-field>
+                    <span class="mb-2 block text-sm font-semibold text-fleet-ink">Week</span>
+                    <input name="week" type="week" class="vehicle-form-control" value="<?= htmlspecialchars($logbookFilters['week'] ?? '', ENT_QUOTES, 'UTF-8'); ?>">
+                </label>
+
+                <label class="block <?= ($logbookFilters['period'] ?? '') === 'month' ? '' : 'hidden'; ?>" data-logbook-month-field>
+                    <span class="mb-2 block text-sm font-semibold text-fleet-ink">Month</span>
+                    <input name="month" type="month" class="vehicle-form-control" value="<?= htmlspecialchars($logbookFilters['month'] ?? '', ENT_QUOTES, 'UTF-8'); ?>">
+                </label>
+
+                <label class="block <?= ($logbookFilters['period'] ?? '') === 'custom' ? '' : 'hidden'; ?>" data-logbook-date-from-field>
+                    <span class="mb-2 block text-sm font-semibold text-fleet-ink">Date From</span>
+                    <input name="date_from" type="date" class="vehicle-form-control" value="<?= htmlspecialchars($logbookFilters['date_from'] ?? '', ENT_QUOTES, 'UTF-8'); ?>">
+                </label>
+
+                <label class="block <?= ($logbookFilters['period'] ?? '') === 'custom' ? '' : 'hidden'; ?>" data-logbook-date-to-field>
+                    <span class="mb-2 block text-sm font-semibold text-fleet-ink">Date To</span>
+                    <input name="date_to" type="date" class="vehicle-form-control" value="<?= htmlspecialchars($logbookFilters['date_to'] ?? '', ENT_QUOTES, 'UTF-8'); ?>">
+                </label>
+            </form>
         </section>
 
         <?php if (!empty($logbookNotification)): ?>
@@ -94,8 +157,34 @@ include __DIR__ . '/../../includes/sidebar.php';
             </div>
         </section>
 
-        <section class="<?= $hasLogs ? 'block' : 'hidden'; ?> overflow-hidden rounded-lg border border-fleet-line bg-fleet-surface shadow-fleet-card">
-            <div class="border-b border-fleet-line-soft px-4 py-4 sm:px-5">
+        <section class="<?= $hasLogs ? 'block' : 'hidden'; ?> rounded-2xl border border-fleet-line bg-white p-6 shadow-fleet-card print:shadow-none">
+            <div class="border-b border-fleet-line-soft pb-5">
+                <p class="text-xs font-extrabold uppercase tracking-[0.18em] text-fleet-primary">Busitema University Fleet</p>
+                <h2 class="mt-2 text-2xl font-extrabold text-fleet-ink"><?= htmlspecialchars($logbookPrintTitle, ENT_QUOTES, 'UTF-8'); ?></h2>
+                <p class="mt-2 text-sm text-fleet-muted">Print scope: <?= htmlspecialchars($logbookPeriodLabel, ENT_QUOTES, 'UTF-8'); ?></p>
+            </div>
+
+            <div class="mt-6 grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+                <article class="rounded-2xl border border-fleet-line bg-fleet-surface p-5">
+                    <p class="text-sm font-medium text-fleet-muted">Trips in View</p>
+                    <p class="mt-2 text-3xl font-extrabold text-fleet-ink"><?= htmlspecialchars((string) count($logs), ENT_QUOTES, 'UTF-8'); ?></p>
+                </article>
+                <article class="rounded-2xl border border-fleet-line bg-fleet-surface p-5">
+                    <p class="text-sm font-medium text-fleet-muted">Vehicle</p>
+                    <p class="mt-2 text-xl font-extrabold text-fleet-ink"><?= htmlspecialchars($logbookSelectedVehicle['registration_no'] ?? 'All vehicles', ENT_QUOTES, 'UTF-8'); ?></p>
+                </article>
+                <article class="rounded-2xl border border-fleet-line bg-fleet-surface p-5">
+                    <p class="text-sm font-medium text-fleet-muted">Driver</p>
+                    <p class="mt-2 text-xl font-extrabold text-fleet-ink"><?= htmlspecialchars($logbookSelectedDriver['full_name'] ?? 'All drivers', ENT_QUOTES, 'UTF-8'); ?></p>
+                </article>
+                <article class="rounded-2xl border border-fleet-line bg-fleet-surface p-5">
+                    <p class="text-sm font-medium text-fleet-muted">Distance Covered</p>
+                    <p class="mt-2 text-3xl font-extrabold text-fleet-ink"><?= htmlspecialchars((string) $totalKm, ENT_QUOTES, 'UTF-8'); ?> km</p>
+                </article>
+            </div>
+
+            <div class="mt-6 overflow-hidden rounded-lg border border-fleet-line bg-fleet-surface shadow-fleet-card">
+            <div class="border-b border-fleet-line-soft px-4 py-4 sm:px-5 print:hidden">
                 <!-- Search appears only when there are actual log rows to filter. -->
                 <label class="relative block max-w-md">
                     <span class="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-fleet-muted">Q</span>
@@ -188,8 +277,35 @@ include __DIR__ . '/../../includes/sidebar.php';
                     </tfoot>
                 </table>
             </div>
+            </div>
         </section>
     </div>
+
+    <script>
+    document.addEventListener('DOMContentLoaded', function () {
+        const periodSelect = document.querySelector('[data-logbook-period-select]');
+        const weekField = document.querySelector('[data-logbook-week-field]');
+        const monthField = document.querySelector('[data-logbook-month-field]');
+        const dateFromField = document.querySelector('[data-logbook-date-from-field]');
+        const dateToField = document.querySelector('[data-logbook-date-to-field]');
+
+        if (!periodSelect) {
+            return;
+        }
+
+        const syncPeriodFields = function () {
+            const period = periodSelect.value;
+
+            weekField?.classList.toggle('hidden', period !== 'week');
+            monthField?.classList.toggle('hidden', period !== 'month');
+            dateFromField?.classList.toggle('hidden', period !== 'custom');
+            dateToField?.classList.toggle('hidden', period !== 'custom');
+        };
+
+        periodSelect.addEventListener('change', syncPeriodFields);
+        syncPeriodFields();
+    });
+    </script>
 
     <div
         id="logbook-modal"

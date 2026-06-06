@@ -23,11 +23,7 @@ const logbookSearch = document.querySelector('#logbook-search');
 const logbookRows = document.querySelectorAll('[data-logbook-table] .logbook-row');
 const driverSearch = document.querySelector('#driver-search');
 const driverRows = document.querySelectorAll('[data-driver-table] .driver-row');
-const driverRowSelectionCheckboxes = document.querySelectorAll('[data-driver-select-row]');
-const driverSelectAllVisibleCheckbox = document.querySelector('[data-driver-select-all]');
-const driverSelectedCountLabel = document.querySelector('[data-driver-selected-count]');
 const printSelectedDriversButtons = document.querySelectorAll('[data-print-selected-drivers]');
-const driverPrintWarning = document.querySelector('[data-driver-print-warning]');
 const maintenanceSearch = document.querySelector('#maintenance-search');
 const maintenanceStatus = document.querySelector('#maintenance-status');
 const maintenanceRows = document.querySelectorAll('[data-maintenance-table] .maintenance-row');
@@ -84,7 +80,6 @@ driverSearch?.addEventListener('input', (event) => {
     row.classList.toggle('hidden', query.length > 0 && !haystack.includes(query));
   });
 
-  syncDriverSelectionSummary();
   driverTablePaginator?.refresh(true);
 });
 
@@ -316,11 +311,7 @@ const vehicleUsageTablePaginators = Array.from(document.querySelectorAll('[data-
   .filter(Boolean);
 
 function getVisibleDriverRows() {
-  return Array.from(driverRows).filter((row) => !row.classList.contains('hidden') && row.style.display !== 'none');
-}
-
-function getSelectedDriverRows() {
-  return Array.from(driverRows).filter((row) => row.querySelector('[data-driver-select-row]')?.checked);
+  return Array.from(driverRows).filter((row) => !row.classList.contains('hidden'));
 }
 
 function buildDriverPrintContact(row) {
@@ -331,40 +322,12 @@ function buildDriverPrintContact(row) {
   return parts.length > 0 ? parts.join(' / ') : 'No contact on file';
 }
 
-function syncDriverSelectionSummary() {
-  const visibleRows = getVisibleDriverRows();
-  const selectedVisibleRows = visibleRows.filter((row) => row.querySelector('[data-driver-select-row]')?.checked);
-  const selectedCount = getSelectedDriverRows().length;
-
-  if (driverSelectedCountLabel) {
-    driverSelectedCountLabel.textContent = `${selectedCount} selected`;
-  }
-
-  if (driverSelectAllVisibleCheckbox) {
-    const allVisibleSelected = visibleRows.length > 0 && selectedVisibleRows.length === visibleRows.length;
-    const someVisibleSelected = selectedVisibleRows.length > 0 && selectedVisibleRows.length < visibleRows.length;
-    driverSelectAllVisibleCheckbox.checked = allVisibleSelected;
-    driverSelectAllVisibleCheckbox.indeterminate = someVisibleSelected;
-  }
-
-  if (driverPrintWarning) {
-    if (selectedCount > 0) {
-      driverPrintWarning.classList.add('hidden');
-    }
-  }
-}
-
 function printDriverSelections() {
-  const selectedRows = getSelectedDriverRows();
+  const rowsToPrint = getVisibleDriverRows();
 
-  if (selectedRows.length === 0) {
-    if (driverPrintWarning) {
-      driverPrintWarning.classList.remove('hidden');
-    }
+  if (rowsToPrint.length === 0) {
     return;
   }
-
-  const rowsToPrint = selectedRows;
 
   const printWindow = window.open('', '_blank', 'width=1100,height=800');
   if (!printWindow) {
@@ -547,28 +510,9 @@ officerEmailInput?.addEventListener('keydown', (event) => {
 
 updateCommunicationRecipientState();
 
-driverRowSelectionCheckboxes.forEach((checkbox) => {
-  checkbox.addEventListener('change', syncDriverSelectionSummary);
-});
-
-driverSelectAllVisibleCheckbox?.addEventListener('change', (event) => {
-  const shouldCheck = event.target.checked;
-
-  getVisibleDriverRows().forEach((row) => {
-    const checkbox = row.querySelector('[data-driver-select-row]');
-    if (checkbox) {
-      checkbox.checked = shouldCheck;
-    }
-  });
-
-  syncDriverSelectionSummary();
-});
-
 printSelectedDriversButtons.forEach((button) => {
   button.addEventListener('click', printDriverSelections);
 });
-
-syncDriverSelectionSummary();
 
 // Modal references for all module pages
 const vehicleModal = document.querySelector('#vehicle-modal');

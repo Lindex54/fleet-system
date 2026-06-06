@@ -73,12 +73,93 @@ function logbookFormatDate(?string $date): string
     return $timestamp ? date('d/m/Y', $timestamp) : $date;
 }
 
+function logbookBuildFilterState(): array
+{
+    return [
+        'vehicle_id' => trim((string) ($_GET['vehicle_id'] ?? '')),
+        'driver_id' => trim((string) ($_GET['driver_id'] ?? '')),
+        'period' => strtolower(trim((string) ($_GET['period'] ?? 'all'))),
+        'week' => trim((string) ($_GET['week'] ?? '')),
+        'month' => trim((string) ($_GET['month'] ?? '')),
+        'date_from' => trim((string) ($_GET['date_from'] ?? '')),
+        'date_to' => trim((string) ($_GET['date_to'] ?? '')),
+    ];
+}
+
+function logbookResolvePeriodRange(array $filters): array
+{
+    $period = in_array($filters['period'], ['all', 'week', 'month', 'custom'], true)
+        ? $filters['period']
+        : 'all';
+
+    if ($period === 'week' && $filters['week'] !== '') {
+        $weekStart = DateTimeImmutable::createFromFormat('o-\WW-N', $filters['week'] . '-1');
+        $weekEnd = DateTimeImmutable::createFromFormat('o-\WW-N', $filters['week'] . '-7');
+
+        if ($weekStart && $weekEnd) {
+            return [
+                'period' => 'week',
+                'date_from' => $weekStart->format('Y-m-d'),
+                'date_to' => $weekEnd->format('Y-m-d'),
+                'label' => 'Week of ' . logbookFormatDate($weekStart->format('Y-m-d')) . ' to ' . logbookFormatDate($weekEnd->format('Y-m-d')),
+            ];
+        }
+    }
+
+    if ($period === 'month' && preg_match('/^\d{4}-\d{2}$/', $filters['month']) === 1) {
+        $monthStart = DateTimeImmutable::createFromFormat('Y-m-d', $filters['month'] . '-01');
+        if ($monthStart) {
+            $monthEnd = $monthStart->modify('last day of this month');
+
+            return [
+                'period' => 'month',
+                'date_from' => $monthStart->format('Y-m-d'),
+                'date_to' => $monthEnd->format('Y-m-d'),
+                'label' => $monthStart->format('F Y'),
+            ];
+        }
+    }
+
+    if ($period === 'custom' && $filters['date_from'] !== '' && $filters['date_to'] !== '') {
+        $dateFrom = DateTimeImmutable::createFromFormat('Y-m-d', $filters['date_from']);
+        $fromErrors = DateTimeImmutable::getLastErrors();
+        $dateTo = DateTimeImmutable::createFromFormat('Y-m-d', $filters['date_to']);
+        $toErrors = DateTimeImmutable::getLastErrors();
+        $fromErrors = is_array($fromErrors) ? $fromErrors : ['warning_count' => 0, 'error_count' => 0];
+        $toErrors = is_array($toErrors) ? $toErrors : ['warning_count' => 0, 'error_count' => 0];
+
+        if (
+            $dateFrom
+            && $dateTo
+            && ($fromErrors['warning_count'] ?? 0) === 0
+            && ($fromErrors['error_count'] ?? 0) === 0
+            && ($toErrors['warning_count'] ?? 0) === 0
+            && ($toErrors['error_count'] ?? 0) === 0
+            && $dateFrom <= $dateTo
+        ) {
+            return [
+                'period' => 'custom',
+                'date_from' => $dateFrom->format('Y-m-d'),
+                'date_to' => $dateTo->format('Y-m-d'),
+                'label' => logbookFormatDate($dateFrom->format('Y-m-d')) . ' to ' . logbookFormatDate($dateTo->format('Y-m-d')),
+            ];
+        }
+    }
+
+    return [
+        'period' => 'all',
+        'date_from' => null,
+        'date_to' => null,
+        'label' => 'All recorded dates',
+    ];
+}
+
 // Dropdown option loaders for the logbook modal
 // Loads current vehicle options for the logbook modal dropdown.
 function logbookFetchVehicleOptions(PDO $pdo): array
 {
     // The modal uses live vehicle records instead of hard-coded registration numbers.
-    $statement = $pdo->query('SELECT id, registration_no, current_mileage FROM vehicles ORDER BY registration_no ASC');
+    $statement = $pdo->query('SELECT id, registration_no, CONCAT(make, \' \', model) AS make_model, current_mileage FROM vehicles ORDER BY registration_no ASC');
 
     return $statement->fetchAll();
 }
@@ -92,6 +173,98 @@ function logbookFetchDriverOptions(PDO $pdo): array
     return $statement->fetchAll();
 }
 
+function logbookBuildQueryFilters(array $filters, array $periodRange): array
+{
+    $conditions = [];
+    $params = [];
+
+    $vehicleId = $filters['vehicle_id'] === ''
+        ? null
+        : filter_var($filters['vehicle_id'], FILTER_VALIDATE_INT, ['options' => ['min_range' => 1]]);
+    if ($vehicleId === false) {
+        $vehicleId = null;
+    }
+
+    $driverId = $filters['driver_id'] === '' || $filters['driver_id'] === 'all'
+        ? null
+        : filter_var($filters['driver_id'], FILTER_VALIDATE_INT, ['options' => ['min_range' => 1]]);
+    if ($driverId === false) {
+        $driverId = null;
+    }
+
+    if ($vehicleId !== null) {
+        $conditions[] = 'vl.vehicle_id = :vehicle_id';
+        $params['vehicle_id'] = (int) $vehicleId;
+    }
+
+    if ($driverId !== null) {
+        $conditions[] = 'vl.driver_id = :driver_id';
+        $params['driver_id'] = (int) $driverId;
+    }
+
+    if ($periodRange['date_from'] !== null && $periodRange['date_to'] !== null) {
+        $conditions[] = 'vl.trip_date BETWEEN :date_from AND :date_to';
+        $params['date_from'] = $periodRange['date_from'];
+        $params['date_to'] = $periodRange['date_to'];
+    }
+
+    return [
+        'where_sql' => $conditions === [] ? '' : 'WHERE ' . implode(' AND ', $conditions),
+        'params' => $params,
+        'vehicle_id' => $vehicleId === null ? null : (int) $vehicleId,
+        'driver_id' => $driverId === null ? null : (int) $driverId,
+    ];
+}
+
+function logbookFindVehicleOption(array $vehicleOptions, ?int $vehicleId): ?array
+{
+    if ($vehicleId === null) {
+        return null;
+    }
+
+    foreach ($vehicleOptions as $vehicleOption) {
+        if ((int) $vehicleOption['id'] === $vehicleId) {
+            return $vehicleOption;
+        }
+    }
+
+    return null;
+}
+
+function logbookFindDriverOption(array $driverOptions, ?int $driverId): ?array
+{
+    if ($driverId === null) {
+        return null;
+    }
+
+    foreach ($driverOptions as $driverOption) {
+        if ((int) $driverOption['id'] === $driverId) {
+            return $driverOption;
+        }
+    }
+
+    return null;
+}
+
+function logbookBuildPrintTitle(?array $selectedVehicle, ?array $selectedDriver, string $periodLabel): string
+{
+    $parts = ['Vehicle Log Book'];
+
+    if ($selectedVehicle !== null) {
+        $parts[] = $selectedVehicle['registration_no'];
+    } else {
+        $parts[] = 'All Vehicles';
+    }
+
+    if ($selectedDriver !== null) {
+        $parts[] = $selectedDriver['full_name'];
+    }
+
+    $parts[] = $periodLabel;
+
+    return implode(' - ', $parts);
+}
+
 // Page data loader for the logbook table, totals, and modal
 // Loads logbook rows, totals, dropdown options, and flash state for the page.
 function logbookFetchPageData(): array
@@ -102,6 +275,7 @@ function logbookFetchPageData(): array
     $formData = $flash['form_data'] ?? [];
     $openModal = (bool) ($flash['open_modal'] ?? false);
     $formMode = $flash['form_mode'] ?? 'create';
+    $filters = logbookBuildFilterState();
 
     $logs = [];
     $vehicleOptions = [];
@@ -109,13 +283,25 @@ function logbookFetchPageData(): array
     $totalKm = 0;
     $totalFuel = 0.0;
     $totalCostAmount = 0.0;
+    $periodRange = [
+        'period' => 'all',
+        'date_from' => null,
+        'date_to' => null,
+        'label' => 'All recorded dates',
+    ];
+    $selectedVehicle = null;
+    $selectedDriver = null;
 
     try {
         $pdo = fleetDb();
         $vehicleOptions = logbookFetchVehicleOptions($pdo);
         $driverOptions = logbookFetchDriverOptions($pdo);
+        $periodRange = logbookResolvePeriodRange($filters);
+        $queryFilters = logbookBuildQueryFilters($filters, $periodRange);
+        $selectedVehicle = logbookFindVehicleOption($vehicleOptions, $queryFilters['vehicle_id']);
+        $selectedDriver = logbookFindDriverOption($driverOptions, $queryFilters['driver_id']);
 
-        $statement = $pdo->query(
+        $statement = $pdo->prepare(
             'SELECT
                 vl.id,
                 vl.trip_date,
@@ -135,8 +321,10 @@ function logbookFetchPageData(): array
             FROM vehicle_logs vl
             INNER JOIN vehicles v ON v.id = vl.vehicle_id
             LEFT JOIN drivers d ON d.id = vl.driver_id
+            ' . $queryFilters['where_sql'] . '
             ORDER BY vl.trip_date DESC, vl.id DESC'
         );
+        $statement->execute($queryFilters['params']);
 
         foreach ($statement->fetchAll() as $row) {
             // Convert raw DB rows into the shape already expected by the table markup.
@@ -145,6 +333,7 @@ function logbookFetchPageData(): array
                 'vehicle_id' => $row['vehicle_id'] ?? null,
                 'driver_id' => $row['driver_id'] ?? null,
                 'date' => logbookFormatDate($row['trip_date']),
+                'date_raw' => $row['trip_date'],
                 'vehicle' => $row['registration_no'],
                 'driver' => $row['driver_name'],
                 'from' => $row['departure_location'],
@@ -176,6 +365,12 @@ function logbookFetchPageData(): array
         'totalKm' => $totalKm,
         'totalFuel' => rtrim(rtrim(number_format($totalFuel, 2, '.', ''), '0'), '.'),
         'totalCost' => logbookFormatMoney($totalCostAmount),
+        'logbookFilters' => $filters,
+        'logbookPeriodLabel' => $periodRange['label'] ?? 'All recorded dates',
+        'logbookSelectedVehicle' => $selectedVehicle ?? null,
+        'logbookSelectedDriver' => $selectedDriver ?? null,
+        'logbookPrintTitle' => logbookBuildPrintTitle($selectedVehicle ?? null, $selectedDriver ?? null, $periodRange['label'] ?? 'All recorded dates'),
+        'logbookPageUrl' => logbookPageUrl(),
         'logbookNotification' => $notification,
         'logbookFormData' => $formData,
         'shouldOpenLogbookModal' => $openModal,

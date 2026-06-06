@@ -98,6 +98,15 @@ function driverHandlerUrl(): string
     return '/fleet-system/handlers/driver.php';
 }
 
+function driverBuildFilterState(): array
+{
+    return [
+        'driver_id' => trim((string) ($_GET['driver_id'] ?? '')),
+        'department' => trim((string) ($_GET['department'] ?? '')),
+        'vehicle_id' => trim((string) ($_GET['vehicle_id'] ?? '')),
+    ];
+}
+
 // Stores one-time driver feedback in session flash state.
 function driverSetFlash(array $payload): void
 {
@@ -185,6 +194,82 @@ function driverFetchVehicleOptions(PDO $pdo): array
     return $statement->fetchAll();
 }
 
+function driverFetchDepartmentOptions(PDO $pdo): array
+{
+    $statement = $pdo->query(
+        "SELECT DISTINCT COALESCE(dep.name, '') AS department_name
+        FROM drivers d
+        LEFT JOIN departments dep ON dep.id = d.department_id
+        WHERE COALESCE(dep.name, '') <> ''
+        ORDER BY dep.name ASC"
+    );
+
+    return array_values(array_filter(array_map(
+        static fn (array $row): string => trim((string) ($row['department_name'] ?? '')),
+        $statement->fetchAll()
+    )));
+}
+
+function driverFetchFilterDriverOptions(PDO $pdo): array
+{
+    $statement = $pdo->query(
+        "SELECT id, full_name
+        FROM drivers
+        ORDER BY full_name ASC"
+    );
+
+    return $statement->fetchAll();
+}
+
+function driverBuildQueryFilters(array $filters): array
+{
+    $conditions = [];
+    $params = [];
+
+    $driverId = $filters['driver_id'] === ''
+        ? null
+        : filter_var($filters['driver_id'], FILTER_VALIDATE_INT, ['options' => ['min_range' => 1]]);
+    if ($driverId === false) {
+        $driverId = null;
+    }
+
+    if ($driverId !== null) {
+        $conditions[] = 'd.id = :driver_id';
+        $params['driver_id'] = (int) $driverId;
+    }
+
+    if ($filters['department'] !== '') {
+        $conditions[] = 'COALESCE(dep.name, \'\') = :department';
+        $params['department'] = $filters['department'];
+    }
+
+    $vehicleId = $filters['vehicle_id'] === ''
+        ? null
+        : filter_var($filters['vehicle_id'], FILTER_VALIDATE_INT, ['options' => ['min_range' => 1]]);
+    if ($vehicleId === false) {
+        $vehicleId = null;
+    }
+
+    if ($vehicleId !== null) {
+        $conditions[] = '(
+            v.id = :vehicle_id
+            OR EXISTS (
+                SELECT 1
+                FROM driver_secondary_vehicles filter_dsv
+                WHERE filter_dsv.driver_id = d.id
+                    AND filter_dsv.vehicle_id = :vehicle_id_secondary
+            )
+        )';
+        $params['vehicle_id'] = (int) $vehicleId;
+        $params['vehicle_id_secondary'] = (int) $vehicleId;
+    }
+
+    return [
+        'where_sql' => $conditions === [] ? '' : 'WHERE ' . implode(' AND ', $conditions),
+        'params' => $params,
+    ];
+}
+
 function driverEnsureSecondaryVehicleTable(PDO $pdo): void
 {
     $pdo->exec(
@@ -215,15 +300,21 @@ function driverFetchPageData(): array
     $formData = $flash['form_data'] ?? [];
     $openModal = (bool) ($flash['open_modal'] ?? false);
     $formMode = $flash['form_mode'] ?? 'create';
+    $filters = driverBuildFilterState();
 
     $drivers = [];
     $vehicleOptions = [];
+    $departmentOptions = [];
+    $filterDriverOptions = [];
 
     try {
         $pdo = fleetDb();
         driverEnsureSecondaryVehicleTable($pdo);
         $vehicleOptions = driverFetchVehicleOptions($pdo);
-        $statement = $pdo->query(
+        $departmentOptions = driverFetchDepartmentOptions($pdo);
+        $filterDriverOptions = driverFetchFilterDriverOptions($pdo);
+        $queryFilters = driverBuildQueryFilters($filters);
+        $statement = $pdo->prepare(
             'SELECT
                 d.id,
                 d.full_name,
@@ -262,8 +353,10 @@ function driverFetchPageData(): array
                 ON active_assignment.driver_id = d.id
                 AND active_assignment.released_at IS NULL
             LEFT JOIN vehicles v ON v.id = active_assignment.vehicle_id
+            ' . $queryFilters['where_sql'] . '
             ORDER BY d.created_at DESC, d.id DESC'
         );
+        $statement->execute($queryFilters['params']);
 
         foreach ($statement->fetchAll() as $row) {
             // Shape database rows into the format the driver table and edit modal expect.
@@ -315,11 +408,15 @@ function driverFetchPageData(): array
         'drivers' => $drivers,
         'hasDrivers' => count($drivers) > 0,
         'driverNotification' => $notification,
+        'driverFilters' => $filters,
         'driverFormData' => $formData,
         'shouldOpenDriverModal' => $openModal,
         'driverFormMode' => $formMode,
         'driverFormAction' => driverHandlerUrl(),
         'driverVehicleOptions' => $vehicleOptions,
+        'driverDepartmentOptions' => $departmentOptions,
+        'driverFilterOptions' => $filterDriverOptions,
+        'driverPageUrl' => driverPageUrl(),
     ];
 }
 
