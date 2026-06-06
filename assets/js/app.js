@@ -61,6 +61,8 @@ vehicleSearch?.addEventListener('input', (event) => {
     const haystack = row.dataset.search || row.textContent.toLowerCase();
     row.classList.toggle('hidden', query.length > 0 && !haystack.includes(query));
   });
+
+  vehicleTablePaginator?.refresh(true);
 });
 
 logbookSearch?.addEventListener('input', (event) => {
@@ -70,6 +72,8 @@ logbookSearch?.addEventListener('input', (event) => {
     const haystack = row.dataset.search || row.textContent.toLowerCase();
     row.classList.toggle('hidden', query.length > 0 && !haystack.includes(query));
   });
+
+  logbookTablePaginator?.refresh(true);
 });
 
 driverSearch?.addEventListener('input', (event) => {
@@ -81,6 +85,7 @@ driverSearch?.addEventListener('input', (event) => {
   });
 
   syncDriverSelectionSummary();
+  driverTablePaginator?.refresh(true);
 });
 
 // Applies the maintenance search text and status filter at the same time.
@@ -96,6 +101,8 @@ function filterMaintenanceRows() {
 
     row.classList.toggle('hidden', !matchesSearch || !matchesStatus);
   });
+
+  maintenanceTablePaginator?.refresh(true);
 }
 
 maintenanceSearch?.addEventListener('input', filterMaintenanceRows);
@@ -108,6 +115,8 @@ preInspectionSearch?.addEventListener('input', (event) => {
     const haystack = row.dataset.search || row.textContent.toLowerCase();
     row.classList.toggle('hidden', query.length > 0 && !haystack.includes(query));
   });
+
+  preInspectionTablePaginator?.refresh(true);
 });
 
 postInspectionSearch?.addEventListener('input', (event) => {
@@ -117,6 +126,8 @@ postInspectionSearch?.addEventListener('input', (event) => {
     const haystack = row.dataset.search || row.textContent.toLowerCase();
     row.classList.toggle('hidden', query.length > 0 && !haystack.includes(query));
   });
+
+  postInspectionTablePaginator?.refresh(true);
 });
 
 providerSearch?.addEventListener('input', (event) => {
@@ -135,6 +146,8 @@ communicationHistorySearch?.addEventListener('input', (event) => {
     const haystack = row.dataset.search || row.textContent.toLowerCase();
     row.classList.toggle('hidden', query.length > 0 && !haystack.includes(query));
   });
+
+  communicationHistoryTablePaginator?.refresh(true);
 });
 
 // Applies the Estates search, status, and category filters entirely in the browser.
@@ -164,8 +177,146 @@ document.querySelector('[data-print-page]')?.addEventListener('click', () => {
   window.print();
 });
 
+function createTablePaginator(table, rowSelector, pageSize = 10) {
+  if (!table) {
+    return null;
+  }
+
+  const rows = Array.from(table.querySelectorAll(rowSelector));
+  if (rows.length <= pageSize) {
+    return {
+      refresh() {},
+    };
+  }
+
+  const wrapper = table.closest('.overflow-x-auto') || table.parentElement;
+  if (!wrapper) {
+    return {
+      refresh() {},
+    };
+  }
+
+  const controls = document.createElement('div');
+  controls.className = 'pagination-controls print:hidden flex flex-col gap-3 border-t border-fleet-line-soft px-4 py-4 sm:flex-row sm:items-center sm:justify-between';
+
+  const summary = document.createElement('p');
+  summary.className = 'text-sm text-fleet-muted';
+
+  const actions = document.createElement('div');
+  actions.className = 'flex items-center gap-3';
+
+  const previousButton = document.createElement('button');
+  previousButton.type = 'button';
+  previousButton.className = 'inline-flex h-10 items-center rounded-lg border border-fleet-line bg-fleet-surface px-4 text-sm font-semibold text-fleet-ink shadow-sm hover:bg-fleet-surface-muted disabled:cursor-not-allowed disabled:opacity-50';
+  previousButton.textContent = 'Previous';
+
+  const pageLabel = document.createElement('span');
+  pageLabel.className = 'text-sm font-semibold text-fleet-ink';
+
+  const nextButton = document.createElement('button');
+  nextButton.type = 'button';
+  nextButton.className = 'inline-flex h-10 items-center rounded-lg border border-fleet-line bg-fleet-surface px-4 text-sm font-semibold text-fleet-ink shadow-sm hover:bg-fleet-surface-muted disabled:cursor-not-allowed disabled:opacity-50';
+  nextButton.textContent = 'Next';
+
+  actions.append(previousButton, pageLabel, nextButton);
+  controls.append(summary, actions);
+  wrapper.insertAdjacentElement('afterend', controls);
+
+  let currentPage = 1;
+
+  function render(resetPage = false) {
+    const visibleRows = rows.filter((row) => !row.classList.contains('hidden'));
+    const totalRows = visibleRows.length;
+    const totalPages = Math.max(1, Math.ceil(totalRows / pageSize));
+
+    if (resetPage) {
+      currentPage = 1;
+    } else if (currentPage > totalPages) {
+      currentPage = totalPages;
+    }
+
+    const startIndex = (currentPage - 1) * pageSize;
+    const endIndex = startIndex + pageSize;
+
+    rows.forEach((row) => {
+      if (row.classList.contains('hidden')) {
+        row.style.display = '';
+        return;
+      }
+
+      const visibleIndex = visibleRows.indexOf(row);
+      row.style.display = visibleIndex >= startIndex && visibleIndex < endIndex ? '' : 'none';
+    });
+
+    if (totalRows === 0) {
+      controls.classList.add('hidden');
+      return;
+    }
+
+    controls.classList.remove('hidden');
+    summary.textContent = `Showing ${startIndex + 1}-${Math.min(endIndex, totalRows)} of ${totalRows} entries`;
+    pageLabel.textContent = `Page ${currentPage} of ${totalPages}`;
+    previousButton.disabled = currentPage === 1;
+    nextButton.disabled = currentPage === totalPages;
+  }
+
+  previousButton.addEventListener('click', () => {
+    if (currentPage === 1) {
+      return;
+    }
+
+    currentPage -= 1;
+    render();
+  });
+
+  nextButton.addEventListener('click', () => {
+    const visibleRows = rows.filter((row) => !row.classList.contains('hidden'));
+    const totalPages = Math.max(1, Math.ceil(visibleRows.length / pageSize));
+
+    if (currentPage === totalPages) {
+      return;
+    }
+
+    currentPage += 1;
+    render();
+  });
+
+  window.addEventListener('beforeprint', () => {
+    rows.forEach((row) => {
+      if (!row.classList.contains('hidden')) {
+        row.style.display = '';
+      }
+    });
+  });
+
+  window.addEventListener('afterprint', () => {
+    render();
+  });
+
+  render();
+
+  return {
+    refresh(resetPage = false) {
+      render(resetPage);
+    },
+  };
+}
+
+const vehicleTablePaginator = createTablePaginator(document.querySelector('[data-vehicle-table]'), '.vehicle-row');
+const logbookTablePaginator = createTablePaginator(document.querySelector('[data-logbook-table]'), '.logbook-row');
+const driverTablePaginator = createTablePaginator(document.querySelector('[data-driver-table]'), '.driver-row');
+const maintenanceTablePaginator = createTablePaginator(document.querySelector('[data-maintenance-table]'), '.maintenance-row');
+const preInspectionTablePaginator = createTablePaginator(document.querySelector('[data-pre-inspection-table]'), '.pre-inspection-row');
+const postInspectionTablePaginator = createTablePaginator(document.querySelector('[data-post-inspection-table]'), '.post-inspection-row');
+const communicationHistoryTablePaginator = createTablePaginator(document.querySelector('[data-communication-history-table]'), '.communication-history-row');
+const dashboardLogTablePaginator = createTablePaginator(document.querySelector('[data-dashboard-log-table]'), '.dashboard-log-row');
+const driverHistoryTablePaginator = createTablePaginator(document.querySelector('[data-driver-history-table]'), '.driver-history-row');
+const vehicleUsageTablePaginators = Array.from(document.querySelectorAll('[data-vehicle-usage-driver-table]'))
+  .map((table) => createTablePaginator(table, '.vehicle-usage-log-row'))
+  .filter(Boolean);
+
 function getVisibleDriverRows() {
-  return Array.from(driverRows).filter((row) => !row.classList.contains('hidden'));
+  return Array.from(driverRows).filter((row) => !row.classList.contains('hidden') && row.style.display !== 'none');
 }
 
 function getSelectedDriverRows() {

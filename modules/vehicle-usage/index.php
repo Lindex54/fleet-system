@@ -4,6 +4,20 @@ require_once __DIR__ . '/../../handlers/vehicle-usage.php';
 extract(vehicleUsageFetchPageData());
 include __DIR__ . '/../../includes/header.php';
 include __DIR__ . '/../../includes/sidebar.php';
+
+$driverBreakdownShowAll = (($_GET['driver_breakdown'] ?? '') === 'all');
+$driverBreakdownTotalEntries = count($vehicleUsageDriverBreakdown);
+$driverBreakdownPreviewRows = array_slice($vehicleUsageDriverBreakdown, 0, 5);
+$driverBreakdownRowsToRender = $driverBreakdownShowAll ? $vehicleUsageDriverBreakdown : $driverBreakdownPreviewRows;
+$driverBreakdownHasMore = $driverBreakdownTotalEntries > 5;
+
+$driverBreakdownShowAllQuery = $_GET;
+$driverBreakdownShowAllQuery['driver_breakdown'] = 'all';
+$driverBreakdownShowLessQuery = $_GET;
+unset($driverBreakdownShowLessQuery['driver_breakdown']);
+
+$driverBreakdownShowAllUrl = $vehicleUsagePageUrl . '?' . http_build_query($driverBreakdownShowAllQuery) . '#driver-breakdown';
+$driverBreakdownShowLessUrl = $vehicleUsagePageUrl . (count($driverBreakdownShowLessQuery) > 0 ? '?' . http_build_query($driverBreakdownShowLessQuery) : '') . '#driver-breakdown';
 ?>
 <main class="min-h-screen lg:pl-64">
     <div class="mx-auto max-w-[1536px] px-4 py-8 sm:px-6 lg:px-8 2xl:max-w-[1800px]">
@@ -168,7 +182,7 @@ include __DIR__ . '/../../includes/sidebar.php';
                     <?php endif; ?>
                 </section>
 
-                <section class="rounded-2xl border border-fleet-line bg-fleet-surface p-5">
+                <section id="driver-breakdown" class="rounded-2xl border border-fleet-line bg-fleet-surface p-5">
                     <h3 class="text-lg font-extrabold text-fleet-ink">Driver Breakdown</h3>
                     <p class="mt-1 text-sm text-fleet-muted">Who used the filtered vehicle scope, how often, and how far.</p>
 
@@ -177,22 +191,47 @@ include __DIR__ . '/../../includes/sidebar.php';
                             No driver usage records match the current filters.
                         </div>
                     <?php else: ?>
-                        <div class="mt-4 space-y-3">
-                            <?php foreach ($vehicleUsageDriverBreakdown as $driverRow): ?>
-                                <div class="rounded-xl border border-fleet-line bg-white px-4 py-4">
-                                    <div class="flex items-start justify-between gap-4">
-                                        <div>
-                                            <p class="font-extrabold text-fleet-ink"><?= htmlspecialchars($driverRow['driver'], ENT_QUOTES, 'UTF-8'); ?></p>
-                                            <p class="mt-1 text-sm text-fleet-muted">Latest trip: <?= htmlspecialchars($driverRow['latest_date'], ENT_QUOTES, 'UTF-8'); ?></p>
-                                        </div>
-                                        <div class="text-right text-sm">
-                                            <p class="font-semibold text-fleet-ink"><?= htmlspecialchars((string) $driverRow['trips'], ENT_QUOTES, 'UTF-8'); ?> trip(s)</p>
-                                            <p class="mt-1 text-fleet-muted"><?= htmlspecialchars($driverRow['distance'], ENT_QUOTES, 'UTF-8'); ?></p>
+                        <details class="mt-4 rounded-2xl border border-fleet-line bg-white p-4">
+                            <summary class="flex cursor-pointer list-none items-center justify-between gap-4 text-sm font-semibold text-fleet-ink">
+                                <span>View driver breakdown</span>
+                                <span class="rounded-full bg-fleet-surface-muted px-3 py-1 text-xs font-semibold text-fleet-sidebar">
+                                    <?= htmlspecialchars((string) ($driverBreakdownShowAll ? $driverBreakdownTotalEntries : count($driverBreakdownRowsToRender)), ENT_QUOTES, 'UTF-8'); ?>
+                                    of
+                                    <?= htmlspecialchars((string) $driverBreakdownTotalEntries, ENT_QUOTES, 'UTF-8'); ?>
+                                </span>
+                            </summary>
+
+                            <div class="mt-4 space-y-3">
+                                <?php foreach ($driverBreakdownRowsToRender as $driverRow): ?>
+                                    <div class="rounded-xl border border-fleet-line bg-fleet-surface px-4 py-4">
+                                        <div class="flex items-start justify-between gap-4">
+                                            <div>
+                                                <p class="font-extrabold text-fleet-ink"><?= htmlspecialchars($driverRow['driver'], ENT_QUOTES, 'UTF-8'); ?></p>
+                                                <p class="mt-1 text-sm text-fleet-muted">Latest trip: <?= htmlspecialchars($driverRow['latest_date'], ENT_QUOTES, 'UTF-8'); ?></p>
+                                            </div>
+                                            <div class="text-right text-sm">
+                                                <p class="font-semibold text-fleet-ink"><?= htmlspecialchars((string) $driverRow['trips'], ENT_QUOTES, 'UTF-8'); ?> trip(s)</p>
+                                                <p class="mt-1 text-fleet-muted"><?= htmlspecialchars($driverRow['distance'], ENT_QUOTES, 'UTF-8'); ?></p>
+                                            </div>
                                         </div>
                                     </div>
+                                <?php endforeach; ?>
+                            </div>
+
+                            <?php if ($driverBreakdownHasMore && !$driverBreakdownShowAll): ?>
+                                <div class="mt-4">
+                                    <a href="<?= htmlspecialchars($driverBreakdownShowAllUrl, ENT_QUOTES, 'UTF-8'); ?>" class="inline-flex h-10 items-center rounded-lg border border-fleet-line bg-fleet-surface px-4 text-sm font-semibold text-fleet-ink shadow-sm hover:bg-fleet-surface-muted">
+                                        View all <?= htmlspecialchars((string) $driverBreakdownTotalEntries, ENT_QUOTES, 'UTF-8'); ?> entries
+                                    </a>
                                 </div>
-                            <?php endforeach; ?>
-                        </div>
+                            <?php elseif ($driverBreakdownHasMore && $driverBreakdownShowAll): ?>
+                                <div class="mt-4">
+                                    <a href="<?= htmlspecialchars($driverBreakdownShowLessUrl, ENT_QUOTES, 'UTF-8'); ?>" class="inline-flex h-10 items-center rounded-lg border border-fleet-line bg-fleet-surface px-4 text-sm font-semibold text-fleet-ink shadow-sm hover:bg-fleet-surface-muted">
+                                        Show first 5 entries
+                                    </a>
+                                </div>
+                            <?php endif; ?>
+                        </details>
                     <?php endif; ?>
                 </section>
             </div>
@@ -226,7 +265,7 @@ include __DIR__ . '/../../includes/sidebar.php';
                                 </div>
 
                                 <div class="mt-4 overflow-x-auto">
-                                    <table class="w-full min-w-[1200px] border-collapse text-left text-sm">
+                                    <table class="w-full min-w-[1200px] border-collapse text-left text-sm" data-vehicle-usage-driver-table>
                                         <thead class="bg-fleet-surface-muted text-fleet-muted">
                                             <tr>
                                                 <th class="border border-fleet-line px-3 py-3 font-semibold">Date</th>
@@ -244,7 +283,7 @@ include __DIR__ . '/../../includes/sidebar.php';
                                         </thead>
                                         <tbody>
                                             <?php foreach ($driverSection['rows'] as $row): ?>
-                                                <tr>
+                                                <tr class="vehicle-usage-log-row">
                                                     <td class="border border-fleet-line px-3 py-3 text-fleet-ink"><?= htmlspecialchars($row['date'], ENT_QUOTES, 'UTF-8'); ?></td>
                                                     <td class="border border-fleet-line px-3 py-3 font-semibold text-fleet-ink"><?= htmlspecialchars($row['vehicle'], ENT_QUOTES, 'UTF-8'); ?></td>
                                                     <td class="border border-fleet-line px-3 py-3 text-fleet-ink"><?= htmlspecialchars($row['driver'], ENT_QUOTES, 'UTF-8'); ?></td>

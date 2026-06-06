@@ -51,7 +51,7 @@ include __DIR__ . '/includes/sidebar.php';
                     <div class="px-5 py-8 text-center text-sm text-fleet-muted">No trip history has been recorded yet.</div>
                 <?php else: ?>
                     <div class="overflow-x-auto">
-                        <table class="w-full min-w-[920px] text-left text-sm">
+                        <table class="w-full min-w-[920px] text-left text-sm" data-driver-history-table>
                             <thead class="bg-fleet-surface-muted text-fleet-muted">
                                 <tr>
                                     <th class="px-5 py-4 font-semibold">Date</th>
@@ -65,7 +65,7 @@ include __DIR__ . '/includes/sidebar.php';
                             </thead>
                             <tbody class="divide-y divide-fleet-line-soft">
                                 <?php foreach ($tripHistory as $trip): ?>
-                                    <tr class="hover:bg-fleet-surface-muted/70">
+                                    <tr class="driver-history-row hover:bg-fleet-surface-muted/70">
                                         <td class="px-5 py-4 text-fleet-ink"><?= htmlspecialchars($trip['date'], ENT_QUOTES, 'UTF-8'); ?></td>
                                         <td class="px-5 py-4 font-semibold text-fleet-ink"><?= htmlspecialchars($trip['vehicle'], ENT_QUOTES, 'UTF-8'); ?></td>
                                         <td class="px-5 py-4 text-fleet-ink"><?= htmlspecialchars($trip['route'], ENT_QUOTES, 'UTF-8'); ?></td>
