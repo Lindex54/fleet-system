@@ -201,7 +201,7 @@ include __DIR__ . '/../../includes/sidebar.php';
                 <div class="flex items-center justify-between gap-4">
                     <div>
                         <h3 class="text-lg font-extrabold text-fleet-ink">Detailed Usage Log</h3>
-                        <p class="mt-1 text-sm text-fleet-muted">Full printable history for the current filter selection.</p>
+                        <p class="mt-1 text-sm text-fleet-muted">Full printable history for the current filter selection, grouped by driver for signing.</p>
                     </div>
                     <span class="rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold text-fleet-sidebar"><?= count($vehicleUsageRows); ?> row(s)</span>
                 </div>
@@ -211,41 +211,73 @@ include __DIR__ . '/../../includes/sidebar.php';
                         No vehicle usage records match the current filter selection.
                     </div>
                 <?php else: ?>
-                    <div class="mt-5 overflow-x-auto">
-                        <table class="w-full min-w-[1200px] border-collapse text-left text-sm">
-                            <thead class="bg-fleet-surface-muted text-fleet-muted">
-                                <tr>
-                                    <th class="border border-fleet-line px-3 py-3 font-semibold">Date</th>
-                                    <th class="border border-fleet-line px-3 py-3 font-semibold">Vehicle</th>
-                                    <th class="border border-fleet-line px-3 py-3 font-semibold">Driver</th>
-                                    <th class="border border-fleet-line px-3 py-3 font-semibold">Route</th>
-                                    <th class="border border-fleet-line px-3 py-3 font-semibold">Purpose</th>
-                                    <th class="border border-fleet-line px-3 py-3 font-semibold">Odo. Start</th>
-                                    <th class="border border-fleet-line px-3 py-3 font-semibold">Odo. End</th>
-                                    <th class="border border-fleet-line px-3 py-3 font-semibold">Distance</th>
-                                    <th class="border border-fleet-line px-3 py-3 font-semibold">Fuel</th>
-                                    <th class="border border-fleet-line px-3 py-3 font-semibold">Fuel Cost</th>
-                                    <th class="border border-fleet-line px-3 py-3 font-semibold">Remarks</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                <?php foreach ($vehicleUsageRows as $row): ?>
-                                    <tr>
-                                        <td class="border border-fleet-line px-3 py-3 text-fleet-ink"><?= htmlspecialchars($row['date'], ENT_QUOTES, 'UTF-8'); ?></td>
-                                        <td class="border border-fleet-line px-3 py-3 font-semibold text-fleet-ink"><?= htmlspecialchars($row['vehicle'], ENT_QUOTES, 'UTF-8'); ?></td>
-                                        <td class="border border-fleet-line px-3 py-3 text-fleet-ink"><?= htmlspecialchars($row['driver'], ENT_QUOTES, 'UTF-8'); ?></td>
-                                        <td class="border border-fleet-line px-3 py-3 text-fleet-muted"><?= htmlspecialchars($row['route'], ENT_QUOTES, 'UTF-8'); ?></td>
-                                        <td class="border border-fleet-line px-3 py-3 text-fleet-muted"><?= htmlspecialchars($row['purpose'], ENT_QUOTES, 'UTF-8'); ?></td>
-                                        <td class="border border-fleet-line px-3 py-3 text-fleet-ink"><?= htmlspecialchars($row['odometer_start'], ENT_QUOTES, 'UTF-8'); ?></td>
-                                        <td class="border border-fleet-line px-3 py-3 text-fleet-ink"><?= htmlspecialchars($row['odometer_end'], ENT_QUOTES, 'UTF-8'); ?></td>
-                                        <td class="border border-fleet-line px-3 py-3 text-fleet-ink"><?= htmlspecialchars($row['distance'], ENT_QUOTES, 'UTF-8'); ?></td>
-                                        <td class="border border-fleet-line px-3 py-3 text-fleet-ink"><?= htmlspecialchars($row['fuel_litres'], ENT_QUOTES, 'UTF-8'); ?></td>
-                                        <td class="border border-fleet-line px-3 py-3 text-fleet-ink"><?= htmlspecialchars($row['fuel_cost'], ENT_QUOTES, 'UTF-8'); ?></td>
-                                        <td class="border border-fleet-line px-3 py-3 text-fleet-muted"><?= htmlspecialchars($row['remarks'], ENT_QUOTES, 'UTF-8'); ?></td>
-                                    </tr>
-                                <?php endforeach; ?>
-                            </tbody>
-                        </table>
+                    <div class="mt-5 space-y-6">
+                        <?php foreach ($vehicleUsageDriverSections as $driverSection): ?>
+                            <section class="vehicle-usage-driver-section rounded-2xl border border-fleet-line bg-white p-5 print:break-inside-avoid">
+                                <div class="flex items-start justify-between gap-4">
+                                    <div>
+                                        <h4 class="text-base font-extrabold text-fleet-ink"><?= htmlspecialchars($driverSection['driver'], ENT_QUOTES, 'UTF-8'); ?></h4>
+                                        <p class="mt-1 text-sm text-fleet-muted">Usage log and sign-off section for this driver.</p>
+                                    </div>
+                                    <div class="text-right text-sm">
+                                        <p class="font-semibold text-fleet-ink"><?= htmlspecialchars((string) $driverSection['trip_count'], ENT_QUOTES, 'UTF-8'); ?> trip(s)</p>
+                                        <p class="mt-1 text-fleet-muted"><?= htmlspecialchars($driverSection['distance'], ENT_QUOTES, 'UTF-8'); ?> • <?= htmlspecialchars($driverSection['fuel_cost'], ENT_QUOTES, 'UTF-8'); ?></p>
+                                    </div>
+                                </div>
+
+                                <div class="mt-4 overflow-x-auto">
+                                    <table class="w-full min-w-[1200px] border-collapse text-left text-sm">
+                                        <thead class="bg-fleet-surface-muted text-fleet-muted">
+                                            <tr>
+                                                <th class="border border-fleet-line px-3 py-3 font-semibold">Date</th>
+                                                <th class="border border-fleet-line px-3 py-3 font-semibold">Vehicle</th>
+                                                <th class="border border-fleet-line px-3 py-3 font-semibold">Driver</th>
+                                                <th class="border border-fleet-line px-3 py-3 font-semibold">Route</th>
+                                                <th class="border border-fleet-line px-3 py-3 font-semibold">Purpose</th>
+                                                <th class="border border-fleet-line px-3 py-3 font-semibold">Odo. Start</th>
+                                                <th class="border border-fleet-line px-3 py-3 font-semibold">Odo. End</th>
+                                                <th class="border border-fleet-line px-3 py-3 font-semibold">Distance</th>
+                                                <th class="border border-fleet-line px-3 py-3 font-semibold">Fuel</th>
+                                                <th class="border border-fleet-line px-3 py-3 font-semibold">Fuel Cost</th>
+                                                <th class="border border-fleet-line px-3 py-3 font-semibold">Remarks</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            <?php foreach ($driverSection['rows'] as $row): ?>
+                                                <tr>
+                                                    <td class="border border-fleet-line px-3 py-3 text-fleet-ink"><?= htmlspecialchars($row['date'], ENT_QUOTES, 'UTF-8'); ?></td>
+                                                    <td class="border border-fleet-line px-3 py-3 font-semibold text-fleet-ink"><?= htmlspecialchars($row['vehicle'], ENT_QUOTES, 'UTF-8'); ?></td>
+                                                    <td class="border border-fleet-line px-3 py-3 text-fleet-ink"><?= htmlspecialchars($row['driver'], ENT_QUOTES, 'UTF-8'); ?></td>
+                                                    <td class="border border-fleet-line px-3 py-3 text-fleet-muted"><?= htmlspecialchars($row['route'], ENT_QUOTES, 'UTF-8'); ?></td>
+                                                    <td class="border border-fleet-line px-3 py-3 text-fleet-muted"><?= htmlspecialchars($row['purpose'], ENT_QUOTES, 'UTF-8'); ?></td>
+                                                    <td class="border border-fleet-line px-3 py-3 text-fleet-ink"><?= htmlspecialchars($row['odometer_start'], ENT_QUOTES, 'UTF-8'); ?></td>
+                                                    <td class="border border-fleet-line px-3 py-3 text-fleet-ink"><?= htmlspecialchars($row['odometer_end'], ENT_QUOTES, 'UTF-8'); ?></td>
+                                                    <td class="border border-fleet-line px-3 py-3 text-fleet-ink"><?= htmlspecialchars($row['distance'], ENT_QUOTES, 'UTF-8'); ?></td>
+                                                    <td class="border border-fleet-line px-3 py-3 text-fleet-ink"><?= htmlspecialchars($row['fuel_litres'], ENT_QUOTES, 'UTF-8'); ?></td>
+                                                    <td class="border border-fleet-line px-3 py-3 text-fleet-ink"><?= htmlspecialchars($row['fuel_cost'], ENT_QUOTES, 'UTF-8'); ?></td>
+                                                    <td class="border border-fleet-line px-3 py-3 text-fleet-muted"><?= htmlspecialchars($row['remarks'], ENT_QUOTES, 'UTF-8'); ?></td>
+                                                </tr>
+                                            <?php endforeach; ?>
+                                        </tbody>
+                                    </table>
+                                </div>
+
+                                <div class="mt-6 hidden gap-4 md:grid-cols-3 print:grid print:mt-8">
+                                    <div class="rounded-xl border border-dashed border-fleet-line px-4 py-5">
+                                        <p class="text-xs font-extrabold uppercase tracking-[0.18em] text-fleet-muted">Driver Signature</p>
+                                        <div class="mt-10 border-b border-fleet-ink"></div>
+                                    </div>
+                                    <div class="rounded-xl border border-dashed border-fleet-line px-4 py-5">
+                                        <p class="text-xs font-extrabold uppercase tracking-[0.18em] text-fleet-muted">Officer Driven</p>
+                                        <div class="mt-10 border-b border-fleet-ink"></div>
+                                    </div>
+                                    <div class="rounded-xl border border-dashed border-fleet-line px-4 py-5">
+                                        <p class="text-xs font-extrabold uppercase tracking-[0.18em] text-fleet-muted">Transport Officer</p>
+                                        <div class="mt-10 border-b border-fleet-ink"></div>
+                                    </div>
+                                </div>
+                            </section>
+                        <?php endforeach; ?>
                     </div>
                 <?php endif; ?>
             </section>
@@ -267,6 +299,11 @@ include __DIR__ . '/../../includes/sidebar.php';
 
   body {
     background: #fff !important;
+  }
+
+  .vehicle-usage-driver-section {
+    break-inside: avoid;
+    page-break-inside: avoid;
   }
 }
 </style>

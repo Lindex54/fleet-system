@@ -334,6 +334,38 @@ function vehicleUsageBuildDriverBreakdown(array $rows): array
     }, $breakdown);
 }
 
+function vehicleUsageBuildDriverSections(array $rows): array
+{
+    $sections = [];
+
+    foreach ($rows as $row) {
+        $driverKey = (string) ($row['driver_id'] ?? 0);
+
+        if (!isset($sections[$driverKey])) {
+            $sections[$driverKey] = [
+                'driver_id' => $row['driver_id'],
+                'driver' => $row['driver'],
+                'rows' => [],
+                'trip_count' => 0,
+                'distance_raw' => 0,
+                'fuel_cost_raw' => 0.0,
+            ];
+        }
+
+        $sections[$driverKey]['rows'][] = $row;
+        $sections[$driverKey]['trip_count']++;
+        $sections[$driverKey]['distance_raw'] += (int) $row['distance_raw'];
+        $sections[$driverKey]['fuel_cost_raw'] += (float) $row['fuel_cost_raw'];
+    }
+
+    return array_values(array_map(static function (array $section): array {
+        $section['distance'] = number_format((int) $section['distance_raw']) . ' km';
+        $section['fuel_cost'] = vehicleUsageFormatMoney($section['fuel_cost_raw']);
+
+        return $section;
+    }, $sections));
+}
+
 function vehicleUsageBuildSummary(array $rows): array
 {
     $totalDistance = 0;
@@ -406,6 +438,7 @@ function vehicleUsageFetchPageData(): array
         $rows = vehicleUsageFetchRows($pdo, $queryFilters['where_sql'], $queryFilters['params']);
         $summary = vehicleUsageBuildSummary($rows);
         $driverBreakdown = vehicleUsageBuildDriverBreakdown($rows);
+        $driverSections = vehicleUsageBuildDriverSections($rows);
 
         return [
             'vehicleUsageFilters' => $filters,
@@ -417,6 +450,7 @@ function vehicleUsageFetchPageData(): array
             'vehicleUsageHasRows' => $rows !== [],
             'vehicleUsageSummary' => $summary,
             'vehicleUsageDriverBreakdown' => $driverBreakdown,
+            'vehicleUsageDriverSections' => $driverSections,
             'vehicleUsagePeriodLabel' => $periodRange['label'],
             'vehicleUsagePrintTitle' => vehicleUsageBuildPrintTitle($selectedVehicle, $selectedDriver, $periodRange['label']),
             'vehicleUsagePageUrl' => vehicleUsagePageUrl(),
@@ -439,6 +473,7 @@ function vehicleUsageFetchPageData(): array
                 'total_cost' => 'UGX 0',
             ],
             'vehicleUsageDriverBreakdown' => [],
+            'vehicleUsageDriverSections' => [],
             'vehicleUsagePeriodLabel' => 'All recorded dates',
             'vehicleUsagePrintTitle' => 'Vehicle Usage Report',
             'vehicleUsagePageUrl' => vehicleUsagePageUrl(),
