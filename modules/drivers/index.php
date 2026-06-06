@@ -15,9 +15,9 @@ include __DIR__ . '/../../includes/sidebar.php';
                 <p class="mt-2 text-sm text-fleet-muted">University fleet driver records</p>
             </div>
             <div class="flex flex-wrap items-center gap-3">
-                <button type="button" data-print-page class="inline-flex h-10 items-center gap-2 rounded-lg border border-fleet-line bg-fleet-surface px-4 text-sm font-semibold text-fleet-ink shadow-fleet-card hover:bg-fleet-surface-muted">
+                <button type="button" data-print-selected-drivers class="inline-flex h-10 items-center gap-2 rounded-lg border border-fleet-line bg-fleet-surface px-4 text-sm font-semibold text-fleet-ink shadow-fleet-card hover:bg-fleet-surface-muted">
                     <span class="text-base">P</span>
-                    <span>Print</span>
+                    <span>Print Drivers</span>
                 </button>
                 <button type="button" data-open-driver-modal class="inline-flex h-10 items-center gap-2 rounded-lg bg-fleet-sidebar px-4 text-sm font-semibold text-white shadow-fleet-card hover:bg-fleet-sidebar-active">
                     <span class="text-lg leading-none">+</span>
@@ -93,17 +93,31 @@ include __DIR__ . '/../../includes/sidebar.php';
 
         <section class="<?= $hasDrivers ? 'block' : 'hidden'; ?> overflow-hidden rounded-lg border border-fleet-line bg-fleet-surface shadow-fleet-card">
             <div class="border-b border-fleet-line-soft px-4 py-4 sm:px-5">
-                <!-- Search appears only when there are actual driver rows to filter. -->
-                <label class="relative block max-w-md">
-                    <span class="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-fleet-muted">Q</span>
-                    <input id="driver-search" type="search" class="h-11 w-full rounded-lg border border-fleet-line bg-fleet-surface py-2 pl-11 pr-4 text-sm text-fleet-ink shadow-sm outline-none transition placeholder:text-fleet-muted focus:border-fleet-primary focus:ring-4 focus:ring-blue-100" placeholder="Search drivers...">
-                </label>
+                <div class="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+                    <!-- Search appears only when there are actual driver rows to filter. -->
+                    <label class="relative block max-w-md flex-1">
+                        <span class="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-fleet-muted">Q</span>
+                        <input id="driver-search" type="search" class="h-11 w-full rounded-lg border border-fleet-line bg-fleet-surface py-2 pl-11 pr-4 text-sm text-fleet-ink shadow-sm outline-none transition placeholder:text-fleet-muted focus:border-fleet-primary focus:ring-4 focus:ring-blue-100" placeholder="Search drivers...">
+                    </label>
+
+                    <div class="flex flex-wrap items-center gap-3">
+                        <label class="inline-flex items-center gap-2 text-sm text-fleet-ink">
+                            <input type="checkbox" class="h-4 w-4 rounded border-fleet-line text-fleet-primary focus:ring-fleet-primary" data-driver-select-all>
+                            <span>Select all visible</span>
+                        </label>
+                        <span class="rounded-full bg-fleet-surface-muted px-3 py-1 text-sm font-semibold text-fleet-ink" data-driver-selected-count>0 selected</span>
+                        <span class="hidden rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm font-semibold text-red-700" data-driver-print-warning>Please select at least one driver before printing.</span>
+                    </div>
+                </div>
             </div>
 
             <div class="overflow-x-auto">
                 <table class="w-full min-w-[920px] text-left text-sm" data-driver-table>
                     <thead class="bg-fleet-surface-muted text-fleet-muted">
                         <tr>
+                            <th class="px-5 py-4 font-semibold">
+                                <span class="sr-only">Select</span>
+                            </th>
                             <th class="px-5 py-4 font-semibold">Driver</th>
                             <th class="px-5 py-4 font-semibold">Contact</th>
                             <th class="px-5 py-4 font-semibold">License No.</th>
@@ -149,6 +163,14 @@ include __DIR__ . '/../../includes/sidebar.php';
                                 data-driving-license-scan-name="<?= htmlspecialchars($driver['driving_license_scan_name'], ENT_QUOTES, 'UTF-8'); ?>"
                                 data-driving-license-scan-is-image="<?= $driver['driving_license_scan_is_image'] ? 'true' : 'false'; ?>"
                             >
+                                <td class="px-5 py-4">
+                                    <input
+                                        type="checkbox"
+                                        class="h-4 w-4 rounded border-fleet-line text-fleet-primary focus:ring-fleet-primary"
+                                        data-driver-select-row
+                                        aria-label="Select <?= htmlspecialchars($driver['name'], ENT_QUOTES, 'UTF-8'); ?>"
+                                    >
+                                </td>
                                 <td class="px-5 py-4">
                                     <div class="flex items-center gap-3">
                                         <?php if ($driver['driver_photo_url'] !== '' && $driver['driver_photo_is_image']): ?>

@@ -23,6 +23,11 @@ const logbookSearch = document.querySelector('#logbook-search');
 const logbookRows = document.querySelectorAll('[data-logbook-table] .logbook-row');
 const driverSearch = document.querySelector('#driver-search');
 const driverRows = document.querySelectorAll('[data-driver-table] .driver-row');
+const driverRowSelectionCheckboxes = document.querySelectorAll('[data-driver-select-row]');
+const driverSelectAllVisibleCheckbox = document.querySelector('[data-driver-select-all]');
+const driverSelectedCountLabel = document.querySelector('[data-driver-selected-count]');
+const printSelectedDriversButtons = document.querySelectorAll('[data-print-selected-drivers]');
+const driverPrintWarning = document.querySelector('[data-driver-print-warning]');
 const maintenanceSearch = document.querySelector('#maintenance-search');
 const maintenanceStatus = document.querySelector('#maintenance-status');
 const maintenanceRows = document.querySelectorAll('[data-maintenance-table] .maintenance-row');
@@ -74,6 +79,8 @@ driverSearch?.addEventListener('input', (event) => {
     const haystack = row.dataset.search || row.textContent.toLowerCase();
     row.classList.toggle('hidden', query.length > 0 && !haystack.includes(query));
   });
+
+  syncDriverSelectionSummary();
 });
 
 // Applies the maintenance search text and status filter at the same time.
@@ -156,6 +163,138 @@ estateCategoryFilter?.addEventListener('change', filterEstateProjects);
 document.querySelector('[data-print-page]')?.addEventListener('click', () => {
   window.print();
 });
+
+function getVisibleDriverRows() {
+  return Array.from(driverRows).filter((row) => !row.classList.contains('hidden'));
+}
+
+function getSelectedDriverRows() {
+  return Array.from(driverRows).filter((row) => row.querySelector('[data-driver-select-row]')?.checked);
+}
+
+function buildDriverPrintContact(row) {
+  const parts = [row.dataset.phone || '', row.dataset.email || '']
+    .map((value) => value.trim())
+    .filter((value) => value !== '' && value !== '-');
+
+  return parts.length > 0 ? parts.join(' / ') : 'No contact on file';
+}
+
+function syncDriverSelectionSummary() {
+  const visibleRows = getVisibleDriverRows();
+  const selectedVisibleRows = visibleRows.filter((row) => row.querySelector('[data-driver-select-row]')?.checked);
+  const selectedCount = getSelectedDriverRows().length;
+
+  if (driverSelectedCountLabel) {
+    driverSelectedCountLabel.textContent = `${selectedCount} selected`;
+  }
+
+  if (driverSelectAllVisibleCheckbox) {
+    const allVisibleSelected = visibleRows.length > 0 && selectedVisibleRows.length === visibleRows.length;
+    const someVisibleSelected = selectedVisibleRows.length > 0 && selectedVisibleRows.length < visibleRows.length;
+    driverSelectAllVisibleCheckbox.checked = allVisibleSelected;
+    driverSelectAllVisibleCheckbox.indeterminate = someVisibleSelected;
+  }
+
+  if (driverPrintWarning) {
+    if (selectedCount > 0) {
+      driverPrintWarning.classList.add('hidden');
+    }
+  }
+}
+
+function printDriverSelections() {
+  const selectedRows = getSelectedDriverRows();
+
+  if (selectedRows.length === 0) {
+    if (driverPrintWarning) {
+      driverPrintWarning.classList.remove('hidden');
+    }
+    return;
+  }
+
+  const rowsToPrint = selectedRows;
+
+  const printWindow = window.open('', '_blank', 'width=1100,height=800');
+  if (!printWindow) {
+    return;
+  }
+
+  const styles = Array.from(document.querySelectorAll('style, link[rel="stylesheet"]'))
+    .map((node) => node.outerHTML)
+    .join('');
+
+  const cardsMarkup = rowsToPrint.map((row) => {
+    const name = row.dataset.fullName || 'Driver';
+    const department = row.dataset.department || 'No department recorded';
+    const vehicle = row.dataset.assignedVehicle || 'Unassigned';
+    const contact = buildDriverPrintContact(row);
+    const permitExpiry = row.dataset.licenseExpiry || '-';
+    const licenseNumber = row.dataset.licenseNumber || '-';
+    const status = row.dataset.statusLabel || '-';
+    const employeeId = row.dataset.employeeId || 'Not assigned';
+
+    return `
+      <article class="driver-print-card">
+        <div class="driver-print-card__header">
+          <h2>${name}</h2>
+          <span>${status}</span>
+        </div>
+        <div class="driver-print-grid">
+          <div><strong>Name</strong><p>${name}</p></div>
+          <div><strong>Department</strong><p>${department}</p></div>
+          <div><strong>Vehicle</strong><p>${vehicle}</p></div>
+          <div><strong>Contact</strong><p>${contact}</p></div>
+          <div><strong>Permit Expiry Date</strong><p>${permitExpiry}</p></div>
+          <div><strong>License Number</strong><p>${licenseNumber}</p></div>
+          <div><strong>Employee ID</strong><p>${employeeId}</p></div>
+        </div>
+      </article>
+    `;
+  }).join('');
+
+  printWindow.document.open();
+  printWindow.document.write(`
+    <!DOCTYPE html>
+    <html lang="en">
+      <head>
+        <meta charset="utf-8">
+        <title>Driver Details</title>
+        ${styles}
+        <style>
+          body { background: #ffffff; color: #0f172a; padding: 24px; font-family: Arial, sans-serif; }
+          .driver-print-header { margin-bottom: 24px; }
+          .driver-print-header h1 { margin: 0 0 8px; font-size: 28px; }
+          .driver-print-header p { margin: 0; color: #475569; }
+          .driver-print-list { display: grid; gap: 16px; }
+          .driver-print-card { border: 1px solid #cbd5e1; border-radius: 16px; padding: 20px; break-inside: avoid; }
+          .driver-print-card__header { display: flex; justify-content: space-between; gap: 12px; align-items: baseline; margin-bottom: 16px; }
+          .driver-print-card__header h2 { margin: 0; font-size: 20px; }
+          .driver-print-card__header span { font-size: 14px; color: #475569; }
+          .driver-print-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; }
+          .driver-print-grid strong { display: block; margin-bottom: 4px; font-size: 12px; letter-spacing: 0.08em; text-transform: uppercase; color: #64748b; }
+          .driver-print-grid p { margin: 0; font-size: 15px; font-weight: 600; }
+          @media print {
+            body { padding: 0; }
+          }
+        </style>
+      </head>
+      <body>
+        <header class="driver-print-header">
+          <h1>Driver Details</h1>
+          <p>Showing ${rowsToPrint.length} driver${rowsToPrint.length === 1 ? '' : 's'}.</p>
+        </header>
+        <section class="driver-print-list">
+          ${cardsMarkup}
+        </section>
+      </body>
+    </html>
+  `);
+  printWindow.document.close();
+  printWindow.focus();
+  printWindow.print();
+  printWindow.close();
+}
 
 // Recalculates selected communication recipients and updates the send UI state.
 function updateCommunicationRecipientState() {
@@ -256,6 +395,29 @@ officerEmailInput?.addEventListener('keydown', (event) => {
 });
 
 updateCommunicationRecipientState();
+
+driverRowSelectionCheckboxes.forEach((checkbox) => {
+  checkbox.addEventListener('change', syncDriverSelectionSummary);
+});
+
+driverSelectAllVisibleCheckbox?.addEventListener('change', (event) => {
+  const shouldCheck = event.target.checked;
+
+  getVisibleDriverRows().forEach((row) => {
+    const checkbox = row.querySelector('[data-driver-select-row]');
+    if (checkbox) {
+      checkbox.checked = shouldCheck;
+    }
+  });
+
+  syncDriverSelectionSummary();
+});
+
+printSelectedDriversButtons.forEach((button) => {
+  button.addEventListener('click', printDriverSelections);
+});
+
+syncDriverSelectionSummary();
 
 // Modal references for all module pages
 const vehicleModal = document.querySelector('#vehicle-modal');

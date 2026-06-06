@@ -1485,6 +1485,9 @@ function populateDriverViewModal(button) {
   const initial = (fullName.trim().charAt(0) || 'D').toUpperCase();
   const photoUrl = row.dataset.driverPhotoUrl || '';
   const photoIsImage = row.dataset.driverPhotoIsImage === 'true';
+  const contact = [phone, email]
+    .filter((value) => value !== 'No phone on file' && value !== 'No email on file')
+    .join(' / ') || 'No contact on file';
   const photoElement = driverViewModal?.querySelector('[data-driver-view-photo]');
   const photoFallback = driverViewModal?.querySelector('[data-driver-view-photo-fallback]');
 
@@ -1508,6 +1511,11 @@ function populateDriverViewModal(button) {
   setDriverViewText('[data-driver-view-license-issuing-authority]', licenseIssuingAuthority);
   setDriverViewText('[data-driver-view-initial]', initial);
   setDriverViewText('[data-driver-view-status]', statusLabel);
+  setDriverViewText('[data-driver-print-name]', fullName);
+  setDriverViewText('[data-driver-print-department]', department);
+  setDriverViewText('[data-driver-print-vehicle]', assignedVehicle);
+  setDriverViewText('[data-driver-print-contact]', contact);
+  setDriverViewText('[data-driver-print-permit-expiry]', licenseExpiry);
 
   const statusBadge = driverViewModal?.querySelector('[data-driver-view-status]');
   if (statusBadge) {
