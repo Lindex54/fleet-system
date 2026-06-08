@@ -5,7 +5,7 @@ include __DIR__ . '/includes/header.php';
 $homeUrl = ($basePath ?: '') . '/home.php';
 $loginUrl = ($basePath ?: '') . '/login.php';
 $dashboardUrl = ($basePath ?: '') . '/dashboard.php';
-$heroImageUrl = ($basePath ?: '') . '/heroimage.png';
+$heroImageUrl = ($basePath ?: '') . '/assets/images/hero/heroimage.png';
 ?>
 <main class="landing-page min-h-screen overflow-hidden bg-fleet-canvas">
     <header class="absolute inset-x-0 top-0 z-50 border-b border-fleet-line bg-white/95 backdrop-blur">

@@ -33,6 +33,16 @@ function driverPanelDashboardUrl(): string
     return '/fleet-system/driver-panel/index.php';
 }
 
+function driverPanelLoginUrl(): string
+{
+    return '/fleet-system/login.php';
+}
+
+function driverPanelPasswordChangeUrl(): string
+{
+    return '/fleet-system/driver-panel/change-password.php';
+}
+
 function driverPanelVehicleUrl(): string
 {
     return '/fleet-system/driver-panel/my-vehicle.php';
@@ -46,6 +56,24 @@ function driverPanelPreTripUrl(): string
 function driverPanelTripLogUrl(): string
 {
     return '/fleet-system/driver-panel/trip-log.php';
+}
+
+function driverPanelRequireAuthenticatedDriver(bool $allowPasswordChange = false): void
+{
+    driverPanelStartSession();
+
+    $driverId = filter_var((string) ($_SESSION['driver_id'] ?? ''), FILTER_VALIDATE_INT, ['options' => ['min_range' => 1]]);
+    $role = (string) ($_SESSION['user_role'] ?? '');
+
+    if ($driverId === false || $role !== 'driver') {
+        header('Location: ' . driverPanelLoginUrl());
+        exit;
+    }
+
+    if (!$allowPasswordChange && (int) ($_SESSION['must_change_password'] ?? 0) === 1) {
+        header('Location: ' . driverPanelPasswordChangeUrl());
+        exit;
+    }
 }
 
 function driverPanelSetFlash(string $key, array $payload): void
@@ -98,6 +126,76 @@ function driverPanelPullMessagesFlash(): ?array
     return driverPanelPullFlash('driver_panel_messages_flash');
 }
 
+function driverPanelSetPasswordFlash(array $payload): void
+{
+    driverPanelSetFlash('driver_panel_password_flash', $payload);
+}
+
+function driverPanelPullPasswordFlash(): ?array
+{
+    return driverPanelPullFlash('driver_panel_password_flash');
+}
+
+function driverPanelHandlePasswordChange(): void
+{
+    driverPanelRequireAuthenticatedDriver(true);
+
+    $newPassword = (string) ($_POST['new_password'] ?? '');
+    $confirmPassword = (string) ($_POST['confirm_password'] ?? '');
+
+    if (strlen($newPassword) < 8) {
+        driverPanelSetPasswordFlash([
+            'type' => 'error',
+            'message' => 'Your new password must be at least 8 characters long.',
+        ]);
+        header('Location: ' . driverPanelPasswordChangeUrl());
+        exit;
+    }
+
+    if ($newPassword !== $confirmPassword) {
+        driverPanelSetPasswordFlash([
+            'type' => 'error',
+            'message' => 'The new password and confirmation do not match.',
+        ]);
+        header('Location: ' . driverPanelPasswordChangeUrl());
+        exit;
+    }
+
+    try {
+        $pdo = fleetDb();
+        $statement = $pdo->prepare(
+            'UPDATE users
+            SET password_hash = :password_hash,
+                must_change_password = 0
+            WHERE id = :user_id
+                AND role = \'driver\''
+        );
+        $statement->execute([
+            'password_hash' => password_hash($newPassword, PASSWORD_DEFAULT),
+            'user_id' => (int) $_SESSION['user_id'],
+        ]);
+
+        if ($statement->rowCount() === 0) {
+            throw new RuntimeException('Password could not be updated.');
+        }
+
+        $_SESSION['must_change_password'] = 0;
+        driverPanelSetPasswordFlash([
+            'type' => 'success',
+            'message' => 'Your password has been updated.',
+        ]);
+        header('Location: ' . driverPanelDashboardUrl());
+        exit;
+    } catch (Throwable $exception) {
+        driverPanelSetPasswordFlash([
+            'type' => 'error',
+            'message' => 'Your password could not be updated right now.',
+        ]);
+        header('Location: ' . driverPanelPasswordChangeUrl());
+        exit;
+    }
+}
+
 function driverPanelEnsureIncidentReportsTable(PDO $pdo): void
 {
     $pdo->exec(
@@ -148,6 +246,41 @@ function driverPanelFormatDate(?string $date): string
     return $timestamp ? date('d M Y', $timestamp) : $date;
 }
 
+function driverPanelBuildLicenseExpiryStatus(?string $expiryDate): array
+{
+    if ($expiryDate === null || trim($expiryDate) === '') {
+        return [
+            'label' => 'Not set',
+            'classes' => 'border-slate-200 bg-slate-100 text-slate-600',
+        ];
+    }
+
+    $expiry = DateTimeImmutable::createFromFormat('Y-m-d', $expiryDate);
+    if (!$expiry) {
+        return [
+            'label' => 'Not set',
+            'classes' => 'border-slate-200 bg-slate-100 text-slate-600',
+        ];
+    }
+
+    $today = new DateTimeImmutable(date('Y-m-d'));
+    $daysLeft = (int) $today->diff($expiry)->format('%r%a');
+
+    if ($daysLeft < 0) {
+        return [
+            'label' => 'Expired',
+            'classes' => 'border-red-200 bg-fleet-danger-soft text-fleet-danger',
+        ];
+    }
+
+    return [
+        'label' => $daysLeft . ' day' . ($daysLeft === 1 ? '' : 's') . ' left',
+        'classes' => $daysLeft <= 30
+            ? 'border-orange-200 bg-fleet-warning-soft text-fleet-warning-strong'
+            : 'border-green-200 bg-fleet-success-soft text-fleet-success',
+    ];
+}
+
 function driverPanelBuildUploadUrl(?string $storedPath): string
 {
     if ($storedPath === null || trim($storedPath) === '') {
@@ -166,54 +299,19 @@ function driverPanelUploadIsImage(?string $storedPath): bool
 
 function driverPanelFindCurrentDriver(PDO $pdo): ?array
 {
-    driverPanelStartSession();
+    driverPanelRequireAuthenticatedDriver();
+    $driverId = filter_var((string) $_SESSION['driver_id'], FILTER_VALIDATE_INT, ['options' => ['min_range' => 1]]);
 
-    $driverId = null;
-
-    if (isset($_SESSION['driver_id'])) {
-        $driverId = filter_var((string) $_SESSION['driver_id'], FILTER_VALIDATE_INT, ['options' => ['min_range' => 1]]);
+    if ($driverId === false) {
+        header('Location: ' . driverPanelLoginUrl());
+        exit;
     }
 
-    if ($driverId === null || $driverId === false) {
-        $driverId = filter_var((string) ($_GET['driver_id'] ?? ''), FILTER_VALIDATE_INT, ['options' => ['min_range' => 1]]);
-    }
-
-    if ($driverId !== null && $driverId !== false) {
-        $statement = $pdo->prepare(
-            'SELECT
-                d.id,
-                d.user_id,
-                d.full_name,
-                d.employee_id,
-                d.phone,
-                d.email,
-                d.gender,
-                d.national_id_number,
-                d.license_number,
-                d.license_classes,
-                d.license_issue_date,
-                d.license_issuing_authority,
-                d.license_expiry,
-                d.driver_photo,
-                d.status,
-                COALESCE(dep.name, \'Transport\') AS department_name
-            FROM drivers d
-            LEFT JOIN departments dep ON dep.id = d.department_id
-            WHERE d.id = :id
-            LIMIT 1'
-        );
-        $statement->execute(['id' => (int) $driverId]);
-        $driver = $statement->fetch();
-
-        if ($driver) {
-            return $driver;
-        }
-    }
-
-    $statement = $pdo->query(
+    $statement = $pdo->prepare(
         'SELECT
             d.id,
             d.user_id,
+            d.driver_code,
             d.full_name,
             d.employee_id,
             d.phone,
@@ -226,25 +324,41 @@ function driverPanelFindCurrentDriver(PDO $pdo): ?array
             d.license_issuing_authority,
             d.license_expiry,
             d.driver_photo,
+            d.national_id_photo,
+            d.driving_license_scan,
             d.status,
+            d.created_at,
+            d.updated_at,
+            u.username,
+            u.must_change_password,
             COALESCE(dep.name, \'Transport\') AS department_name
         FROM drivers d
+        INNER JOIN users u ON u.id = d.user_id
         LEFT JOIN departments dep ON dep.id = d.department_id
-        LEFT JOIN vehicle_assignments va
-            ON va.driver_id = d.id
-            AND va.released_at IS NULL
-        WHERE d.status = \'active\'
-        ORDER BY CASE WHEN va.id IS NULL THEN 1 ELSE 0 END, d.created_at ASC, d.id ASC
+        WHERE d.id = :id
+            AND u.role = \'driver\'
+            AND u.status = \'active\'
+            AND d.status = \'active\'
         LIMIT 1'
     );
+    $statement->execute(['id' => (int) $driverId]);
 
     $driver = $statement->fetch();
 
-    if ($driver) {
-        $_SESSION['driver_id'] = (int) $driver['id'];
+    if (!$driver) {
+        $_SESSION = [];
+        header('Location: ' . driverPanelLoginUrl());
+        exit;
     }
 
-    return $driver ?: null;
+    $_SESSION['must_change_password'] = (int) $driver['must_change_password'];
+
+    if ((int) $driver['must_change_password'] === 1) {
+        header('Location: ' . driverPanelPasswordChangeUrl());
+        exit;
+    }
+
+    return $driver;
 }
 
 function driverPanelFetchAssignedVehicle(PDO $pdo, int $driverId): ?array
@@ -765,6 +879,59 @@ function driverPanelFetchVehiclePageData(): array
 
     return $commonData + [
         'vehicleHighlights' => $vehicleHighlights,
+    ];
+}
+
+function driverPanelFetchProfilePageData(): array
+{
+    driverPanelRequireAuthenticatedDriver();
+
+    $pdo = fleetDb();
+    $driver = driverPanelFindCurrentDriver($pdo);
+    $assignedVehicle = driverPanelFetchAssignedVehicle($pdo, (int) $driver['id']);
+    $licenseExpiryStatus = driverPanelBuildLicenseExpiryStatus($driver['license_expiry'] ?? null);
+
+    $profileRows = [
+        'Account' => [
+            'Driver ID' => $driver['driver_code'] ?: 'Not assigned',
+            'Username' => $driver['username'] ?: 'Not assigned',
+            'Status' => ucfirst((string) $driver['status']),
+            'Department' => $driver['department_name'] ?: 'Not available',
+            'Record Created' => driverPanelFormatDate($driver['created_at']),
+            'Last Updated' => driverPanelFormatDate($driver['updated_at']),
+        ],
+        'Personal Details' => [
+            'Full Name' => $driver['full_name'],
+            'Employee ID' => $driver['employee_id'] ?: 'Not assigned',
+            'Gender' => $driver['gender'] ? ucfirst((string) $driver['gender']) : 'Not specified',
+            'National ID / NIN' => $driver['national_id_number'] ?: 'Not available',
+        ],
+        'Contact' => [
+            'Phone' => $driver['phone'] ?: 'No phone on file',
+            'Email' => $driver['email'] ?: 'No email on file',
+        ],
+        'Driving License' => [
+            'License Number' => $driver['license_number'],
+            'License Classes' => $driver['license_classes'] ?: 'Not set',
+            'Issued On' => driverPanelFormatDate($driver['license_issue_date']),
+            'Issuing Authority' => $driver['license_issuing_authority'] ?: 'Not available',
+            'Expiry Date' => driverPanelFormatDate($driver['license_expiry']),
+        ],
+        'Vehicle' => [
+            'Assigned Vehicle' => $assignedVehicle['registration_no'] ?? 'Not assigned',
+            'Vehicle Details' => $assignedVehicle['make_model'] ?? '-',
+        ],
+    ];
+
+    return [
+        'profileDriver' => $driver,
+        'profileRows' => $profileRows,
+        'licenseExpiryStatus' => $licenseExpiryStatus,
+        'assignedVehicle' => $assignedVehicle,
+        'driverPhotoUrl' => driverPanelBuildUploadUrl($driver['driver_photo'] ?? ''),
+        'driverPhotoIsImage' => driverPanelUploadIsImage($driver['driver_photo'] ?? ''),
+        'nationalIdPhotoUrl' => driverPanelBuildUploadUrl($driver['national_id_photo'] ?? ''),
+        'licenseScanUrl' => driverPanelBuildUploadUrl($driver['driving_license_scan'] ?? ''),
     ];
 }
 
@@ -2014,6 +2181,10 @@ function driverPanelHandleRequest(): void
     }
 
     $action = trim((string) ($_POST['driver_panel_action'] ?? ''));
+
+    if ($action === 'change_password') {
+        driverPanelHandlePasswordChange();
+    }
 
     if ($action === 'submit_pre_trip') {
         driverPanelHandlePreTripSubmission();

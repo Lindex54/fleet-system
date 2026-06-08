@@ -10,32 +10,6 @@
                 <button type="button" data-close-driver-view-modal class="flex h-8 w-8 items-center justify-center rounded-lg text-2xl leading-none text-fleet-muted hover:bg-fleet-surface-muted hover:text-fleet-ink" aria-label="Close driver details">&times;</button>
             </div>
 
-            <section class="mb-6 hidden rounded-2xl border border-fleet-line bg-white p-5 print:block">
-                <p class="text-xs font-extrabold uppercase tracking-[0.18em] text-fleet-muted">Print Summary</p>
-                <dl class="mt-4 grid gap-4 sm:grid-cols-2">
-                    <div>
-                        <dt class="text-sm text-fleet-muted">Name</dt>
-                        <dd class="mt-1 font-semibold text-fleet-ink" data-driver-print-name>-</dd>
-                    </div>
-                    <div>
-                        <dt class="text-sm text-fleet-muted">Department</dt>
-                        <dd class="mt-1 font-semibold text-fleet-ink" data-driver-print-department>-</dd>
-                    </div>
-                    <div>
-                        <dt class="text-sm text-fleet-muted">Vehicle</dt>
-                        <dd class="mt-1 font-semibold text-fleet-ink" data-driver-print-vehicle>-</dd>
-                    </div>
-                    <div>
-                        <dt class="text-sm text-fleet-muted">Contact</dt>
-                        <dd class="mt-1 font-semibold text-fleet-ink" data-driver-print-contact>-</dd>
-                    </div>
-                    <div>
-                        <dt class="text-sm text-fleet-muted">Permit Expiry Date</dt>
-                        <dd class="mt-1 font-semibold text-fleet-ink" data-driver-print-permit-expiry>-</dd>
-                    </div>
-                </dl>
-            </section>
-
             <div class="grid gap-6 lg:grid-cols-[280px_minmax(0,1fr)]">
                 <section class="rounded-2xl border border-fleet-line bg-fleet-surface-muted p-5">
                     <div class="flex flex-col items-center text-center">
@@ -130,6 +104,10 @@
                             <div class="rounded-xl border border-fleet-line bg-fleet-surface-muted px-4 py-3">
                                 <p class="text-xs font-extrabold uppercase tracking-[0.18em] text-fleet-muted">Expiry Date</p>
                                 <p class="mt-1 text-base font-extrabold text-fleet-ink" data-driver-view-license-expiry>-</p>
+                            </div>
+                            <div class="rounded-xl border border-fleet-line bg-fleet-surface-muted px-4 py-3">
+                                <p class="text-xs font-extrabold uppercase tracking-[0.18em] text-fleet-muted">Permit Days Left</p>
+                                <p class="mt-1 text-base font-extrabold text-fleet-ink" data-driver-view-license-days-left>-</p>
                             </div>
                             <div class="rounded-xl border border-fleet-line bg-fleet-surface-muted px-4 py-3 md:col-span-2">
                                 <p class="text-xs font-extrabold uppercase tracking-[0.18em] text-fleet-muted">Issuing Authority</p>

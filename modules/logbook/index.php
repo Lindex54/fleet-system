@@ -157,7 +157,7 @@ include __DIR__ . '/../../includes/sidebar.php';
             </div>
         </section>
 
-        <section class="<?= $hasLogs ? 'block' : 'hidden'; ?> rounded-2xl border border-fleet-line bg-white p-6 shadow-fleet-card print:shadow-none">
+        <section data-print-root class="<?= $hasLogs ? 'block' : 'hidden'; ?> rounded-2xl border border-fleet-line bg-white p-6 shadow-fleet-card print:shadow-none">
             <div class="border-b border-fleet-line-soft pb-5">
                 <p class="text-xs font-extrabold uppercase tracking-[0.18em] text-fleet-primary">Busitema University Fleet</p>
                 <h2 class="mt-2 text-2xl font-extrabold text-fleet-ink"><?= htmlspecialchars($logbookPrintTitle, ENT_QUOTES, 'UTF-8'); ?></h2>

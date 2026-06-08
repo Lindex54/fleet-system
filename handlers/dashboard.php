@@ -3,6 +3,8 @@
 declare(strict_types=1);
 
 require_once __DIR__ . '/../config/database.php';
+require_once __DIR__ . '/../includes/auth.php';
+fleetAuthRequireAdmin();
 
 // Loads dashboard metrics, alerts, recent logs, and other live summary data.
 function dashboardFetchPageData(): array

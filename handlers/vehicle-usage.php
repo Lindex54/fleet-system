@@ -423,6 +423,31 @@ function vehicleUsageFindDriverOption(array $driverOptions, ?int $driverId): ?ar
     return null;
 }
 
+function vehicleUsageBuildVehicleSubjectLabel(array $rows, ?array $selectedVehicle, array $filters): string
+{
+    if ($selectedVehicle !== null) {
+        return (string) $selectedVehicle['registration_no'];
+    }
+
+    if (($filters['vehicle_id'] ?? '') === '' && ($filters['driver_id'] ?? '') === '') {
+        return 'All Vehicles';
+    }
+
+    $registrations = [];
+    foreach ($rows as $row) {
+        $registration = trim((string) ($row['vehicle'] ?? ''));
+        if ($registration !== '') {
+            $registrations[$registration] = true;
+        }
+    }
+
+    if ($registrations === []) {
+        return 'All Vehicles';
+    }
+
+    return implode(', ', array_keys($registrations));
+}
+
 function vehicleUsageFetchPageData(): array
 {
     $filters = vehicleUsageBuildFilterState();
@@ -439,6 +464,7 @@ function vehicleUsageFetchPageData(): array
         $summary = vehicleUsageBuildSummary($rows);
         $driverBreakdown = vehicleUsageBuildDriverBreakdown($rows);
         $driverSections = vehicleUsageBuildDriverSections($rows);
+        $vehicleSubjectLabel = vehicleUsageBuildVehicleSubjectLabel($rows, $selectedVehicle, $filters);
 
         return [
             'vehicleUsageFilters' => $filters,
@@ -451,6 +477,13 @@ function vehicleUsageFetchPageData(): array
             'vehicleUsageSummary' => $summary,
             'vehicleUsageDriverBreakdown' => $driverBreakdown,
             'vehicleUsageDriverSections' => $driverSections,
+            'vehicleUsageMemoTo' => 'University Secretary',
+            'vehicleUsageMemoThruOne' => 'University Bursar',
+            'vehicleUsageMemoThruTwo' => 'Programme Controller',
+            'vehicleUsageMemoFrom' => 'Ag. AEO. (Mech.) Simali Habert',
+            'vehicleUsageMemoDate' => date('F j, Y'),
+            'vehicleUsageMemoSubject' => 'VEHICLE USAGE REPORT FOR MOTOR VEHICLE REG: NO. ' . $vehicleSubjectLabel . '.',
+            'vehicleUsageMemoFor' => $vehicleSubjectLabel,
             'vehicleUsagePeriodLabel' => $periodRange['label'],
             'vehicleUsagePrintTitle' => vehicleUsageBuildPrintTitle($selectedVehicle, $selectedDriver, $periodRange['label']),
             'vehicleUsagePageUrl' => vehicleUsagePageUrl(),
@@ -474,6 +507,13 @@ function vehicleUsageFetchPageData(): array
             ],
             'vehicleUsageDriverBreakdown' => [],
             'vehicleUsageDriverSections' => [],
+            'vehicleUsageMemoTo' => 'University Secretary',
+            'vehicleUsageMemoThruOne' => 'University Bursar',
+            'vehicleUsageMemoThruTwo' => 'Programme Controller',
+            'vehicleUsageMemoFrom' => 'Ag. AEO. (Mech.) Simali Habert',
+            'vehicleUsageMemoDate' => date('F j, Y'),
+            'vehicleUsageMemoSubject' => 'VEHICLE USAGE REPORT FOR MOTOR VEHICLE REG: NO. ALL VEHICLES.',
+            'vehicleUsageMemoFor' => 'All Vehicles',
             'vehicleUsagePeriodLabel' => 'All recorded dates',
             'vehicleUsagePrintTitle' => 'Vehicle Usage Report',
             'vehicleUsagePageUrl' => vehicleUsagePageUrl(),

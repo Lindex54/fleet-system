@@ -88,7 +88,7 @@ include __DIR__ . '/../../includes/sidebar.php';
             </div>
         </section>
 
-        <section class="<?= $hasRecords ? 'block' : 'hidden'; ?> overflow-hidden rounded-lg border border-fleet-line bg-fleet-surface shadow-fleet-card">
+        <section data-print-root class="<?= $hasRecords ? 'block' : 'hidden'; ?> overflow-hidden rounded-lg border border-fleet-line bg-fleet-surface shadow-fleet-card">
             <div class="border-b border-fleet-line-soft px-4 py-4 sm:px-5">
                 <div class="grid gap-3 lg:grid-cols-[1fr_180px]">
                     <label class="relative block">

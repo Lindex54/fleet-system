@@ -5,6 +5,8 @@ extract(vehicleUsageFetchPageData());
 include __DIR__ . '/../../includes/header.php';
 include __DIR__ . '/../../includes/sidebar.php';
 
+$vehicleUsagePrintBannerUrl = ($basePath ?: '') . '/assets/images/branding/print_banner.png';
+
 $driverBreakdownShowAll = (($_GET['driver_breakdown'] ?? '') === 'all');
 $driverBreakdownTotalEntries = count($vehicleUsageDriverBreakdown);
 $driverBreakdownPreviewRows = array_slice($vehicleUsageDriverBreakdown, 0, 5);
@@ -15,6 +17,8 @@ $driverBreakdownShowAllQuery = $_GET;
 $driverBreakdownShowAllQuery['driver_breakdown'] = 'all';
 $driverBreakdownShowLessQuery = $_GET;
 unset($driverBreakdownShowLessQuery['driver_breakdown']);
+
+$vehicleUsageHasMultipleDriverSections = count($vehicleUsageDriverSections) > 1;
 
 $driverBreakdownShowAllUrl = $vehicleUsagePageUrl . '?' . http_build_query($driverBreakdownShowAllQuery) . '#driver-breakdown';
 $driverBreakdownShowLessUrl = $vehicleUsagePageUrl . (count($driverBreakdownShowLessQuery) > 0 ? '?' . http_build_query($driverBreakdownShowLessQuery) : '') . '#driver-breakdown';
@@ -107,7 +111,39 @@ $driverBreakdownShowLessUrl = $vehicleUsagePageUrl . (count($driverBreakdownShow
             </form>
         </section>
 
-        <section class="rounded-2xl border border-fleet-line bg-white p-6 shadow-fleet-card print:shadow-none">
+        <section data-print-root class="rounded-2xl border border-fleet-line bg-white p-6 shadow-fleet-card print:shadow-none">
+            <div class="vehicle-usage-print-memo">
+                <img src="<?= htmlspecialchars($vehicleUsagePrintBannerUrl, ENT_QUOTES, 'UTF-8'); ?>" alt="Busitema University print banner" class="vehicle-usage-print-banner">
+                <div class="vehicle-usage-print-unit">ESTATES UNIT</div>
+                <dl class="vehicle-usage-print-meta">
+                    <div class="vehicle-usage-print-meta-row">
+                        <dt>To:</dt>
+                        <dd><?= htmlspecialchars($vehicleUsageMemoTo, ENT_QUOTES, 'UTF-8'); ?></dd>
+                    </div>
+                    <div class="vehicle-usage-print-meta-row">
+                        <dt>Thru:</dt>
+                        <dd><?= htmlspecialchars($vehicleUsageMemoThruOne, ENT_QUOTES, 'UTF-8'); ?></dd>
+                    </div>
+                    <div class="vehicle-usage-print-meta-row">
+                        <dt>Thru:</dt>
+                        <dd><?= htmlspecialchars($vehicleUsageMemoThruTwo, ENT_QUOTES, 'UTF-8'); ?></dd>
+                    </div>
+                    <div class="vehicle-usage-print-meta-row">
+                        <dt>From:</dt>
+                        <dd><?= htmlspecialchars($vehicleUsageMemoFrom, ENT_QUOTES, 'UTF-8'); ?></dd>
+                    </div>
+                    <div class="vehicle-usage-print-meta-row">
+                        <dt>Date:</dt>
+                        <dd><?= htmlspecialchars($vehicleUsageMemoDate, ENT_QUOTES, 'UTF-8'); ?></dd>
+                    </div>
+                    <div class="vehicle-usage-print-meta-row">
+                        <dt>For:</dt>
+                        <dd><?= htmlspecialchars($vehicleUsageMemoFor, ENT_QUOTES, 'UTF-8'); ?></dd>
+                    </div>
+                </dl>
+                <p class="vehicle-usage-print-subject">SUBJECT: <?= htmlspecialchars($vehicleUsageMemoSubject, ENT_QUOTES, 'UTF-8'); ?></p>
+            </div>
+
             <div class="border-b border-fleet-line-soft pb-5">
                 <p class="text-xs font-extrabold uppercase tracking-[0.18em] text-fleet-primary">Busitema University Fleet</p>
                 <h2 class="mt-2 text-2xl font-extrabold text-fleet-ink"><?= htmlspecialchars($vehicleUsagePrintTitle, ENT_QUOTES, 'UTF-8'); ?></h2>
@@ -301,7 +337,7 @@ $driverBreakdownShowLessUrl = $vehicleUsagePageUrl . (count($driverBreakdownShow
                                     </table>
                                 </div>
 
-                                <div class="mt-6 hidden gap-4 md:grid-cols-3 print:grid print:mt-8">
+                                <div class="vehicle-usage-signoff mt-6 gap-4 md:grid-cols-3 print:mt-8 <?= $vehicleUsageHasMultipleDriverSections ? 'vehicle-usage-signoff--print' : ''; ?>">
                                     <div class="rounded-xl border border-dashed border-fleet-line px-4 py-5">
                                         <p class="text-xs font-extrabold uppercase tracking-[0.18em] text-fleet-muted">Driver Signature</p>
                                         <div class="mt-10 border-b border-fleet-ink"></div>
@@ -318,34 +354,26 @@ $driverBreakdownShowLessUrl = $vehicleUsagePageUrl . (count($driverBreakdownShow
                             </section>
                         <?php endforeach; ?>
                     </div>
+
+                    <div class="vehicle-usage-signoff mt-6 gap-4 md:grid-cols-3 print:mt-8 <?= !$vehicleUsageHasMultipleDriverSections ? 'vehicle-usage-signoff--print' : ''; ?>">
+                        <div class="rounded-xl border border-dashed border-fleet-line px-4 py-5">
+                            <p class="text-xs font-extrabold uppercase tracking-[0.18em] text-fleet-muted">Driver Signature</p>
+                            <div class="mt-10 border-b border-fleet-ink"></div>
+                        </div>
+                        <div class="rounded-xl border border-dashed border-fleet-line px-4 py-5">
+                            <p class="text-xs font-extrabold uppercase tracking-[0.18em] text-fleet-muted">Officer Driven</p>
+                            <div class="mt-10 border-b border-fleet-ink"></div>
+                        </div>
+                        <div class="rounded-xl border border-dashed border-fleet-line px-4 py-5">
+                            <p class="text-xs font-extrabold uppercase tracking-[0.18em] text-fleet-muted">Transport Officer</p>
+                            <div class="mt-10 border-b border-fleet-ink"></div>
+                        </div>
+                    </div>
                 <?php endif; ?>
             </section>
         </section>
     </div>
 </main>
-
-<style>
-@media print {
-  #app-sidebar,
-  #sidebar-backdrop,
-  .print\:hidden {
-    display: none !important;
-  }
-
-  main {
-    padding-left: 0 !important;
-  }
-
-  body {
-    background: #fff !important;
-  }
-
-  .vehicle-usage-driver-section {
-    break-inside: avoid;
-    page-break-inside: avoid;
-  }
-}
-</style>
 
 <script>
 document.addEventListener('DOMContentLoaded', function () {

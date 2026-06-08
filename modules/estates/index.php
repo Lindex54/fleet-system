@@ -67,46 +67,47 @@ include __DIR__ . '/../../includes/sidebar.php';
             </section>
         <?php endif; ?>
 
-        <section class="mb-4 grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-            <article class="interactive-card rounded-xl border border-blue-200 bg-blue-50 p-6 shadow-fleet-card"><p class="text-2xl font-extrabold leading-6 text-fleet-primary"><?= (int) $estateSummary['total_projects']; ?></p><p class="mt-2 text-sm text-fleet-muted">Total Projects</p></article>
-            <article class="interactive-card rounded-xl border border-yellow-300 bg-yellow-50 p-6 shadow-fleet-card"><p class="text-2xl font-extrabold leading-6 text-fleet-warning-strong"><?= (int) $estateSummary['in_progress']; ?></p><p class="mt-2 text-sm text-fleet-muted">In Progress</p></article>
-            <article class="interactive-card rounded-xl border border-green-200 bg-fleet-success-soft p-6 shadow-fleet-card"><p class="text-2xl font-extrabold leading-6 text-fleet-success"><?= (int) $estateSummary['completed']; ?></p><p class="mt-2 text-sm text-fleet-muted">Completed</p></article>
-            <article class="interactive-card rounded-xl border border-red-200 bg-fleet-danger-soft p-6 shadow-fleet-card"><p class="text-2xl font-extrabold leading-6 text-fleet-danger"><?= (int) $estateSummary['overdue']; ?> / <?= (int) $estateSummary['on_hold']; ?></p><p class="mt-2 text-sm text-fleet-muted">Overdue / On Hold</p></article>
-        </section>
+        <div data-print-root>
+            <section class="mb-4 grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+                <article class="interactive-card rounded-xl border border-blue-200 bg-blue-50 p-6 shadow-fleet-card"><p class="text-2xl font-extrabold leading-6 text-fleet-primary"><?= (int) $estateSummary['total_projects']; ?></p><p class="mt-2 text-sm text-fleet-muted">Total Projects</p></article>
+                <article class="interactive-card rounded-xl border border-yellow-300 bg-yellow-50 p-6 shadow-fleet-card"><p class="text-2xl font-extrabold leading-6 text-fleet-warning-strong"><?= (int) $estateSummary['in_progress']; ?></p><p class="mt-2 text-sm text-fleet-muted">In Progress</p></article>
+                <article class="interactive-card rounded-xl border border-green-200 bg-fleet-success-soft p-6 shadow-fleet-card"><p class="text-2xl font-extrabold leading-6 text-fleet-success"><?= (int) $estateSummary['completed']; ?></p><p class="mt-2 text-sm text-fleet-muted">Completed</p></article>
+                <article class="interactive-card rounded-xl border border-red-200 bg-fleet-danger-soft p-6 shadow-fleet-card"><p class="text-2xl font-extrabold leading-6 text-fleet-danger"><?= (int) $estateSummary['overdue']; ?> / <?= (int) $estateSummary['on_hold']; ?></p><p class="mt-2 text-sm text-fleet-muted">Overdue / On Hold</p></article>
+            </section>
 
-        <section class="mb-8 rounded-xl border border-purple-200 bg-purple-50 p-6 shadow-fleet-card">
-            <div class="grid gap-6 md:grid-cols-3">
-                <div><p class="text-sm text-fleet-muted">Total Budget</p><p class="text-xl font-extrabold text-purple-700"><?= estateFormatMoney((float) $estateSummary['total_budget']); ?></p></div>
-                <div><p class="text-sm text-fleet-muted">Total Spent</p><p class="text-xl font-extrabold text-purple-700"><?= estateFormatMoney((float) $estateSummary['total_spent']); ?></p></div>
-                <div><p class="text-sm text-fleet-muted">Remaining</p><p class="text-xl font-extrabold text-fleet-success"><?= estateFormatMoney(max((float) $estateSummary['total_budget'] - (float) $estateSummary['total_spent'], 0)); ?></p></div>
-            </div>
-        </section>
+            <section class="mb-8 rounded-xl border border-purple-200 bg-purple-50 p-6 shadow-fleet-card">
+                <div class="grid gap-6 md:grid-cols-3">
+                    <div><p class="text-sm text-fleet-muted">Total Budget</p><p class="text-xl font-extrabold text-purple-700"><?= estateFormatMoney((float) $estateSummary['total_budget']); ?></p></div>
+                    <div><p class="text-sm text-fleet-muted">Total Spent</p><p class="text-xl font-extrabold text-purple-700"><?= estateFormatMoney((float) $estateSummary['total_spent']); ?></p></div>
+                    <div><p class="text-sm text-fleet-muted">Remaining</p><p class="text-xl font-extrabold text-fleet-success"><?= estateFormatMoney(max((float) $estateSummary['total_budget'] - (float) $estateSummary['total_spent'], 0)); ?></p></div>
+                </div>
+            </section>
 
-        <section class="mb-6 grid gap-3 xl:grid-cols-[1fr_210px_210px]">
-            <label class="relative block">
-                <span class="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-fleet-muted">Q</span>
-                <input id="estate-project-search" type="search" class="h-11 w-full rounded-lg border border-fleet-line bg-fleet-surface py-2 pl-12 pr-4 text-sm text-fleet-ink shadow-sm outline-none transition placeholder:text-fleet-muted focus:border-fleet-primary focus:ring-4 focus:ring-blue-100" placeholder="Search projects, location, contractor...">
-            </label>
-            <select id="estate-status-filter" class="vehicle-form-control">
-                <option value="all">All Statuses</option>
-                <option value="In Progress">In Progress</option>
-                <option value="Approved">Approved</option>
-                <option value="On Hold">On Hold</option>
-                <option value="Completed">Completed</option>
-                <option value="Planned">Planned</option>
-                <option value="Cancelled">Cancelled</option>
-            </select>
-            <select id="estate-category-filter" class="vehicle-form-control">
-                <option value="all">All Categories</option>
-                <?php foreach (array_unique(array_map(static fn(array $project): string => $project['category'], $projects)) as $category): ?>
-                    <option value="<?= htmlspecialchars($category, ENT_QUOTES, 'UTF-8'); ?>"><?= htmlspecialchars($category, ENT_QUOTES, 'UTF-8'); ?></option>
-                <?php endforeach; ?>
-            </select>
-        </section>
+            <section class="mb-6 grid gap-3 xl:grid-cols-[1fr_210px_210px] print:hidden">
+                <label class="relative block">
+                    <span class="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-fleet-muted">Q</span>
+                    <input id="estate-project-search" type="search" class="h-11 w-full rounded-lg border border-fleet-line bg-fleet-surface py-2 pl-12 pr-4 text-sm text-fleet-ink shadow-sm outline-none transition placeholder:text-fleet-muted focus:border-fleet-primary focus:ring-4 focus:ring-blue-100" placeholder="Search projects, location, contractor...">
+                </label>
+                <select id="estate-status-filter" class="vehicle-form-control">
+                    <option value="all">All Statuses</option>
+                    <option value="In Progress">In Progress</option>
+                    <option value="Approved">Approved</option>
+                    <option value="On Hold">On Hold</option>
+                    <option value="Completed">Completed</option>
+                    <option value="Planned">Planned</option>
+                    <option value="Cancelled">Cancelled</option>
+                </select>
+                <select id="estate-category-filter" class="vehicle-form-control">
+                    <option value="all">All Categories</option>
+                    <?php foreach (array_unique(array_map(static fn(array $project): string => $project['category'], $projects)) as $category): ?>
+                        <option value="<?= htmlspecialchars($category, ENT_QUOTES, 'UTF-8'); ?>"><?= htmlspecialchars($category, ENT_QUOTES, 'UTF-8'); ?></option>
+                    <?php endforeach; ?>
+                </select>
+            </section>
 
-        <p class="mb-6 text-sm text-fleet-muted">Showing <?= count($projects); ?> of <?= count($projects); ?> projects</p>
+            <p class="mb-6 text-sm text-fleet-muted print:hidden">Showing <?= count($projects); ?> of <?= count($projects); ?> projects</p>
 
-        <section class="<?= $hasProjects ? 'grid' : 'hidden'; ?> gap-5 md:grid-cols-2 xl:grid-cols-4" data-estate-project-list>
+            <section class="<?= $hasProjects ? 'grid' : 'hidden'; ?> gap-5 md:grid-cols-2 xl:grid-cols-4" data-estate-project-list>
             <?php foreach ($projects as $project): ?>
                 <article
                     class="estate-project-card group interactive-card relative overflow-hidden rounded-xl border border-fleet-line bg-fleet-surface p-5 shadow-fleet-card"
@@ -180,7 +181,8 @@ include __DIR__ . '/../../includes/sidebar.php';
                     </div>
                 </article>
             <?php endforeach; ?>
-        </section>
+            </section>
+        </div>
 
         <section class="<?= $hasProjects ? 'hidden' : 'flex'; ?> min-h-[320px] items-center justify-center rounded-xl border border-fleet-line bg-fleet-surface shadow-fleet-card">
             <div class="text-center">

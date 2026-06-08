@@ -93,7 +93,7 @@ include __DIR__ . '/../../includes/sidebar.php';
             </div>
         </section>
 
-        <section class="<?= $hasReports ? 'block' : 'hidden'; ?> overflow-hidden rounded-lg border border-fleet-line bg-fleet-surface shadow-fleet-card">
+        <section data-print-root class="<?= $hasReports ? 'block' : 'hidden'; ?> overflow-hidden rounded-lg border border-fleet-line bg-fleet-surface shadow-fleet-card">
             <div class="border-b border-fleet-line-soft px-4 py-4 sm:px-5">
                 <label class="relative block max-w-md">
                     <span class="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-fleet-muted">Q</span>

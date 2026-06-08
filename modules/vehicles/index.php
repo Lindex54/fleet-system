@@ -98,7 +98,7 @@ include __DIR__ . '/../../includes/sidebar.php';
             </div>
         </section>
 
-        <section class="<?= $hasVehicles ? 'block' : 'hidden'; ?> overflow-hidden rounded-lg border border-fleet-line bg-fleet-surface shadow-fleet-card">
+        <section data-print-root class="<?= $hasVehicles ? 'block' : 'hidden'; ?> overflow-hidden rounded-lg border border-fleet-line bg-fleet-surface shadow-fleet-card">
             <div class="overflow-x-auto">
                 <table class="w-full min-w-[1180px] text-left text-sm" data-vehicle-table>
                     <thead class="bg-fleet-surface-muted text-fleet-muted">

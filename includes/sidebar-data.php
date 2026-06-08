@@ -8,6 +8,7 @@ $navItems = [
     ['key' => 'logbook', 'label' => 'Vehicle Log Book', 'href' => ($basePath ?: '') . '/modules/logbook/index.php', 'icon' => 'book'],
     ['key' => 'vehicle-usage', 'label' => 'Vehicle Usage', 'href' => ($basePath ?: '') . '/modules/vehicle-usage/index.php', 'icon' => 'history'],
     ['key' => 'drivers', 'label' => 'Drivers', 'href' => ($basePath ?: '') . '/modules/drivers/index.php', 'icon' => 'users'],
+    ['key' => 'admins', 'label' => 'Admins', 'href' => ($basePath ?: '') . '/modules/admins/index.php', 'icon' => 'users'],
     ['key' => 'maintenance', 'label' => 'Maintenance', 'href' => ($basePath ?: '') . '/modules/maintenance/index.php', 'icon' => 'wrench'],
     ['key' => 'reports', 'label' => 'Reports', 'href' => ($basePath ?: '') . '/modules/reports/index.php', 'icon' => 'file'],
     ['key' => 'pre-inspection', 'label' => 'Pre-Inspection Report', 'href' => ($basePath ?: '') . '/modules/inspections/index.php', 'icon' => 'clipboard-list'],

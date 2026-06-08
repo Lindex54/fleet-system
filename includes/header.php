@@ -1,5 +1,8 @@
 <?php
 // Shared header partial for common page setup and asset loading.
+require_once __DIR__ . '/auth.php';
+fleetAuthGuardCurrentPage();
+
 $documentRoot = realpath($_SERVER['DOCUMENT_ROOT'] ?? '');
 $projectRoot = realpath(dirname(__DIR__));
 $basePath = '';
@@ -9,9 +12,11 @@ if ($documentRoot && $projectRoot && substr($projectRoot, 0, strlen($documentRoo
 }
 
 $assetVersion = file_exists($projectRoot . '/assets/css/app.css') ? filemtime($projectRoot . '/assets/css/app.css') : time();
+$scriptVersion = file_exists($projectRoot . '/assets/js/app.js') ? filemtime($projectRoot . '/assets/js/app.js') : time();
+$moduleScriptVersion = file_exists($projectRoot . '/assets/js/module-modals.js') ? filemtime($projectRoot . '/assets/js/module-modals.js') : time();
 $assetPath = ($basePath ?: '') . '/assets/css/app.css?v=' . $assetVersion;
-$scriptPath = ($basePath ?: '') . '/assets/js/app.js';
-$moduleScriptPath = ($basePath ?: '') . '/assets/js/module-modals.js';
+$scriptPath = ($basePath ?: '') . '/assets/js/app.js?v=' . $scriptVersion;
+$moduleScriptPath = ($basePath ?: '') . '/assets/js/module-modals.js?v=' . $moduleScriptVersion;
 ?>
 <!DOCTYPE html>
 <html lang="en">

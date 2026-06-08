@@ -12,7 +12,7 @@ include __DIR__ . '/includes/sidebar.php';
         $totalVehicles = max((int) ($metrics[0]['value'] ?? 0), 1);
         $activeVehicles = (int) ($metrics[1]['value'] ?? 0);
         $activePercent = (int) round(($activeVehicles / $totalVehicles) * 100);
-        $dashboardGreeting = $activeUsers[0]['name'] ?? 'Team';
+        $dashboardGreeting = $_SESSION['user_name'] ?? 'Administrator';
         ?>
         <div class="dashboard-shell">
             <div class="dashboard-topbar">
@@ -155,7 +155,7 @@ include __DIR__ . '/includes/sidebar.php';
                             <a href="/fleet-system/modules/logbook/index.php" class="text-sm font-semibold text-fleet-sidebar hover:text-fleet-primary">View all &rarr;</a>
                         </div>
                         <div class="overflow-x-auto">
-                            <table class="w-full min-w-[620px] text-left text-sm" data-dashboard-log-table>
+                            <table class="w-full min-w-[620px] text-left text-sm">
                                 <thead class="bg-fleet-primary-soft text-fleet-muted">
                                     <tr>
                                         <th class="px-5 py-3 font-bold">Date</th>
@@ -170,7 +170,7 @@ include __DIR__ . '/includes/sidebar.php';
                                         <tr><td colspan="5" class="px-5 py-4 text-fleet-muted">No recent vehicle logs.</td></tr>
                                     <?php else: ?>
                                         <?php foreach ($vehicleLogs as $log): ?>
-                                            <tr class="dashboard-log-row bg-white/70">
+                                            <tr class="bg-white/70">
                                                 <td class="px-5 py-4 text-fleet-ink"><?= htmlspecialchars($log['date'], ENT_QUOTES, 'UTF-8'); ?></td>
                                                 <td class="px-5 py-4 font-bold text-fleet-ink"><?= htmlspecialchars($log['vehicle'], ENT_QUOTES, 'UTF-8'); ?></td>
                                                 <td class="px-5 py-4 text-fleet-ink"><?= htmlspecialchars($log['driver'], ENT_QUOTES, 'UTF-8'); ?></td>

@@ -1395,6 +1395,10 @@ function setDriverFormMode(mode) {
   if (driverSubmitButton) {
     driverSubmitButton.textContent = mode === 'update' ? 'Save Changes' : 'Add Driver';
   }
+
+  driverModal?.querySelectorAll('[data-driver-required-on-create]').forEach((field) => {
+    field.required = mode !== 'update';
+  });
 }
 
 // Writes a value into a single field inside the driver modal if it exists.
@@ -1413,6 +1417,27 @@ function setDriverViewText(selector, value) {
   if (element) {
     element.textContent = value;
   }
+}
+
+function getDriverLicenseDaysLeft(expiryDate) {
+  if (!expiryDate || expiryDate === '-') {
+    return 'Not set';
+  }
+
+  const expiry = new Date(`${expiryDate}T00:00:00`);
+  if (Number.isNaN(expiry.getTime())) {
+    return 'Not set';
+  }
+
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+
+  const daysLeft = Math.ceil((expiry.getTime() - today.getTime()) / 86400000);
+  if (daysLeft < 0) {
+    return 'Expired';
+  }
+
+  return `${daysLeft} day${daysLeft === 1 ? '' : 's'} left`;
 }
 
 function setDriverMultiSelectValues(selectElement, values) {
@@ -1481,13 +1506,11 @@ function populateDriverViewModal(button) {
   const licenseClasses = row.dataset.licenseClasses || '-';
   const licenseIssueDate = row.dataset.licenseIssueDate || '-';
   const licenseExpiry = row.dataset.licenseExpiry || '-';
+  const licenseDaysLeft = row.dataset.licenseDaysLeft || getDriverLicenseDaysLeft(row.dataset.licenseExpiry || '');
   const licenseIssuingAuthority = row.dataset.licenseIssuingAuthority || 'Not available';
   const initial = (fullName.trim().charAt(0) || 'D').toUpperCase();
   const photoUrl = row.dataset.driverPhotoUrl || '';
   const photoIsImage = row.dataset.driverPhotoIsImage === 'true';
-  const contact = [phone, email]
-    .filter((value) => value !== 'No phone on file' && value !== 'No email on file')
-    .join(' / ') || 'No contact on file';
   const photoElement = driverViewModal?.querySelector('[data-driver-view-photo]');
   const photoFallback = driverViewModal?.querySelector('[data-driver-view-photo-fallback]');
 
@@ -1508,14 +1531,10 @@ function populateDriverViewModal(button) {
   setDriverViewText('[data-driver-view-license-classes]', licenseClasses);
   setDriverViewText('[data-driver-view-license-issue-date]', licenseIssueDate);
   setDriverViewText('[data-driver-view-license-expiry]', licenseExpiry);
+  setDriverViewText('[data-driver-view-license-days-left]', licenseDaysLeft);
   setDriverViewText('[data-driver-view-license-issuing-authority]', licenseIssuingAuthority);
   setDriverViewText('[data-driver-view-initial]', initial);
   setDriverViewText('[data-driver-view-status]', statusLabel);
-  setDriverViewText('[data-driver-print-name]', fullName);
-  setDriverViewText('[data-driver-print-department]', department);
-  setDriverViewText('[data-driver-print-vehicle]', assignedVehicle);
-  setDriverViewText('[data-driver-print-contact]', contact);
-  setDriverViewText('[data-driver-print-permit-expiry]', licenseExpiry);
 
   const statusBadge = driverViewModal?.querySelector('[data-driver-view-status]');
   if (statusBadge) {
@@ -1653,7 +1672,7 @@ function resetDriverFormForCreate() {
   }
 
   setDriverFormMode('create');
-  setDriverFieldValue('select[name="assigned_vehicle"]', 'unassigned');
+  setDriverFieldValue('select[name="assigned_vehicle"]', '');
   setDriverMultiSelectValues(driverOtherVehiclesSelect, []);
   setDriverFieldValue('select[name="status"]', 'active');
   setDriverFieldValue('select[name="gender"]', '');

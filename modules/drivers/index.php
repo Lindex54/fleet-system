@@ -15,9 +15,9 @@ include __DIR__ . '/../../includes/sidebar.php';
                 <p class="mt-2 text-sm text-fleet-muted">University fleet driver records</p>
             </div>
             <div class="flex flex-wrap items-center gap-3">
-                <button type="button" data-print-selected-drivers class="inline-flex h-10 items-center gap-2 rounded-lg border border-fleet-line bg-fleet-surface px-4 text-sm font-semibold text-fleet-ink shadow-fleet-card hover:bg-fleet-surface-muted">
+                <button type="button" data-print-page class="inline-flex h-10 items-center gap-2 rounded-lg border border-fleet-line bg-fleet-surface px-4 text-sm font-semibold text-fleet-ink shadow-fleet-card hover:bg-fleet-surface-muted">
                     <span class="text-base">P</span>
-                    <span>Print Drivers</span>
+                    <span>Print</span>
                 </button>
                 <button type="button" data-open-driver-modal class="inline-flex h-10 items-center gap-2 rounded-lg bg-fleet-sidebar px-4 text-sm font-semibold text-white shadow-fleet-card hover:bg-fleet-sidebar-active">
                     <span class="text-lg leading-none">+</span>
@@ -72,50 +72,31 @@ include __DIR__ . '/../../includes/sidebar.php';
             </section>
         <?php endif; ?>
 
-        <section class="mb-6 rounded-2xl border border-fleet-line bg-fleet-surface p-5 shadow-fleet-card print:hidden">
-            <form action="<?= htmlspecialchars($driverPageUrl, ENT_QUOTES, 'UTF-8'); ?>" method="get" class="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-                <label class="block">
-                    <span class="mb-2 block text-sm font-semibold text-fleet-ink">Driver</span>
-                    <select name="driver_id" class="vehicle-form-control">
-                        <option value="">All drivers</option>
-                        <?php foreach ($driverFilterOptions as $driverOption): ?>
-                            <option value="<?= htmlspecialchars((string) $driverOption['id'], ENT_QUOTES, 'UTF-8'); ?>" <?= ($driverFilters['driver_id'] ?? '') === (string) $driverOption['id'] ? 'selected' : ''; ?>>
-                                <?= htmlspecialchars($driverOption['full_name'], ENT_QUOTES, 'UTF-8'); ?>
-                            </option>
-                        <?php endforeach; ?>
-                    </select>
-                </label>
-
-                <label class="block">
-                    <span class="mb-2 block text-sm font-semibold text-fleet-ink">Department</span>
-                    <select name="department" class="vehicle-form-control">
-                        <option value="">All departments</option>
-                        <?php foreach ($driverDepartmentOptions as $departmentOption): ?>
-                            <option value="<?= htmlspecialchars($departmentOption, ENT_QUOTES, 'UTF-8'); ?>" <?= ($driverFilters['department'] ?? '') === $departmentOption ? 'selected' : ''; ?>>
-                                <?= htmlspecialchars($departmentOption, ENT_QUOTES, 'UTF-8'); ?>
-                            </option>
-                        <?php endforeach; ?>
-                    </select>
-                </label>
-
-                <label class="block">
-                    <span class="mb-2 block text-sm font-semibold text-fleet-ink">Vehicle</span>
-                    <select name="vehicle_id" class="vehicle-form-control">
-                        <option value="">All vehicles</option>
-                        <?php foreach ($driverVehicleOptions as $vehicleOption): ?>
-                            <option value="<?= htmlspecialchars((string) $vehicleOption['id'], ENT_QUOTES, 'UTF-8'); ?>" <?= ($driverFilters['vehicle_id'] ?? '') === (string) $vehicleOption['id'] ? 'selected' : ''; ?>>
-                                <?= htmlspecialchars($vehicleOption['registration_no'], ENT_QUOTES, 'UTF-8'); ?>
-                            </option>
-                        <?php endforeach; ?>
-                    </select>
-                </label>
-
-                <div class="flex items-end gap-3">
-                    <button type="submit" class="inline-flex h-10 items-center rounded-lg bg-fleet-sidebar px-5 text-sm font-semibold text-white shadow-sm hover:bg-fleet-sidebar-active">Apply Filters</button>
-                    <a href="<?= htmlspecialchars($driverPageUrl, ENT_QUOTES, 'UTF-8'); ?>" class="inline-flex h-10 items-center rounded-lg border border-fleet-line bg-fleet-surface px-4 text-sm font-semibold text-fleet-ink shadow-sm hover:bg-fleet-surface-muted">Reset</a>
+        <?php if (!empty($driverCredentials)): ?>
+            <section class="mb-6 rounded-lg border border-green-200 bg-green-50 p-5 shadow-fleet-card">
+                <div class="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
+                    <div>
+                        <p class="text-xs font-extrabold uppercase tracking-[0.18em] text-green-700">Driver Login Created</p>
+                        <h2 class="mt-1 text-lg font-extrabold text-fleet-ink">Give these credentials to the driver now</h2>
+                        <p class="mt-1 text-sm text-fleet-muted">The password is shown only this once. The driver will be required to set a new password on first login.</p>
+                    </div>
+                    <div class="grid gap-3 text-sm sm:grid-cols-3 md:min-w-[520px]">
+                        <div class="rounded-lg border border-green-200 bg-white px-4 py-3">
+                            <p class="text-xs font-bold uppercase tracking-wide text-fleet-muted">Driver ID</p>
+                            <p class="mt-1 font-extrabold text-fleet-ink"><?= htmlspecialchars((string) ($driverCredentials['driver_code'] ?? ''), ENT_QUOTES, 'UTF-8'); ?></p>
+                        </div>
+                        <div class="rounded-lg border border-green-200 bg-white px-4 py-3">
+                            <p class="text-xs font-bold uppercase tracking-wide text-fleet-muted">Username</p>
+                            <p class="mt-1 font-extrabold text-fleet-ink"><?= htmlspecialchars((string) ($driverCredentials['username'] ?? ''), ENT_QUOTES, 'UTF-8'); ?></p>
+                        </div>
+                        <div class="rounded-lg border border-green-200 bg-white px-4 py-3">
+                            <p class="text-xs font-bold uppercase tracking-wide text-fleet-muted">One-Time Password</p>
+                            <p class="mt-1 font-extrabold text-fleet-ink"><?= htmlspecialchars((string) ($driverCredentials['one_time_password'] ?? ''), ENT_QUOTES, 'UTF-8'); ?></p>
+                        </div>
+                    </div>
                 </div>
-            </form>
-        </section>
+            </section>
+        <?php endif; ?>
 
         <section class="<?= $hasDrivers ? 'hidden' : 'flex'; ?> min-h-[420px] items-center justify-center">
             <div class="text-center">
@@ -136,15 +117,13 @@ include __DIR__ . '/../../includes/sidebar.php';
             </div>
         </section>
 
-        <section class="<?= $hasDrivers ? 'block' : 'hidden'; ?> overflow-hidden rounded-lg border border-fleet-line bg-fleet-surface shadow-fleet-card">
+        <section data-print-root class="<?= $hasDrivers ? 'block' : 'hidden'; ?> overflow-hidden rounded-lg border border-fleet-line bg-fleet-surface shadow-fleet-card">
             <div class="border-b border-fleet-line-soft px-4 py-4 sm:px-5">
-                <div class="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
-                    <!-- Search appears only when there are actual driver rows to filter. -->
-                    <label class="relative block max-w-md flex-1">
-                        <span class="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-fleet-muted">Q</span>
-                        <input id="driver-search" type="search" class="h-11 w-full rounded-lg border border-fleet-line bg-fleet-surface py-2 pl-11 pr-4 text-sm text-fleet-ink shadow-sm outline-none transition placeholder:text-fleet-muted focus:border-fleet-primary focus:ring-4 focus:ring-blue-100" placeholder="Search drivers...">
-                    </label>
-                </div>
+                <!-- Search appears only when there are actual driver rows to filter. -->
+                <label class="relative block max-w-md">
+                    <span class="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-fleet-muted">Q</span>
+                    <input id="driver-search" type="search" class="h-11 w-full rounded-lg border border-fleet-line bg-fleet-surface py-2 pl-11 pr-4 text-sm text-fleet-ink shadow-sm outline-none transition placeholder:text-fleet-muted focus:border-fleet-primary focus:ring-4 focus:ring-blue-100" placeholder="Search drivers...">
+                </label>
             </div>
 
             <div class="overflow-x-auto">
@@ -163,8 +142,9 @@ include __DIR__ . '/../../includes/sidebar.php';
                         <?php foreach ($drivers as $driver): ?>
                             <tr
                                 class="driver-row hover:bg-fleet-surface-muted/70"
-                                data-search="<?= htmlspecialchars(strtolower(implode(' ', array_filter([$driver['name'], $driver['email'], $driver['phone'], $driver['license'], $driver['assigned'], $driver['other_vehicles'], $driver['department'], $driver['gender'], $driver['national_id_number']]))), ENT_QUOTES, 'UTF-8'); ?>"
+                                data-search="<?= htmlspecialchars(strtolower(implode(' ', array_filter([$driver['driver_code'], $driver['name'], $driver['email'], $driver['phone'], $driver['license'], $driver['assigned'], $driver['other_vehicles'], $driver['department'], $driver['gender'], $driver['national_id_number']]))), ENT_QUOTES, 'UTF-8'); ?>"
                                 data-driver-id="<?= htmlspecialchars((string) $driver['id'], ENT_QUOTES, 'UTF-8'); ?>"
+                                data-driver-code="<?= htmlspecialchars($driver['driver_code'], ENT_QUOTES, 'UTF-8'); ?>"
                                 data-full-name="<?= htmlspecialchars($driver['name'], ENT_QUOTES, 'UTF-8'); ?>"
                                 data-employee-id="<?= htmlspecialchars($driver['employee_id'], ENT_QUOTES, 'UTF-8'); ?>"
                                 data-phone="<?= htmlspecialchars($driver['phone'] === '-' ? '' : $driver['phone'], ENT_QUOTES, 'UTF-8'); ?>"
@@ -176,6 +156,7 @@ include __DIR__ . '/../../includes/sidebar.php';
                                 data-license-issue-date="<?= htmlspecialchars($driver['license_issue_date'], ENT_QUOTES, 'UTF-8'); ?>"
                                 data-license-issuing-authority="<?= htmlspecialchars($driver['license_issuing_authority'], ENT_QUOTES, 'UTF-8'); ?>"
                                 data-license-expiry="<?= htmlspecialchars($driver['license_expiry'], ENT_QUOTES, 'UTF-8'); ?>"
+                                data-license-days-left="<?= htmlspecialchars($driver['license_days_left'], ENT_QUOTES, 'UTF-8'); ?>"
                                 data-department="<?= htmlspecialchars($driver['department'], ENT_QUOTES, 'UTF-8'); ?>"
                                 data-assigned-vehicle="<?= htmlspecialchars($driver['assigned'], ENT_QUOTES, 'UTF-8'); ?>"
                                 data-assigned-vehicle-id="<?= htmlspecialchars((string) ($driver['assigned_vehicle_id'] ?? ''), ENT_QUOTES, 'UTF-8'); ?>"
@@ -284,27 +265,28 @@ include __DIR__ . '/../../includes/sidebar.php';
                 <div class="grid gap-5 md:grid-cols-2">
                     <label class="block">
                         <span class="mb-2 block text-sm font-semibold text-fleet-ink">Full Name *</span>
-                        <input name="full_name" type="text" required autofocus class="vehicle-form-control" placeholder="John Doe" value="<?= htmlspecialchars($driverFormData['full_name'] ?? '', ENT_QUOTES, 'UTF-8'); ?>">
+                        <input name="full_name" type="text" required data-driver-required-on-create autofocus class="vehicle-form-control" placeholder="John Doe" value="<?= htmlspecialchars($driverFormData['full_name'] ?? '', ENT_QUOTES, 'UTF-8'); ?>">
                     </label>
 
                     <label class="block">
                         <span class="mb-2 block text-sm font-semibold text-fleet-ink">Employee ID</span>
-                        <input name="employee_id" type="text" class="vehicle-form-control" placeholder="EMP-001" value="<?= htmlspecialchars($driverFormData['employee_id'] ?? '', ENT_QUOTES, 'UTF-8'); ?>">
+                        <input name="employee_id" type="text" class="vehicle-form-control" placeholder="Optional staff ID" value="<?= htmlspecialchars($driverFormData['employee_id'] ?? '', ENT_QUOTES, 'UTF-8'); ?>">
+                        <span class="mt-2 block text-xs text-fleet-muted">Driver ID is generated automatically after saving.</span>
                     </label>
 
                     <label class="block">
-                        <span class="mb-2 block text-sm font-semibold text-fleet-ink">Phone</span>
-                        <input name="phone" type="tel" class="vehicle-form-control" placeholder="+256 700 000000" value="<?= htmlspecialchars($driverFormData['phone'] ?? '', ENT_QUOTES, 'UTF-8'); ?>">
+                        <span class="mb-2 block text-sm font-semibold text-fleet-ink">Phone *</span>
+                        <input name="phone" type="tel" required data-driver-required-on-create class="vehicle-form-control" placeholder="+256 700 000000" value="<?= htmlspecialchars($driverFormData['phone'] ?? '', ENT_QUOTES, 'UTF-8'); ?>">
                     </label>
 
                     <label class="block">
-                        <span class="mb-2 block text-sm font-semibold text-fleet-ink">Email</span>
-                        <input name="email" type="email" class="vehicle-form-control" value="<?= htmlspecialchars($driverFormData['email'] ?? '', ENT_QUOTES, 'UTF-8'); ?>">
+                        <span class="mb-2 block text-sm font-semibold text-fleet-ink">Email *</span>
+                        <input name="email" type="email" required data-driver-required-on-create class="vehicle-form-control" value="<?= htmlspecialchars($driverFormData['email'] ?? '', ENT_QUOTES, 'UTF-8'); ?>">
                     </label>
 
                     <label class="block">
-                        <span class="mb-2 block text-sm font-semibold text-fleet-ink">Gender</span>
-                        <select name="gender" class="vehicle-form-control">
+                        <span class="mb-2 block text-sm font-semibold text-fleet-ink">Gender *</span>
+                        <select name="gender" required data-driver-required-on-create class="vehicle-form-control">
                             <option value="" <?= (($driverFormData['gender'] ?? '') === '') ? 'selected' : ''; ?>>Select gender</option>
                             <option value="male" <?= (($driverFormData['gender'] ?? '') === 'male') ? 'selected' : ''; ?>>Male</option>
                             <option value="female" <?= (($driverFormData['gender'] ?? '') === 'female') ? 'selected' : ''; ?>>Female</option>
@@ -313,45 +295,45 @@ include __DIR__ . '/../../includes/sidebar.php';
                     </label>
 
                     <label class="block">
-                        <span class="mb-2 block text-sm font-semibold text-fleet-ink">National ID Number / NIN</span>
-                        <input name="national_id_number" type="text" class="vehicle-form-control" placeholder="CM12345678901234" value="<?= htmlspecialchars($driverFormData['national_id_number'] ?? '', ENT_QUOTES, 'UTF-8'); ?>">
+                        <span class="mb-2 block text-sm font-semibold text-fleet-ink">National ID Number / NIN *</span>
+                        <input name="national_id_number" type="text" required data-driver-required-on-create class="vehicle-form-control" placeholder="CM12345678901234" value="<?= htmlspecialchars($driverFormData['national_id_number'] ?? '', ENT_QUOTES, 'UTF-8'); ?>">
                     </label>
 
                     <label class="block">
                         <span class="mb-2 block text-sm font-semibold text-fleet-ink">License Number *</span>
-                        <input name="license_number" type="text" required class="vehicle-form-control" value="<?= htmlspecialchars($driverFormData['license_number'] ?? '', ENT_QUOTES, 'UTF-8'); ?>">
+                        <input name="license_number" type="text" required data-driver-required-on-create class="vehicle-form-control" value="<?= htmlspecialchars($driverFormData['license_number'] ?? '', ENT_QUOTES, 'UTF-8'); ?>">
                     </label>
 
                     <label class="block">
-                        <span class="mb-2 block text-sm font-semibold text-fleet-ink">License Class(es)</span>
-                        <input name="license_classes" type="text" class="vehicle-form-control" value="<?= htmlspecialchars($driverFormData['license_classes'] ?? 'B', ENT_QUOTES, 'UTF-8'); ?>">
+                        <span class="mb-2 block text-sm font-semibold text-fleet-ink">License Class(es) *</span>
+                        <input name="license_classes" type="text" required data-driver-required-on-create class="vehicle-form-control" value="<?= htmlspecialchars($driverFormData['license_classes'] ?? 'B', ENT_QUOTES, 'UTF-8'); ?>">
                         <span class="mt-2 block text-xs text-fleet-muted">Separate multiple classes with commas</span>
                     </label>
 
                     <label class="block">
-                        <span class="mb-2 block text-sm font-semibold text-fleet-ink">License Issue Date</span>
-                        <input name="license_issue_date" type="date" class="vehicle-form-control" value="<?= htmlspecialchars($driverFormData['license_issue_date'] ?? '', ENT_QUOTES, 'UTF-8'); ?>">
+                        <span class="mb-2 block text-sm font-semibold text-fleet-ink">License Issue Date *</span>
+                        <input name="license_issue_date" type="date" required data-driver-required-on-create class="vehicle-form-control" value="<?= htmlspecialchars($driverFormData['license_issue_date'] ?? '', ENT_QUOTES, 'UTF-8'); ?>">
                     </label>
 
                     <label class="block">
-                        <span class="mb-2 block text-sm font-semibold text-fleet-ink">License Expiry</span>
-                        <input name="license_expiry" type="date" class="vehicle-form-control" value="<?= htmlspecialchars($driverFormData['license_expiry'] ?? '', ENT_QUOTES, 'UTF-8'); ?>">
+                        <span class="mb-2 block text-sm font-semibold text-fleet-ink">License Expiry *</span>
+                        <input name="license_expiry" type="date" required data-driver-required-on-create class="vehicle-form-control" value="<?= htmlspecialchars($driverFormData['license_expiry'] ?? '', ENT_QUOTES, 'UTF-8'); ?>">
                     </label>
 
                     <label class="block md:col-span-2">
-                        <span class="mb-2 block text-sm font-semibold text-fleet-ink">License Issuing Authority</span>
-                        <input name="license_issuing_authority" type="text" class="vehicle-form-control" placeholder="Uganda Revenue Authority" value="<?= htmlspecialchars($driverFormData['license_issuing_authority'] ?? '', ENT_QUOTES, 'UTF-8'); ?>">
+                        <span class="mb-2 block text-sm font-semibold text-fleet-ink">License Issuing Authority *</span>
+                        <input name="license_issuing_authority" type="text" required data-driver-required-on-create class="vehicle-form-control" placeholder="Uganda Revenue Authority" value="<?= htmlspecialchars($driverFormData['license_issuing_authority'] ?? '', ENT_QUOTES, 'UTF-8'); ?>">
                     </label>
 
                     <label class="block">
-                        <span class="mb-2 block text-sm font-semibold text-fleet-ink">Department</span>
-                        <input name="department" type="text" class="vehicle-form-control" placeholder="Transport" value="<?= htmlspecialchars($driverFormData['department'] ?? '', ENT_QUOTES, 'UTF-8'); ?>">
+                        <span class="mb-2 block text-sm font-semibold text-fleet-ink">Department *</span>
+                        <input name="department" type="text" required data-driver-required-on-create class="vehicle-form-control" placeholder="Transport" value="<?= htmlspecialchars($driverFormData['department'] ?? '', ENT_QUOTES, 'UTF-8'); ?>">
                     </label>
 
                     <label class="block md:col-span-2">
-                        <span class="mb-2 block text-sm font-semibold text-fleet-ink">Assigned Vehicle</span>
-                        <select name="assigned_vehicle" class="vehicle-form-control" data-driver-vehicle-select>
-                            <option value="unassigned" <?= (($driverFormData['assigned_vehicle'] ?? 'unassigned') === 'unassigned') ? 'selected' : ''; ?>>Unassigned</option>
+                        <span class="mb-2 block text-sm font-semibold text-fleet-ink">Assigned Vehicle *</span>
+                        <select name="assigned_vehicle" required data-driver-required-on-create class="vehicle-form-control" data-driver-vehicle-select>
+                            <option value="" <?= (($driverFormData['assigned_vehicle'] ?? '') === '') ? 'selected' : ''; ?>>Unassigned</option>
                             <?php foreach ($driverVehicleOptions as $vehicleOption): ?>
                                 <?php
                                 $assignedDriverId = $vehicleOption['assigned_driver_id'] !== null ? (int) $vehicleOption['assigned_driver_id'] : null;
@@ -399,13 +381,13 @@ include __DIR__ . '/../../includes/sidebar.php';
                 <section class="mt-8 border-t border-fleet-line-soft pt-6">
                     <div class="mb-5">
                         <h3 class="text-base font-extrabold text-fleet-ink">Uploads</h3>
-                        <p class="mt-1 text-sm text-fleet-muted">Add optional supporting files for the driver record. Upload a new file only when you want to replace the current one.</p>
+                        <p class="mt-1 text-sm text-fleet-muted">All uploads are required for a new driver. When editing, upload a new file only when you want to replace the current one.</p>
                     </div>
 
                     <div class="grid gap-5 md:grid-cols-2">
                         <label class="block">
-                            <span class="mb-2 block text-sm font-semibold text-fleet-ink">Driver Photo</span>
-                            <input name="driver_photo" type="file" accept=".jpg,.jpeg,.png,.pdf" class="vehicle-form-control file:mr-3 file:rounded-lg file:border-0 file:bg-fleet-primary-soft file:px-3 file:py-2 file:text-sm file:font-semibold file:text-fleet-primary">
+                            <span class="mb-2 block text-sm font-semibold text-fleet-ink">Driver Photo *</span>
+                            <input name="driver_photo" type="file" required data-driver-required-on-create accept=".jpg,.jpeg,.png,.pdf" class="vehicle-form-control file:mr-3 file:rounded-lg file:border-0 file:bg-fleet-primary-soft file:px-3 file:py-2 file:text-sm file:font-semibold file:text-fleet-primary">
                             <span class="mt-2 block text-xs text-fleet-muted">Accepted formats: JPG, JPEG, PNG, PDF. Maximum 5MB.</span>
                             <div class="<?= $driverPhotoPath !== '' ? 'block' : 'hidden'; ?> mt-3 rounded-lg border border-fleet-line bg-fleet-surface-muted p-3" data-driver-file-preview="driver_photo">
                                 <div class="flex items-start gap-3">
@@ -426,8 +408,8 @@ include __DIR__ . '/../../includes/sidebar.php';
                         </label>
 
                         <label class="block">
-                            <span class="mb-2 block text-sm font-semibold text-fleet-ink">National ID Photo</span>
-                            <input name="national_id_photo" type="file" accept=".jpg,.jpeg,.png,.pdf" class="vehicle-form-control file:mr-3 file:rounded-lg file:border-0 file:bg-fleet-primary-soft file:px-3 file:py-2 file:text-sm file:font-semibold file:text-fleet-primary">
+                            <span class="mb-2 block text-sm font-semibold text-fleet-ink">National ID Photo *</span>
+                            <input name="national_id_photo" type="file" required data-driver-required-on-create accept=".jpg,.jpeg,.png,.pdf" class="vehicle-form-control file:mr-3 file:rounded-lg file:border-0 file:bg-fleet-primary-soft file:px-3 file:py-2 file:text-sm file:font-semibold file:text-fleet-primary">
                             <span class="mt-2 block text-xs text-fleet-muted">Accepted formats: JPG, JPEG, PNG, PDF. Maximum 5MB.</span>
                             <div class="<?= $nationalIdPhotoPath !== '' ? 'block' : 'hidden'; ?> mt-3 rounded-lg border border-fleet-line bg-fleet-surface-muted p-3" data-driver-file-preview="national_id_photo">
                                 <div class="flex items-start gap-3">
@@ -448,8 +430,8 @@ include __DIR__ . '/../../includes/sidebar.php';
                         </label>
 
                         <label class="block md:col-span-2">
-                            <span class="mb-2 block text-sm font-semibold text-fleet-ink">Driving License Scan</span>
-                            <input name="driving_license_scan" type="file" accept=".jpg,.jpeg,.png,.pdf" class="vehicle-form-control file:mr-3 file:rounded-lg file:border-0 file:bg-fleet-primary-soft file:px-3 file:py-2 file:text-sm file:font-semibold file:text-fleet-primary">
+                            <span class="mb-2 block text-sm font-semibold text-fleet-ink">Driving License Scan *</span>
+                            <input name="driving_license_scan" type="file" required data-driver-required-on-create accept=".jpg,.jpeg,.png,.pdf" class="vehicle-form-control file:mr-3 file:rounded-lg file:border-0 file:bg-fleet-primary-soft file:px-3 file:py-2 file:text-sm file:font-semibold file:text-fleet-primary">
                             <span class="mt-2 block text-xs text-fleet-muted">Accepted formats: JPG, JPEG, PNG, PDF. Maximum 5MB.</span>
                             <div class="<?= $drivingLicenseScanPath !== '' ? 'block' : 'hidden'; ?> mt-3 rounded-lg border border-fleet-line bg-fleet-surface-muted p-3" data-driver-file-preview="driving_license_scan">
                                 <div class="flex items-start gap-3">

@@ -3,6 +3,8 @@
 declare(strict_types=1);
 
 require_once __DIR__ . '/../config/database.php';
+require_once __DIR__ . '/../includes/auth.php';
+fleetAuthRequireAdmin();
 
 // Driver constants and page/session helpers
 const DRIVER_ALLOWED_STATUSES = ['active', 'inactive', 'suspended'];
@@ -10,6 +12,7 @@ const DRIVER_ALLOWED_GENDERS = ['male', 'female', 'other'];
 const DRIVER_UPLOAD_MAX_BYTES = 5242880;
 const DRIVER_ALLOWED_UPLOAD_EXTENSIONS = ['jpg', 'jpeg', 'png', 'pdf'];
 const DRIVER_ALLOWED_UPLOAD_MIME_TYPES = ['image/jpeg', 'image/png', 'application/pdf'];
+const DRIVER_CODE_PREFIX = 'BUESMIS';
 
 // Returns the absolute uploads directory used for driver files.
 function driverUploadDirectoryPath(): string
@@ -69,12 +72,15 @@ function driverEnsureUploadDirectoryExists(): void
     $directory = driverUploadDirectoryPath();
 
     if (is_dir($directory)) {
+        @chmod($directory, 0777);
         return;
     }
 
     if (!mkdir($directory, 0775, true) && !is_dir($directory)) {
         throw new RuntimeException('The uploads directory could not be prepared for driver files.');
     }
+
+    @chmod($directory, 0777);
 }
 
 // Starts the session used for driver flash notifications if it is not already active.
@@ -96,15 +102,6 @@ function driverPageUrl(): string
 function driverHandlerUrl(): string
 {
     return '/fleet-system/handlers/driver.php';
-}
-
-function driverBuildFilterState(): array
-{
-    return [
-        'driver_id' => trim((string) ($_GET['driver_id'] ?? '')),
-        'department' => trim((string) ($_GET['department'] ?? '')),
-        'vehicle_id' => trim((string) ($_GET['vehicle_id'] ?? '')),
-    ];
 }
 
 // Stores one-time driver feedback in session flash state.
@@ -140,6 +137,108 @@ function driverNormalizeStatus(string $status): string
         'suspended' => 'Suspended',
         default => ucfirst($status),
     };
+}
+
+function driverBuildLicenseDaysLeftLabel(?string $expiryDate): string
+{
+    if ($expiryDate === null || trim($expiryDate) === '') {
+        return 'Not set';
+    }
+
+    $expiry = DateTimeImmutable::createFromFormat('Y-m-d', $expiryDate);
+    if (!$expiry) {
+        return 'Not set';
+    }
+
+    $today = new DateTimeImmutable(date('Y-m-d'));
+    $daysLeft = (int) $today->diff($expiry)->format('%r%a');
+
+    if ($daysLeft < 0) {
+        return 'Expired';
+    }
+
+    return $daysLeft . ' day' . ($daysLeft === 1 ? '' : 's') . ' left';
+}
+
+function driverBuildCodeNamePart(string $fullName): string
+{
+    $letters = (string) preg_replace('/[^A-Z]/', '', strtoupper($fullName));
+
+    return substr($letters !== '' ? $letters : 'DRVR', 0, 4);
+}
+
+function driverGenerateCode(PDO $pdo, string $fullName): string
+{
+    $prefix = DRIVER_CODE_PREFIX . driverBuildCodeNamePart($fullName);
+    $statement = $pdo->prepare(
+        'SELECT driver_code
+        FROM drivers
+        WHERE driver_code LIKE :prefix
+        FOR UPDATE'
+    );
+    $statement->execute(['prefix' => DRIVER_CODE_PREFIX . '%']);
+    $nextNumber = 1;
+
+    foreach ($statement->fetchAll() as $row) {
+        $driverCode = (string) ($row['driver_code'] ?? '');
+        if (preg_match('/(\d{3})$/', $driverCode, $matches)) {
+            $nextNumber = max($nextNumber, ((int) $matches[1]) + 1);
+        }
+    }
+
+    if ($nextNumber > 999) {
+        throw new RuntimeException('Driver ID numbers have been exhausted.');
+    }
+
+    return $prefix . str_pad((string) $nextNumber, 3, '0', STR_PAD_LEFT);
+}
+
+function driverGenerateOneTimePassword(): string
+{
+    return 'Drv-' . substr(bin2hex(random_bytes(8)), 0, 12);
+}
+
+function driverCreateCredentials(PDO $pdo, array $validated, ?int $departmentId): array
+{
+    $driverCode = driverGenerateCode($pdo, $validated['full_name']);
+    $oneTimePassword = driverGenerateOneTimePassword();
+    $email = strtolower($driverCode) . '@drivers.local';
+
+    $statement = $pdo->prepare(
+        'INSERT INTO users (
+            department_id,
+            username,
+            name,
+            email,
+            password_hash,
+            role,
+            status,
+            must_change_password
+        ) VALUES (
+            :department_id,
+            :username,
+            :name,
+            :email,
+            :password_hash,
+            \'driver\',
+            :status,
+            1
+        )'
+    );
+    $statement->bindValue(':department_id', $departmentId, $departmentId === null ? PDO::PARAM_NULL : PDO::PARAM_INT);
+    $statement->bindValue(':username', $driverCode);
+    $statement->bindValue(':name', $validated['full_name']);
+    $statement->bindValue(':email', $email);
+    $statement->bindValue(':password_hash', password_hash($oneTimePassword, PASSWORD_DEFAULT));
+    $statement->bindValue(':status', $validated['status']);
+    $statement->execute();
+
+    return [
+        'user_id' => (int) $pdo->lastInsertId(),
+        'driver_code' => $driverCode,
+        'username' => $driverCode,
+        'one_time_password' => $oneTimePassword,
+    ];
 }
 
 // Department and vehicle option helpers used by the driver modal
@@ -194,82 +293,6 @@ function driverFetchVehicleOptions(PDO $pdo): array
     return $statement->fetchAll();
 }
 
-function driverFetchDepartmentOptions(PDO $pdo): array
-{
-    $statement = $pdo->query(
-        "SELECT DISTINCT COALESCE(dep.name, '') AS department_name
-        FROM drivers d
-        LEFT JOIN departments dep ON dep.id = d.department_id
-        WHERE COALESCE(dep.name, '') <> ''
-        ORDER BY dep.name ASC"
-    );
-
-    return array_values(array_filter(array_map(
-        static fn (array $row): string => trim((string) ($row['department_name'] ?? '')),
-        $statement->fetchAll()
-    )));
-}
-
-function driverFetchFilterDriverOptions(PDO $pdo): array
-{
-    $statement = $pdo->query(
-        "SELECT id, full_name
-        FROM drivers
-        ORDER BY full_name ASC"
-    );
-
-    return $statement->fetchAll();
-}
-
-function driverBuildQueryFilters(array $filters): array
-{
-    $conditions = [];
-    $params = [];
-
-    $driverId = $filters['driver_id'] === ''
-        ? null
-        : filter_var($filters['driver_id'], FILTER_VALIDATE_INT, ['options' => ['min_range' => 1]]);
-    if ($driverId === false) {
-        $driverId = null;
-    }
-
-    if ($driverId !== null) {
-        $conditions[] = 'd.id = :driver_id';
-        $params['driver_id'] = (int) $driverId;
-    }
-
-    if ($filters['department'] !== '') {
-        $conditions[] = 'COALESCE(dep.name, \'\') = :department';
-        $params['department'] = $filters['department'];
-    }
-
-    $vehicleId = $filters['vehicle_id'] === ''
-        ? null
-        : filter_var($filters['vehicle_id'], FILTER_VALIDATE_INT, ['options' => ['min_range' => 1]]);
-    if ($vehicleId === false) {
-        $vehicleId = null;
-    }
-
-    if ($vehicleId !== null) {
-        $conditions[] = '(
-            v.id = :vehicle_id
-            OR EXISTS (
-                SELECT 1
-                FROM driver_secondary_vehicles filter_dsv
-                WHERE filter_dsv.driver_id = d.id
-                    AND filter_dsv.vehicle_id = :vehicle_id_secondary
-            )
-        )';
-        $params['vehicle_id'] = (int) $vehicleId;
-        $params['vehicle_id_secondary'] = (int) $vehicleId;
-    }
-
-    return [
-        'where_sql' => $conditions === [] ? '' : 'WHERE ' . implode(' AND ', $conditions),
-        'params' => $params,
-    ];
-}
-
 function driverEnsureSecondaryVehicleTable(PDO $pdo): void
 {
     $pdo->exec(
@@ -300,23 +323,19 @@ function driverFetchPageData(): array
     $formData = $flash['form_data'] ?? [];
     $openModal = (bool) ($flash['open_modal'] ?? false);
     $formMode = $flash['form_mode'] ?? 'create';
-    $filters = driverBuildFilterState();
+    $credentials = $flash['credentials'] ?? null;
 
     $drivers = [];
     $vehicleOptions = [];
-    $departmentOptions = [];
-    $filterDriverOptions = [];
 
     try {
         $pdo = fleetDb();
         driverEnsureSecondaryVehicleTable($pdo);
         $vehicleOptions = driverFetchVehicleOptions($pdo);
-        $departmentOptions = driverFetchDepartmentOptions($pdo);
-        $filterDriverOptions = driverFetchFilterDriverOptions($pdo);
-        $queryFilters = driverBuildQueryFilters($filters);
-        $statement = $pdo->prepare(
+        $statement = $pdo->query(
             'SELECT
                 d.id,
+                d.driver_code,
                 d.full_name,
                 d.employee_id,
                 d.phone,
@@ -353,15 +372,14 @@ function driverFetchPageData(): array
                 ON active_assignment.driver_id = d.id
                 AND active_assignment.released_at IS NULL
             LEFT JOIN vehicles v ON v.id = active_assignment.vehicle_id
-            ' . $queryFilters['where_sql'] . '
             ORDER BY d.created_at DESC, d.id DESC'
         );
-        $statement->execute($queryFilters['params']);
 
         foreach ($statement->fetchAll() as $row) {
             // Shape database rows into the format the driver table and edit modal expect.
             $drivers[] = [
                 'id' => (int) $row['id'],
+                'driver_code' => $row['driver_code'] ?: '',
                 'name' => $row['full_name'],
                 'employee_id' => $row['employee_id'] ?: '',
                 'email' => $row['email'] ?: '-',
@@ -373,6 +391,7 @@ function driverFetchPageData(): array
                 'license_issue_date' => $row['license_issue_date'] ?: '',
                 'license_issuing_authority' => $row['license_issuing_authority'] ?: '',
                 'license_expiry' => $row['license_expiry'] ?: '',
+                'license_days_left' => driverBuildLicenseDaysLeftLabel($row['license_expiry'] ?? null),
                 'driver_photo' => $row['driver_photo'] ?: '',
                 'driver_photo_url' => driverBuildUploadUrl($row['driver_photo'] ?? ''),
                 'driver_photo_name' => driverUploadDisplayName($row['driver_photo'] ?? ''),
@@ -408,15 +427,12 @@ function driverFetchPageData(): array
         'drivers' => $drivers,
         'hasDrivers' => count($drivers) > 0,
         'driverNotification' => $notification,
-        'driverFilters' => $filters,
         'driverFormData' => $formData,
         'shouldOpenDriverModal' => $openModal,
         'driverFormMode' => $formMode,
         'driverFormAction' => driverHandlerUrl(),
         'driverVehicleOptions' => $vehicleOptions,
-        'driverDepartmentOptions' => $departmentOptions,
-        'driverFilterOptions' => $filterDriverOptions,
-        'driverPageUrl' => driverPageUrl(),
+        'driverCredentials' => is_array($credentials) ? $credentials : null,
     ];
 }
 
@@ -451,9 +467,57 @@ function driverBuildFormDataFromPost(): array
     ];
 }
 
-// Validates and normalizes submitted driver form values.
-function driverValidateFormData(array $formData): array
+function driverAssertRequiredCreateFields(array $formData): void
 {
+    $requiredFields = [
+        'full_name' => 'Full name',
+        'phone' => 'Phone',
+        'email' => 'Email',
+        'gender' => 'Gender',
+        'national_id_number' => 'National ID Number / NIN',
+        'license_number' => 'License number',
+        'license_classes' => 'License class(es)',
+        'license_issue_date' => 'License issue date',
+        'license_issuing_authority' => 'License issuing authority',
+        'license_expiry' => 'License expiry',
+        'department' => 'Department',
+    ];
+
+    foreach ($requiredFields as $field => $label) {
+        if (($formData[$field] ?? '') === '') {
+            throw new RuntimeException($label . ' is required before a new driver can be added.');
+        }
+    }
+
+    if (($formData['assigned_vehicle'] ?? '') === '' || $formData['assigned_vehicle'] === 'unassigned') {
+        throw new RuntimeException('Assigned vehicle is required before a new driver can be added.');
+    }
+}
+
+function driverAssertRequiredCreateUploads(): void
+{
+    $requiredUploads = [
+        'driver_photo' => 'Driver photo',
+        'national_id_photo' => 'National ID photo',
+        'driving_license_scan' => 'Driving license scan',
+    ];
+
+    foreach ($requiredUploads as $fieldName => $label) {
+        $upload = $_FILES[$fieldName] ?? null;
+        if (!is_array($upload) || (int) ($upload['error'] ?? UPLOAD_ERR_NO_FILE) === UPLOAD_ERR_NO_FILE) {
+            throw new RuntimeException($label . ' is required before a new driver can be added.');
+        }
+    }
+}
+
+// Validates and normalizes submitted driver form values.
+function driverValidateFormData(array $formData, string $action = 'create'): array
+{
+    if ($action === 'create') {
+        driverAssertRequiredCreateFields($formData);
+        driverAssertRequiredCreateUploads();
+    }
+
     // Shared validation keeps create and update behavior consistent.
     if ($formData['full_name'] === '' || $formData['license_number'] === '') {
         throw new RuntimeException('Full name and license number are required.');
@@ -552,7 +616,7 @@ function driverValidateFormData(array $formData): array
 function driverFetchExistingRecord(PDO $pdo, int $driverId): array
 {
     $statement = $pdo->prepare(
-        'SELECT id, driver_photo, national_id_photo, driving_license_scan
+        'SELECT id, user_id, driver_photo, national_id_photo, driving_license_scan
         FROM drivers
         WHERE id = :id
         LIMIT 1'
@@ -728,8 +792,6 @@ function driverSyncVehicleAssignment(PDO $pdo, int $driverId, ?int $vehicleId): 
 
 function driverSyncSecondaryVehicles(PDO $pdo, int $driverId, array $vehicleIds, ?int $assignedVehicleId): void
 {
-    driverEnsureSecondaryVehicleTable($pdo);
-
     $normalizedVehicleIds = array_values(array_unique(array_map('intval', $vehicleIds)));
     if ($assignedVehicleId !== null) {
         $normalizedVehicleIds = array_values(array_filter(
@@ -771,7 +833,7 @@ function driverHandleCreateOrUpdate(string $action): void
     $oldUploadsToDelete = [];
 
     try {
-        $validated = driverValidateFormData($formData);
+        $validated = driverValidateFormData($formData, $action);
         $pdo = fleetDb();
         driverEnsureSecondaryVehicleTable($pdo);
         $pdo->beginTransaction();
@@ -832,6 +894,7 @@ function driverHandleCreateOrUpdate(string $action): void
             );
             $statement->bindValue(':driver_id', (int) $driverId, PDO::PARAM_INT);
         } else {
+            $credentials = driverCreateCredentials($pdo, $validated, $departmentId);
             $validated['driver_photo'] = driverStoreOptionalUpload(
                 'driver_photo',
                 'Driver photo',
@@ -857,6 +920,8 @@ function driverHandleCreateOrUpdate(string $action): void
             // New drivers are inserted first, then any selected vehicle is assigned afterwards.
             $statement = $pdo->prepare(
                 'INSERT INTO drivers (
+                    user_id,
+                    driver_code,
                     department_id,
                     full_name,
                     employee_id,
@@ -874,6 +939,8 @@ function driverHandleCreateOrUpdate(string $action): void
                     driving_license_scan,
                     status
                 ) VALUES (
+                    :user_id,
+                    :driver_code,
                     :department_id,
                     :full_name,
                     :employee_id,
@@ -892,6 +959,8 @@ function driverHandleCreateOrUpdate(string $action): void
                     :status
                 )'
             );
+            $statement->bindValue(':user_id', $credentials['user_id'], PDO::PARAM_INT);
+            $statement->bindValue(':driver_code', $credentials['driver_code']);
         }
 
         $statement->bindValue(':department_id', $departmentId, $departmentId === null ? PDO::PARAM_NULL : PDO::PARAM_INT);
@@ -924,11 +993,16 @@ function driverHandleCreateOrUpdate(string $action): void
         driverSetFlash([
             'notification' => [
                 'type' => 'success',
-                'title' => $action === 'update' ? 'Driver updated successfully' : 'Driver added successfully',
+                'title' => $action === 'update' ? 'Driver updated successfully' : 'Driver login created',
                 'message' => $action === 'update'
                     ? 'The driver record has been updated successfully.'
-                    : 'The driver record has been added successfully.',
+                    : 'Username: ' . ($credentials['username'] ?? '') . ' | One-time password: ' . ($credentials['one_time_password'] ?? ''),
             ],
+            'credentials' => $action === 'create' ? [
+                'driver_code' => $credentials['driver_code'] ?? '',
+                'username' => $credentials['username'] ?? '',
+                'one_time_password' => $credentials['one_time_password'] ?? '',
+            ] : null,
         ]);
     } catch (RuntimeException $exception) {
         if (isset($pdo) && $pdo instanceof PDO && $pdo->inTransaction()) {
@@ -1031,6 +1105,11 @@ function driverHandleDelete(): void
 
         if ($statement->rowCount() === 0) {
             throw new RuntimeException('The selected driver no longer exists.');
+        }
+
+        if (!empty($existingRecord['user_id'])) {
+            $deleteUser = $pdo->prepare('DELETE FROM users WHERE id = :id AND role = \'driver\'');
+            $deleteUser->execute(['id' => (int) $existingRecord['user_id']]);
         }
 
         driverDeleteStoredUpload($existingRecord['driver_photo'] ?? null);

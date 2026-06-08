@@ -168,9 +168,44 @@ estateStatusFilter?.addEventListener('change', filterEstateProjects);
 estateCategoryFilter?.addEventListener('change', filterEstateProjects);
 
 // Shared page actions and communications recipient helpers
-document.querySelector('[data-print-page]')?.addEventListener('click', () => {
-  window.print();
+const printPageButtons = document.querySelectorAll('[data-print-page]');
+let activePrintRoot = null;
+
+function clearPrintTarget() {
+  if (activePrintRoot) {
+    activePrintRoot.classList.remove('print-target-active');
+    activePrintRoot = null;
+  }
+
+  document.body.classList.remove('print-target-active');
+}
+
+function resolvePrintRoot(button) {
+  const selector = button.dataset.printTarget;
+  if (selector) {
+    return document.querySelector(selector);
+  }
+
+  return button.closest('main')?.querySelector('[data-print-root]') || null;
+}
+
+printPageButtons.forEach((button) => {
+  button.addEventListener('click', () => {
+    const printRoot = resolvePrintRoot(button);
+
+    clearPrintTarget();
+
+    if (printRoot) {
+      activePrintRoot = printRoot;
+      activePrintRoot.classList.add('print-target-active');
+      document.body.classList.add('print-target-active');
+    }
+
+    window.print();
+  });
 });
+
+window.addEventListener('afterprint', clearPrintTarget);
 
 function createTablePaginator(table, rowSelector, pageSize = 10) {
   if (!table) {
