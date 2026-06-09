@@ -439,6 +439,7 @@ CREATE TABLE `vehicles` (
   `insurance_expiry` date DEFAULT NULL,
   `status` enum('active','maintenance','grounded','disposed') NOT NULL DEFAULT 'active',
   `notes` text DEFAULT NULL,
+  `vehicle_image` varchar(255) DEFAULT NULL,
   `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
   `updated_at` timestamp NULL DEFAULT NULL ON UPDATE current_timestamp()
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
@@ -447,16 +448,16 @@ CREATE TABLE `vehicles` (
 -- Dumping data for table `vehicles`
 --
 
-INSERT INTO `vehicles` (`id`, `department_id`, `registration_no`, `make`, `model`, `manufacture_year`, `vehicle_type`, `fuel_type`, `current_mileage`, `insurance_expiry`, `status`, `notes`, `created_at`, `updated_at`) VALUES
-(1, 1, 'UBD 456G', 'Toyota', 'Prado', '2022', 'suv', 'diesel', 0, NULL, 'maintenance', NULL, '2026-05-28 19:14:05', NULL),
-(2, 6, 'UBR 123C', 'TOYOTA', 'Land cruiser', '2024', 'suv', 'diesel', 852436, NULL, 'active', NULL, '2026-05-28 19:14:05', NULL),
-(3, 4, 'UBR 402Q', 'TOYOTA', 'HILLUX PICKUP', '2024', 'pickup', 'diesel', 65231, NULL, 'active', NULL, '2026-05-28 19:14:05', NULL),
-(4, 3, 'UAJ 433X', 'Ford', 'Ford ranger', '2009', 'pickup', 'diesel', 196002, NULL, 'active', NULL, '2026-05-28 19:14:05', NULL),
-(5, 5, 'UBP 401F', 'TOYOTA', 'LAND CRUISER', '2022', 'suv', 'diesel', 200808, NULL, 'maintenance', NULL, '2026-05-28 19:14:05', NULL),
-(6, 7, 'UAX 2342', 'Toyata', 'Land Cruiser2', '2012', 'sedan', 'diesel', 123, NULL, 'maintenance', NULL, '2026-05-28 19:47:45', NULL),
-(13, 2, 'UBU 908K', 'Toyota', 'Hiace', '2019', 'van', 'diesel', 148230, '2026-12-31', 'active', 'Dummy seeded vehicle for maintenance-provider relationship testing.', '2026-06-03 09:47:19', NULL),
-(14, 3, 'UBU 771E', 'Isuzu', 'D-Max', '2021', 'pickup', 'diesel', 89210, '2027-03-15', 'maintenance', 'Dummy seeded Estates vehicle.', '2026-06-03 09:47:19', NULL),
-(15, 7, 'UBU 552L', 'Nissan', 'Navara', '2018', 'pickup', 'diesel', 176540, '2026-11-20', 'active', 'Dummy seeded Library support vehicle.', '2026-06-03 09:47:19', NULL);
+INSERT INTO `vehicles` (`id`, `department_id`, `registration_no`, `make`, `model`, `manufacture_year`, `vehicle_type`, `fuel_type`, `current_mileage`, `insurance_expiry`, `status`, `notes`, `vehicle_image`, `created_at`, `updated_at`) VALUES
+(1, 1, 'UBD 456G', 'Toyota', 'Prado', '2022', 'suv', 'diesel', 0, NULL, 'maintenance', NULL, NULL, '2026-05-28 19:14:05', NULL),
+(2, 6, 'UBR 123C', 'TOYOTA', 'Land cruiser', '2024', 'suv', 'diesel', 852436, NULL, 'active', NULL, NULL, '2026-05-28 19:14:05', NULL),
+(3, 4, 'UBR 402Q', 'TOYOTA', 'HILLUX PICKUP', '2024', 'pickup', 'diesel', 65231, NULL, 'active', NULL, NULL, '2026-05-28 19:14:05', NULL),
+(4, 3, 'UAJ 433X', 'Ford', 'Ford ranger', '2009', 'pickup', 'diesel', 196002, NULL, 'active', NULL, NULL, '2026-05-28 19:14:05', NULL),
+(5, 5, 'UBP 401F', 'TOYOTA', 'LAND CRUISER', '2022', 'suv', 'diesel', 200808, NULL, 'maintenance', NULL, NULL, '2026-05-28 19:14:05', NULL),
+(6, 7, 'UAX 2342', 'Toyata', 'Land Cruiser2', '2012', 'sedan', 'diesel', 123, NULL, 'maintenance', NULL, NULL, '2026-05-28 19:47:45', NULL),
+(13, 2, 'UBU 908K', 'Toyota', 'Hiace', '2019', 'van', 'diesel', 148230, '2026-12-31', 'active', 'Dummy seeded vehicle for maintenance-provider relationship testing.', NULL, '2026-06-03 09:47:19', NULL),
+(14, 3, 'UBU 771E', 'Isuzu', 'D-Max', '2021', 'pickup', 'diesel', 89210, '2027-03-15', 'maintenance', 'Dummy seeded Estates vehicle.', NULL, '2026-06-03 09:47:19', NULL),
+(15, 7, 'UBU 552L', 'Nissan', 'Navara', '2018', 'pickup', 'diesel', 176540, '2026-11-20', 'active', 'Dummy seeded Library support vehicle.', NULL, '2026-06-03 09:47:19', NULL);
 
 -- --------------------------------------------------------
 

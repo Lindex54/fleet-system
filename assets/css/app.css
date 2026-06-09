@@ -96,6 +96,8 @@ body.print-target-active main *{visibility:hidden!important}
 body.print-target-active [data-print-root].print-target-active,
 body.print-target-active [data-print-root].print-target-active *{visibility:visible!important}
 body.print-target-active [data-print-root].print-target-active{position:absolute;left:0;top:0;width:100%;margin:0!important;padding:0!important;border:none!important;background:#fff!important;box-shadow:none!important}
+body.print-target-active [data-print-root].print-target-active:not([data-print-root-custom-header]){padding-top:210px!important}
+body.print-target-active [data-print-root].print-target-active:not([data-print-root-custom-header]):before{content:"";position:absolute;left:0;top:0;width:100%;height:180px;background:url("../images/branding/print_banner.png") no-repeat top center/contain}
 body.print-target-active .pagination-controls,
 body.print-target-active [data-print-root].print-target-active button,
 body.print-target-active [data-print-root].print-target-active form,

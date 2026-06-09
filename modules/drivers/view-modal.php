@@ -13,10 +13,10 @@
             <div class="grid gap-6 lg:grid-cols-[280px_minmax(0,1fr)]">
                 <section class="rounded-2xl border border-fleet-line bg-fleet-surface-muted p-5">
                     <div class="flex flex-col items-center text-center">
-                        <div class="flex h-28 w-28 items-center justify-center overflow-hidden rounded-3xl bg-fleet-primary-soft text-3xl font-extrabold text-fleet-primary" data-driver-view-photo-fallback>
+                        <div class="flex h-24 w-24 items-center justify-center overflow-hidden rounded-full border-4 border-white bg-fleet-primary-soft text-3xl font-extrabold text-fleet-primary shadow-sm ring-2 ring-fleet-primary-soft" data-driver-view-photo-fallback>
                             <span data-driver-view-initial>D</span>
                         </div>
-                        <img src="" alt="Driver profile" class="hidden h-28 w-28 rounded-3xl object-cover ring-2 ring-fleet-primary-soft" data-driver-view-photo>
+                        <img src="" alt="Driver profile" class="hidden h-24 w-24 rounded-full border-4 border-white object-cover shadow-sm ring-2 ring-fleet-primary-soft" data-driver-view-photo>
                         <p class="mt-4 text-xl font-extrabold text-fleet-ink" data-driver-view-full-name>Driver Name</p>
                         <p class="mt-1 text-sm text-fleet-muted" data-driver-view-department>Department</p>
                         <span class="mt-4 inline-flex rounded-lg border px-3 py-1 text-xs font-semibold" data-driver-view-status>Active</span>

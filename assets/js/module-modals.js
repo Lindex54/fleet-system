@@ -114,6 +114,7 @@ const closeMaintenanceModalButtons = document.querySelectorAll('[data-close-main
 const openMaintenanceViewButtons = document.querySelectorAll('[data-view-maintenance-entry]');
 const closeMaintenanceViewModalButtons = document.querySelectorAll('[data-close-maintenance-view-modal]');
 const printMaintenanceViewButton = document.querySelector('[data-print-maintenance-view]');
+const MODULE_PRINT_BANNER_URL = `${window.location.origin}/fleet-system/assets/images/branding/print_banner.png`;
 const editMaintenanceEntryButtons = document.querySelectorAll('[data-edit-maintenance-entry]');
 const openMaintenanceDeleteButtons = document.querySelectorAll('[data-open-maintenance-delete]');
 const maintenanceActionField = document.querySelector('[data-maintenance-action-field]');
@@ -125,7 +126,7 @@ const maintenanceDeleteModal = document.querySelector('#maintenance-delete-modal
 const cancelMaintenanceDeleteButton = document.querySelector('[data-cancel-maintenance-delete]');
 const confirmMaintenanceDeleteButton = document.querySelector('[data-confirm-maintenance-delete]');
 
-function setDeletePreview(modal, nameSelector, detailSelector, form, fallbackName, fallbackDetail) {
+function setModuleDeletePreview(modal, nameSelector, detailSelector, form, fallbackName, fallbackDetail) {
   const nameField = modal?.querySelector(nameSelector);
   const detailField = modal?.querySelector(detailSelector);
   const name = form?.dataset.deleteName || fallbackName;
@@ -148,6 +149,10 @@ function setModalText(modal, selector, value) {
   }
 }
 
+function buildModulePrintBannerMarkup() {
+  return `<div class="app-print-banner"><img src="${MODULE_PRINT_BANNER_URL}" alt="Busitema University print banner"></div>`;
+}
+
 function printDetailSheet(sheet, title) {
   if (!sheet) {
     return;
@@ -163,7 +168,7 @@ function printDetailSheet(sheet, title) {
     .join('');
 
   printWindow.document.open();
-  printWindow.document.write(`<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><title>${title}</title>${styles}<style>body{background:#fff;padding:24px;}button{display:none !important;}</style></head><body>${sheet.outerHTML}</body></html>`);
+  printWindow.document.write(`<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><title>${title}</title>${styles}<style>body{background:#fff;padding:24px;}.app-print-banner{margin-bottom:24px;}.app-print-banner img{display:block;width:100%;max-width:1200px;margin:0 auto;}button{display:none !important;}</style></head><body>${buildModulePrintBannerMarkup()}${sheet.outerHTML}</body></html>`);
   printWindow.document.close();
   printWindow.focus();
   printWindow.print();
@@ -388,7 +393,7 @@ function setPreInspectionDeleteModalOpen(isOpen, form = null) {
   pendingPreInspectionDeleteForm = isOpen ? form : null;
 
   if (isOpen) {
-    setDeletePreview(
+    setModuleDeletePreview(
       preInspectionDeleteModal,
       '[data-pre-inspection-delete-name]',
       '[data-pre-inspection-delete-detail]',
@@ -720,7 +725,7 @@ function setPostInspectionDeleteModalOpen(isOpen, form = null) {
   pendingPostInspectionDeleteForm = isOpen ? form : null;
 
   if (isOpen) {
-    setDeletePreview(
+    setModuleDeletePreview(
       postInspectionDeleteModal,
       '[data-post-inspection-delete-name]',
       '[data-post-inspection-delete-detail]',
@@ -961,7 +966,7 @@ function setProviderDeleteModalOpen(isOpen, form = null) {
       card?.dataset.town || '',
     ].filter((value) => value && value !== '-').join(' - ');
 
-    setDeletePreview(
+    setModuleDeletePreview(
       providerDeleteModal,
       '[data-provider-delete-name]',
       '[data-provider-delete-detail]',
@@ -1109,7 +1114,7 @@ function setLogbookDeleteModalOpen(isOpen, form = null) {
   pendingLogbookDeleteForm = isOpen ? form : null;
 
   if (isOpen) {
-    setDeletePreview(
+    setModuleDeletePreview(
       logbookDeleteModal,
       '[data-logbook-delete-name]',
       '[data-logbook-delete-detail]',
@@ -1506,7 +1511,7 @@ function populateDriverViewModal(button) {
   const licenseClasses = row.dataset.licenseClasses || '-';
   const licenseIssueDate = row.dataset.licenseIssueDate || '-';
   const licenseExpiry = row.dataset.licenseExpiry || '-';
-  const licenseDaysLeft = row.dataset.licenseDaysLeft || getDriverLicenseDaysLeft(row.dataset.licenseExpiry || '');
+  const licenseDaysLeft = getDriverLicenseDaysLeft(row.dataset.licenseExpiry || '');
   const licenseIssuingAuthority = row.dataset.licenseIssuingAuthority || 'Not available';
   const initial = (fullName.trim().charAt(0) || 'D').toUpperCase();
   const photoUrl = row.dataset.driverPhotoUrl || '';
@@ -1593,10 +1598,37 @@ function printDriverDetailSheet() {
         ${styles}
         <style>
           body { background: #ffffff; padding: 24px; }
+          .app-print-banner { margin-bottom: 24px; }
+          .app-print-banner img { display: block; width: 100%; max-width: 1200px; margin: 0 auto; }
+          [data-driver-detail-sheet] { max-width: 780px; margin: 0 auto; }
+          [data-driver-detail-sheet] [data-driver-view-photo],
+          [data-driver-detail-sheet] [data-driver-view-photo-fallback] {
+            width: 120px !important;
+            height: 120px !important;
+            border-radius: 9999px !important;
+            overflow: hidden !important;
+            margin: 0 auto !important;
+          }
+          [data-driver-detail-sheet] [data-driver-view-photo] {
+            object-fit: cover !important;
+            border: 4px solid #ffffff !important;
+            box-shadow: 0 8px 24px rgba(15, 23, 42, 0.12) !important;
+          }
+          [data-driver-detail-sheet] [data-driver-view-photo-fallback] {
+            display: flex !important;
+            align-items: center !important;
+            justify-content: center !important;
+            border: 4px solid #ffffff !important;
+          }
+          [data-driver-detail-sheet] section:first-of-type {
+            max-width: 280px;
+            margin: 0 auto;
+          }
           button { display: none !important; }
         </style>
       </head>
       <body>
+        ${buildModulePrintBannerMarkup()}
         ${driverDetailSheet.outerHTML}
       </body>
     </html>
@@ -1774,7 +1806,7 @@ function setDriverDeleteModalOpen(isOpen, form = null) {
   pendingDriverDeleteForm = isOpen ? form : null;
 
   if (isOpen) {
-    setDeletePreview(
+    setModuleDeletePreview(
       driverDeleteModal,
       '[data-driver-delete-name]',
       '[data-driver-delete-detail]',
@@ -2026,7 +2058,7 @@ function setMaintenanceDeleteModalOpen(isOpen, form = null) {
       row?.dataset.cost || '',
     ].filter((value) => value && value !== '-').join(' - ');
 
-    setDeletePreview(
+    setModuleDeletePreview(
       maintenanceDeleteModal,
       '[data-maintenance-delete-name]',
       '[data-maintenance-delete-detail]',

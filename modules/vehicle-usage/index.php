@@ -111,7 +111,7 @@ $driverBreakdownShowLessUrl = $vehicleUsagePageUrl . (count($driverBreakdownShow
             </form>
         </section>
 
-        <section data-print-root class="rounded-2xl border border-fleet-line bg-white p-6 shadow-fleet-card print:shadow-none">
+        <section data-print-root data-print-root-custom-header class="rounded-2xl border border-fleet-line bg-white p-6 shadow-fleet-card print:shadow-none">
             <div class="vehicle-usage-print-memo">
                 <img src="<?= htmlspecialchars($vehicleUsagePrintBannerUrl, ENT_QUOTES, 'UTF-8'); ?>" alt="Busitema University print banner" class="vehicle-usage-print-banner">
                 <div class="vehicle-usage-print-unit">ESTATES UNIT</div>

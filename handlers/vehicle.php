@@ -8,6 +8,95 @@ require_once __DIR__ . '/../config/database.php';
 const VEHICLE_ALLOWED_TYPES = ['sedan', 'suv', 'pickup', 'truck', 'van', 'bus', 'motorcycle', 'other'];
 const VEHICLE_ALLOWED_FUELS = ['petrol', 'diesel', 'hybrid', 'electric', 'other'];
 const VEHICLE_ALLOWED_STATUSES = ['active', 'maintenance', 'grounded', 'disposed'];
+const VEHICLE_UPLOAD_MAX_BYTES = 5242880;
+const VEHICLE_ALLOWED_UPLOAD_EXTENSIONS = ['jpg', 'jpeg', 'png', 'webp'];
+const VEHICLE_ALLOWED_UPLOAD_MIME_TYPES = ['image/jpeg', 'image/png', 'image/webp'];
+
+// Returns the absolute uploads directory used for vehicle images.
+function vehicleUploadDirectoryPath(): string
+{
+    return dirname(__DIR__) . '/uploads/vehicles';
+}
+
+// Builds a public URL for a stored vehicle image path.
+function vehicleBuildUploadUrl(?string $storedPath): string
+{
+    if ($storedPath === null || trim($storedPath) === '') {
+        return '';
+    }
+
+    return '/fleet-system/' . ltrim($storedPath, '/');
+}
+
+// Detects whether the stored upload path should be previewed as an image.
+function vehicleUploadIsImage(?string $storedPath): bool
+{
+    $extension = strtolower(pathinfo((string) $storedPath, PATHINFO_EXTENSION));
+
+    return in_array($extension, VEHICLE_ALLOWED_UPLOAD_EXTENSIONS, true);
+}
+
+// Returns a display label for an uploaded vehicle image.
+function vehicleUploadDisplayName(?string $storedPath): string
+{
+    if ($storedPath === null || trim($storedPath) === '') {
+        return 'No image uploaded';
+    }
+
+    return basename($storedPath);
+}
+
+// Removes a stored vehicle image when it has been replaced or deleted.
+function vehicleDeleteStoredUpload(?string $storedPath): void
+{
+    if ($storedPath === null || trim($storedPath) === '') {
+        return;
+    }
+
+    $normalizedPath = str_replace('\\', '/', $storedPath);
+    if (!str_starts_with($normalizedPath, 'uploads/vehicles/')) {
+        return;
+    }
+
+    $absolutePath = dirname(__DIR__) . '/' . $normalizedPath;
+    if (is_file($absolutePath)) {
+        @unlink($absolutePath);
+    }
+}
+
+// Ensures the uploads directory exists before vehicle images are moved into it.
+function vehicleEnsureUploadDirectoryExists(): void
+{
+    $directory = vehicleUploadDirectoryPath();
+
+    if (is_dir($directory)) {
+        @chmod($directory, 0777);
+        return;
+    }
+
+    if (!mkdir($directory, 0775, true) && !is_dir($directory)) {
+        throw new RuntimeException('The uploads directory could not be prepared for vehicle images.');
+    }
+
+    @chmod($directory, 0777);
+}
+
+// Ensures legacy databases have the vehicle image column before reads and writes.
+function vehicleEnsureImageColumn(PDO $pdo): void
+{
+    static $checked = false;
+
+    if ($checked) {
+        return;
+    }
+
+    $statement = $pdo->query("SHOW COLUMNS FROM vehicles LIKE 'vehicle_image'");
+    if ($statement->fetch() === false) {
+        $pdo->exec("ALTER TABLE vehicles ADD COLUMN vehicle_image VARCHAR(255) DEFAULT NULL AFTER notes");
+    }
+
+    $checked = true;
+}
 
 // Starts the session used for flash notifications if it is not already active.
 function vehicleStartSession(): void
@@ -124,7 +213,8 @@ function vehicleFetchPageData(): array
             v.current_mileage,
             v.insurance_expiry,
             v.status,
-            v.notes
+            v.notes,
+            v.vehicle_image
         FROM vehicles v
         LEFT JOIN departments d ON d.id = v.department_id
         ORDER BY v.created_at DESC, v.id DESC
@@ -133,7 +223,9 @@ function vehicleFetchPageData(): array
     $vehicles = [];
 
     try {
-        $rows = fleetDb()->query($sql)->fetchAll();
+        $pdo = fleetDb();
+        vehicleEnsureImageColumn($pdo);
+        $rows = $pdo->query($sql)->fetchAll();
 
         foreach ($rows as $row) {
             // Shape database rows into the same view-friendly structure the table expects.
@@ -152,6 +244,10 @@ function vehicleFetchPageData(): array
                 'insurance_raw' => $row['insurance_expiry'] ?: '',
                 'repairs' => trim((string) ($row['notes'] ?? '')) !== '' ? trim((string) $row['notes']) : '-',
                 'repairs_raw' => trim((string) ($row['notes'] ?? '')),
+                'vehicle_image' => $row['vehicle_image'] ?: '',
+                'vehicle_image_url' => vehicleBuildUploadUrl($row['vehicle_image'] ?? ''),
+                'vehicle_image_name' => vehicleUploadDisplayName($row['vehicle_image'] ?? ''),
+                'vehicle_image_is_image' => vehicleUploadIsImage($row['vehicle_image'] ?? ''),
                 'status' => vehicleNormalizeStatus((string) $row['status']),
                 'status_value' => (string) $row['status'],
             ];
@@ -191,6 +287,7 @@ function vehicleBuildFormDataFromPost(): array
         'insurance_expiry' => trim((string) ($_POST['insurance_expiry'] ?? '')),
         'status' => strtolower(trim((string) ($_POST['status'] ?? 'active'))),
         'repairs_done' => trim((string) ($_POST['repairs_done'] ?? '')),
+        'vehicle_image' => trim((string) ($_POST['existing_vehicle_image'] ?? '')),
     ];
 }
 
@@ -252,13 +349,89 @@ function vehicleValidateFormData(array $formData): array
         'insurance_expiry' => $insuranceExpiry,
         'status' => $formData['status'],
         'repairs_done' => $formData['repairs_done'] === '' ? null : $formData['repairs_done'],
+        'vehicle_image' => $formData['vehicle_image'] === '' ? null : $formData['vehicle_image'],
     ];
 }
 
+// Loads the current vehicle row when an update needs the stored image value.
+function vehicleFetchExistingRecord(PDO $pdo, int $vehicleId): array
+{
+    vehicleEnsureImageColumn($pdo);
+
+    $statement = $pdo->prepare(
+        'SELECT id, vehicle_image
+        FROM vehicles
+        WHERE id = :id
+        LIMIT 1'
+    );
+    $statement->execute(['id' => $vehicleId]);
+    $vehicle = $statement->fetch();
+
+    if (!$vehicle) {
+        throw new RuntimeException('The selected vehicle no longer exists.');
+    }
+
+    return $vehicle;
+}
+
+// Validates and stores one optional vehicle image, returning the final stored path.
+function vehicleStoreOptionalUpload(string $fieldName, string $label, ?string $existingPath, array &$newUploads, array &$oldUploadsToDelete): ?string
+{
+    $upload = $_FILES[$fieldName] ?? null;
+    if (!is_array($upload) || (int) ($upload['error'] ?? UPLOAD_ERR_NO_FILE) === UPLOAD_ERR_NO_FILE) {
+        return $existingPath;
+    }
+
+    $errorCode = (int) ($upload['error'] ?? UPLOAD_ERR_NO_FILE);
+    if ($errorCode !== UPLOAD_ERR_OK) {
+        throw new RuntimeException($label . ' could not be uploaded.');
+    }
+
+    $temporaryPath = (string) ($upload['tmp_name'] ?? '');
+    if ($temporaryPath === '' || !is_uploaded_file($temporaryPath)) {
+        throw new RuntimeException($label . ' upload was not received correctly.');
+    }
+
+    $fileSize = (int) ($upload['size'] ?? 0);
+    if ($fileSize <= 0 || $fileSize > VEHICLE_UPLOAD_MAX_BYTES) {
+        throw new RuntimeException($label . ' must be smaller than 5 MB.');
+    }
+
+    $originalName = (string) ($upload['name'] ?? '');
+    $extension = strtolower(pathinfo($originalName, PATHINFO_EXTENSION));
+    if (!in_array($extension, VEHICLE_ALLOWED_UPLOAD_EXTENSIONS, true)) {
+        throw new RuntimeException($label . ' must be a JPG, PNG, or WEBP image.');
+    }
+
+    $finfo = new finfo(FILEINFO_MIME_TYPE);
+    $mimeType = (string) $finfo->file($temporaryPath);
+    if (!in_array($mimeType, VEHICLE_ALLOWED_UPLOAD_MIME_TYPES, true)) {
+        throw new RuntimeException($label . ' must be a valid image file.');
+    }
+
+    vehicleEnsureUploadDirectoryExists();
+
+    $storedFileName = 'vehicle-' . date('YmdHis') . '-' . bin2hex(random_bytes(6)) . '.' . $extension;
+    $relativePath = 'uploads/vehicles/' . $storedFileName;
+    $absolutePath = vehicleUploadDirectoryPath() . '/' . $storedFileName;
+
+    if (!move_uploaded_file($temporaryPath, $absolutePath)) {
+        throw new RuntimeException($label . ' could not be saved.');
+    }
+
+    $newUploads[] = $relativePath;
+    if ($existingPath !== null && trim($existingPath) !== '') {
+        $oldUploadsToDelete[] = $existingPath;
+    }
+
+    return $relativePath;
+}
+
 // Inserts or updates a vehicle record using the same normalized payload.
-function vehiclePersistRecord(array $validated, string $action): void
+function vehiclePersistRecord(array $validated, string $action, array &$newUploads, array &$oldUploadsToDelete): void
 {
     $pdo = fleetDb();
+    vehicleEnsureImageColumn($pdo);
     $departmentId = vehicleFindOrCreateDepartmentId($pdo, $validated['department']);
 
     if ($action === 'update') {
@@ -266,6 +439,15 @@ function vehiclePersistRecord(array $validated, string $action): void
         if ($vehicleId === false) {
             throw new RuntimeException('The selected vehicle could not be identified for editing.');
         }
+
+        $existingRecord = vehicleFetchExistingRecord($pdo, (int) $vehicleId);
+        $validated['vehicle_image'] = vehicleStoreOptionalUpload(
+            'vehicle_image',
+            'Vehicle image',
+            $existingRecord['vehicle_image'] ?: null,
+            $newUploads,
+            $oldUploadsToDelete
+        );
 
         $statement = $pdo->prepare(
             'UPDATE vehicles SET
@@ -279,11 +461,20 @@ function vehiclePersistRecord(array $validated, string $action): void
                 current_mileage = :current_mileage,
                 insurance_expiry = :insurance_expiry,
                 status = :status,
-                notes = :notes
+                notes = :notes,
+                vehicle_image = :vehicle_image
             WHERE id = :vehicle_id'
         );
         $statement->bindValue(':vehicle_id', $vehicleId, PDO::PARAM_INT);
     } else {
+        $validated['vehicle_image'] = vehicleStoreOptionalUpload(
+            'vehicle_image',
+            'Vehicle image',
+            null,
+            $newUploads,
+            $oldUploadsToDelete
+        );
+
         $statement = $pdo->prepare(
             'INSERT INTO vehicles (
                 department_id,
@@ -296,7 +487,8 @@ function vehiclePersistRecord(array $validated, string $action): void
                 current_mileage,
                 insurance_expiry,
                 status,
-                notes
+                notes,
+                vehicle_image
             ) VALUES (
                 :department_id,
                 :registration_no,
@@ -308,7 +500,8 @@ function vehiclePersistRecord(array $validated, string $action): void
                 :current_mileage,
                 :insurance_expiry,
                 :status,
-                :notes
+                :notes,
+                :vehicle_image
             )'
         );
     }
@@ -324,6 +517,7 @@ function vehiclePersistRecord(array $validated, string $action): void
     $statement->bindValue(':insurance_expiry', $validated['insurance_expiry'], $validated['insurance_expiry'] === null ? PDO::PARAM_NULL : PDO::PARAM_STR);
     $statement->bindValue(':status', $validated['status']);
     $statement->bindValue(':notes', $validated['repairs_done'], $validated['repairs_done'] === null ? PDO::PARAM_NULL : PDO::PARAM_STR);
+    $statement->bindValue(':vehicle_image', $validated['vehicle_image'], $validated['vehicle_image'] === null ? PDO::PARAM_NULL : PDO::PARAM_STR);
     $statement->execute();
 }
 
@@ -346,12 +540,17 @@ function vehicleHandleDelete(): void
     }
 
     try {
-        $statement = fleetDb()->prepare('DELETE FROM vehicles WHERE id = :id');
+        $pdo = fleetDb();
+        vehicleEnsureImageColumn($pdo);
+        $existingRecord = vehicleFetchExistingRecord($pdo, (int) $vehicleId);
+        $statement = $pdo->prepare('DELETE FROM vehicles WHERE id = :id');
         $statement->execute(['id' => $vehicleId]);
 
         if ($statement->rowCount() === 0) {
             throw new RuntimeException('The selected vehicle no longer exists.');
         }
+
+        vehicleDeleteStoredUpload($existingRecord['vehicle_image'] ?? null);
 
         vehicleSetFlash([
             'notification' => [
@@ -392,10 +591,16 @@ function vehicleHandleUpsert(string $action): void
     }
 
     $formData = vehicleBuildFormDataFromPost();
+    $newUploads = [];
+    $oldUploadsToDelete = [];
 
     try {
         $validated = vehicleValidateFormData($formData);
-        vehiclePersistRecord($validated, $action);
+        vehiclePersistRecord($validated, $action, $newUploads, $oldUploadsToDelete);
+
+        foreach ($oldUploadsToDelete as $oldUpload) {
+            vehicleDeleteStoredUpload($oldUpload);
+        }
 
         vehicleSetFlash([
             'notification' => [
@@ -409,6 +614,10 @@ function vehicleHandleUpsert(string $action): void
             ],
         ]);
     } catch (RuntimeException $exception) {
+        foreach ($newUploads as $newUpload) {
+            vehicleDeleteStoredUpload($newUpload);
+        }
+
         vehicleSetFlash([
             'notification' => [
                 'type' => 'error',
@@ -420,6 +629,10 @@ function vehicleHandleUpsert(string $action): void
             'form_mode' => $action,
         ]);
     } catch (PDOException $exception) {
+        foreach ($newUploads as $newUpload) {
+            vehicleDeleteStoredUpload($newUpload);
+        }
+
         $message = $action === 'update'
             ? 'Vehicle could not be updated. Please try again.'
             : 'Vehicle could not be added. Please try again.';
@@ -442,6 +655,10 @@ function vehicleHandleUpsert(string $action): void
             'form_mode' => $action,
         ]);
     } catch (Throwable $exception) {
+        foreach ($newUploads as $newUpload) {
+            vehicleDeleteStoredUpload($newUpload);
+        }
+
         vehicleSetFlash([
             'notification' => [
                 'type' => 'error',

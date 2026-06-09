@@ -9,6 +9,11 @@
                 </div>
                 <button type="button" data-close-vehicle-view-modal class="flex h-8 w-8 items-center justify-center rounded-lg text-2xl leading-none text-fleet-muted hover:bg-fleet-surface-muted hover:text-fleet-ink" aria-label="Close vehicle details">&times;</button>
             </div>
+            <div class="mb-5 flex justify-center">
+                <div class="hidden w-full max-w-[320px] overflow-hidden rounded-2xl border border-fleet-line bg-fleet-surface-muted p-3 shadow-sm" data-vehicle-view-image-wrap>
+                    <img src="" alt="Vehicle image" class="h-44 w-full rounded-xl object-contain bg-white" data-vehicle-view-image>
+                </div>
+            </div>
             <div class="grid gap-5 md:grid-cols-2">
                 <div class="rounded-2xl border border-fleet-line bg-white p-5">
                     <p class="text-xs font-extrabold uppercase tracking-[0.18em] text-fleet-muted">Identity</p>

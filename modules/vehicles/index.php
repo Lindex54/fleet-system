@@ -133,6 +133,10 @@ include __DIR__ . '/../../includes/sidebar.php';
                                 data-status="<?= htmlspecialchars($vehicle['status_value'], ENT_QUOTES, 'UTF-8'); ?>"
                                 data-status-label="<?= htmlspecialchars($vehicle['status'], ENT_QUOTES, 'UTF-8'); ?>"
                                 data-repairs-done="<?= htmlspecialchars($vehicle['repairs_raw'], ENT_QUOTES, 'UTF-8'); ?>"
+                                data-vehicle-image="<?= htmlspecialchars($vehicle['vehicle_image'], ENT_QUOTES, 'UTF-8'); ?>"
+                                data-vehicle-image-url="<?= htmlspecialchars($vehicle['vehicle_image_url'], ENT_QUOTES, 'UTF-8'); ?>"
+                                data-vehicle-image-name="<?= htmlspecialchars($vehicle['vehicle_image_name'], ENT_QUOTES, 'UTF-8'); ?>"
+                                data-vehicle-image-is-image="<?= $vehicle['vehicle_image_is_image'] ? 'true' : 'false'; ?>"
                             >
                                 <td class="px-5 py-4 font-extrabold text-fleet-ink"><?= htmlspecialchars($vehicle['reg'], ENT_QUOTES, 'UTF-8'); ?></td>
                                 <td class="px-5 py-4 text-fleet-ink">
@@ -188,11 +192,13 @@ include __DIR__ . '/../../includes/sidebar.php';
         aria-hidden="<?= $shouldOpenVehicleModal ? 'false' : 'true'; ?>"
         data-open-on-load="<?= $shouldOpenVehicleModal ? 'true' : 'false'; ?>"
     >
-        <div class="w-full max-w-2xl rounded-lg border border-fleet-line bg-fleet-surface shadow-2xl" role="dialog" aria-modal="true" aria-labelledby="vehicle-modal-title">
+        <div class="dashboard-scroll max-h-[calc(100vh-2.5rem)] w-full max-w-2xl overflow-y-auto rounded-lg border border-fleet-line bg-fleet-surface shadow-2xl" role="dialog" aria-modal="true" aria-labelledby="vehicle-modal-title">
             <!-- Failed submissions reopen this modal and refill the fields from flash form data. -->
-            <form class="p-6" action="<?= htmlspecialchars($vehicleFormAction, ENT_QUOTES, 'UTF-8'); ?>" method="post">
+            <?php $vehicleImagePath = $vehicleFormData['vehicle_image'] ?? ''; ?>
+            <form class="p-6" action="<?= htmlspecialchars($vehicleFormAction, ENT_QUOTES, 'UTF-8'); ?>" method="post" enctype="multipart/form-data">
                 <input type="hidden" name="vehicle_action" value="<?= $vehicleFormMode === 'update' ? 'update' : 'create'; ?>" data-vehicle-action-field>
                 <input type="hidden" name="vehicle_id" value="<?= htmlspecialchars($vehicleFormData['vehicle_id'] ?? '', ENT_QUOTES, 'UTF-8'); ?>" data-vehicle-id-field>
+                <input type="hidden" name="existing_vehicle_image" value="<?= htmlspecialchars($vehicleImagePath, ENT_QUOTES, 'UTF-8'); ?>" data-vehicle-image-path-field>
                 <div class="mb-5 flex items-center justify-between gap-4">
                     <h2 id="vehicle-modal-title" class="text-xl font-extrabold text-fleet-ink" data-vehicle-modal-title><?= $vehicleFormMode === 'update' ? 'Edit Vehicle' : 'Add New Vehicle'; ?></h2>
                     <button type="button" data-close-vehicle-modal class="flex h-8 w-8 items-center justify-center rounded-lg text-2xl leading-none text-fleet-muted hover:bg-fleet-surface-muted hover:text-fleet-ink" aria-label="Close add vehicle form">&times;</button>
@@ -257,6 +263,28 @@ include __DIR__ . '/../../includes/sidebar.php';
                     <label class="block">
                         <span class="mb-2 block text-sm font-semibold text-fleet-ink">Insurance Expiry Date</span>
                         <input name="insurance_expiry" type="date" class="vehicle-form-control" value="<?= htmlspecialchars($vehicleFormData['insurance_expiry'] ?? '', ENT_QUOTES, 'UTF-8'); ?>">
+                    </label>
+
+                    <label class="block md:col-span-2">
+                        <span class="mb-2 block text-sm font-semibold text-fleet-ink">Vehicle Image</span>
+                        <input name="vehicle_image" type="file" accept=".jpg,.jpeg,.png,.webp" class="vehicle-form-control file:mr-3 file:rounded-lg file:border-0 file:bg-fleet-primary-soft file:px-3 file:py-2 file:text-sm file:font-semibold file:text-fleet-primary">
+                        <p class="mt-2 text-xs text-fleet-muted">Upload a clear vehicle photo in JPG, PNG, or WEBP format.</p>
+                        <div class="<?= $vehicleImagePath !== '' ? 'block' : 'hidden'; ?> mt-3 rounded-lg border border-fleet-line bg-fleet-surface-muted p-3" data-vehicle-image-preview>
+                            <div class="flex items-start gap-3">
+                                <img
+                                    src="<?= htmlspecialchars(vehicleBuildUploadUrl($vehicleImagePath), ENT_QUOTES, 'UTF-8'); ?>"
+                                    alt="Vehicle image"
+                                    class="<?= vehicleUploadIsImage($vehicleImagePath) ? 'block' : 'hidden'; ?> h-20 w-20 rounded-xl object-cover ring-2 ring-fleet-primary-soft"
+                                    data-vehicle-image-preview-tag
+                                >
+                                <div class="min-w-0">
+                                    <p class="text-xs font-extrabold uppercase tracking-[0.18em] text-fleet-muted">Current Image</p>
+                                    <a href="<?= htmlspecialchars(vehicleBuildUploadUrl($vehicleImagePath), ENT_QUOTES, 'UTF-8'); ?>" target="_blank" rel="noopener noreferrer" class="mt-1 inline-flex text-sm font-semibold text-fleet-primary hover:underline" data-vehicle-image-link>
+                                        <?= htmlspecialchars(vehicleUploadDisplayName($vehicleImagePath), ENT_QUOTES, 'UTF-8'); ?>
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
                     </label>
 
                     <label class="block md:col-span-1">

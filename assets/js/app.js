@@ -24,6 +24,7 @@ const logbookRows = document.querySelectorAll('[data-logbook-table] .logbook-row
 const driverSearch = document.querySelector('#driver-search');
 const driverRows = document.querySelectorAll('[data-driver-table] .driver-row');
 const printSelectedDriversButtons = document.querySelectorAll('[data-print-selected-drivers]');
+const PRINT_BANNER_URL = `${window.location.origin}/fleet-system/assets/images/branding/print_banner.png`;
 const maintenanceSearch = document.querySelector('#maintenance-search');
 const maintenanceStatus = document.querySelector('#maintenance-status');
 const maintenanceRows = document.querySelectorAll('[data-maintenance-table] .maintenance-row');
@@ -349,6 +350,10 @@ function getVisibleDriverRows() {
   return Array.from(driverRows).filter((row) => !row.classList.contains('hidden'));
 }
 
+function buildPrintBannerMarkup() {
+  return `<div class="app-print-banner"><img src="${PRINT_BANNER_URL}" alt="Busitema University print banner"></div>`;
+}
+
 function buildDriverPrintContact(row) {
   const parts = [row.dataset.phone || '', row.dataset.email || '']
     .map((value) => value.trim())
@@ -412,6 +417,8 @@ function printDriverSelections() {
         ${styles}
         <style>
           body { background: #ffffff; color: #0f172a; padding: 24px; font-family: Arial, sans-serif; }
+          .app-print-banner { margin-bottom: 24px; }
+          .app-print-banner img { display: block; width: 100%; max-width: 1200px; margin: 0 auto; }
           .driver-print-header { margin-bottom: 24px; }
           .driver-print-header h1 { margin: 0 0 8px; font-size: 28px; }
           .driver-print-header p { margin: 0; color: #475569; }
@@ -429,6 +436,7 @@ function printDriverSelections() {
         </style>
       </head>
       <body>
+        ${buildPrintBannerMarkup()}
         <header class="driver-print-header">
           <h1>Driver Details</h1>
           <p>Showing ${rowsToPrint.length} driver${rowsToPrint.length === 1 ? '' : 's'}.</p>
@@ -556,6 +564,7 @@ const vehicleDetailSheet = document.querySelector('[data-vehicle-detail-sheet]')
 const vehicleForm = vehicleModal?.querySelector('form');
 const vehicleActionField = vehicleModal?.querySelector('[data-vehicle-action-field]');
 const vehicleIdField = vehicleModal?.querySelector('[data-vehicle-id-field]');
+const vehicleImagePathField = vehicleModal?.querySelector('[data-vehicle-image-path-field]');
 const vehicleModalTitle = vehicleModal?.querySelector('[data-vehicle-modal-title]');
 const vehicleSubmitButton = vehicleModal?.querySelector('[data-vehicle-submit-button]');
 const vehicleRepairsField = vehicleModal?.querySelector('[data-vehicle-repairs-field]');
@@ -640,6 +649,40 @@ function setVehicleViewText(selector, value) {
   }
 }
 
+function setVehicleImagePreview(storedPath = '', fileUrl = '', fileName = '', isImage = false) {
+  const preview = vehicleModal?.querySelector('[data-vehicle-image-preview]');
+  const image = vehicleModal?.querySelector('[data-vehicle-image-preview-tag]');
+  const link = vehicleModal?.querySelector('[data-vehicle-image-link]');
+
+  if (!preview || !image || !link) {
+    return;
+  }
+
+  const hasFile = storedPath.trim() !== '';
+
+  preview.classList.toggle('hidden', !hasFile);
+  preview.classList.toggle('block', hasFile);
+  image.src = hasFile ? fileUrl : '';
+  image.classList.toggle('hidden', !(hasFile && isImage));
+  image.classList.toggle('block', hasFile && isImage);
+  link.href = hasFile ? fileUrl : '#';
+  link.textContent = hasFile ? (fileName || storedPath.split('/').pop() || 'Vehicle image') : '';
+}
+
+function setVehicleViewImage(imageUrl = '', isImage = false) {
+  const imageWrap = vehicleViewModal?.querySelector('[data-vehicle-view-image-wrap]');
+  const image = vehicleViewModal?.querySelector('[data-vehicle-view-image]');
+
+  if (!imageWrap || !image) {
+    return;
+  }
+
+  const showImage = imageUrl.trim() !== '' && isImage;
+  image.src = showImage ? imageUrl : '';
+  imageWrap.classList.toggle('hidden', !showImage);
+  imageWrap.classList.toggle('block', showImage);
+}
+
 function setVehicleViewModalOpen(isOpen) {
   if (!vehicleViewModal) {
     return;
@@ -674,6 +717,8 @@ function populateVehicleViewModal(button) {
   const insurance = row.dataset.insuranceExpiry || 'Not set';
   const status = row.dataset.statusLabel || '-';
   const repairs = row.dataset.repairsDone || 'No repairs recorded.';
+  const imageUrl = row.dataset.vehicleImageUrl || '';
+  const imageIsImage = row.dataset.vehicleImageIsImage === 'true';
 
   setVehicleViewText('[data-vehicle-view-name]', registration);
   setVehicleViewText('[data-vehicle-view-subtitle]', `${make} ${model}`.trim());
@@ -688,6 +733,7 @@ function populateVehicleViewModal(button) {
   setVehicleViewText('[data-vehicle-view-mileage]', mileage);
   setVehicleViewText('[data-vehicle-view-insurance]', insurance);
   setVehicleViewText('[data-vehicle-view-repairs]', repairs);
+  setVehicleViewImage(imageUrl, imageIsImage);
 }
 
 function printVehicleDetailSheet() {
@@ -705,7 +751,7 @@ function printVehicleDetailSheet() {
     .join('');
 
   printWindow.document.open();
-  printWindow.document.write(`<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><title>Vehicle Details</title>${styles}<style>body{background:#fff;padding:24px;}button{display:none !important;}</style></head><body>${vehicleDetailSheet.outerHTML}</body></html>`);
+  printWindow.document.write(`<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><title>Vehicle Details</title>${styles}<style>body{background:#fff;padding:24px;}.app-print-banner{margin-bottom:24px;}.app-print-banner img{display:block;width:100%;max-width:1200px;margin:0 auto;}button{display:none !important;}</style></head><body>${buildPrintBannerMarkup()}${vehicleDetailSheet.outerHTML}</body></html>`);
   printWindow.document.close();
   printWindow.focus();
   printWindow.print();
@@ -719,12 +765,17 @@ function resetVehicleFormForCreate() {
     vehicleIdField.value = '';
   }
 
+  if (vehicleImagePathField) {
+    vehicleImagePathField.value = '';
+  }
+
   setVehicleFormMode('create');
   setVehicleFieldValue('select[name="vehicle_type"]', 'sedan');
   setVehicleFieldValue('select[name="fuel_type"]', 'diesel');
   setVehicleFieldValue('input[name="current_mileage"]', '0');
   setVehicleFieldValue('select[name="status"]', 'active');
   setVehicleFieldValue('textarea[name="repairs_done"]', '');
+  setVehicleImagePreview('', '', '', false);
 }
 
 function populateVehicleEditForm(button) {
@@ -739,6 +790,10 @@ function populateVehicleEditForm(button) {
     vehicleIdField.value = row.dataset.vehicleId || '';
   }
 
+  if (vehicleImagePathField) {
+    vehicleImagePathField.value = row.dataset.vehicleImage || '';
+  }
+
   setVehicleFieldValue('input[name="registration_number"]', row.dataset.registrationNumber || '');
   setVehicleFieldValue('input[name="make"]', row.dataset.make || '');
   setVehicleFieldValue('input[name="model"]', row.dataset.model || '');
@@ -750,6 +805,12 @@ function populateVehicleEditForm(button) {
   setVehicleFieldValue('input[name="insurance_expiry"]', row.dataset.insuranceExpiry || '');
   setVehicleFieldValue('select[name="status"]', row.dataset.status || 'active');
   setVehicleFieldValue('textarea[name="repairs_done"]', row.dataset.repairsDone || '');
+  setVehicleImagePreview(
+    row.dataset.vehicleImage || '',
+    row.dataset.vehicleImageUrl || '',
+    row.dataset.vehicleImageName || 'Vehicle image',
+    row.dataset.vehicleImageIsImage === 'true'
+  );
 }
 
 // Opens or closes the vehicle modal and keeps focus/scroll state in sync.
