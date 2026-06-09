@@ -18,7 +18,7 @@ function providerStartSession(): void
 // Returns the service providers page URL used after redirects.
 function providerPageUrl(): string
 {
-    return '/fleet-system/modules/service-providers/index.php';
+    return '/fleet-system/modules/service-providers/';
 }
 
 // Returns the POST endpoint URL for service provider form submissions.

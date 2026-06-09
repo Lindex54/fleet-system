@@ -16,7 +16,7 @@ function adminStartSession(): void
 
 function adminPageUrl(): string
 {
-    return '/fleet-system/modules/admins/index.php';
+    return '/fleet-system/modules/admins/';
 }
 
 function adminHandlerUrl(): string

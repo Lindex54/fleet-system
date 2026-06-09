@@ -6,7 +6,7 @@ require_once __DIR__ . '/../config/database.php';
 
 function vehicleUsagePageUrl(): string
 {
-    return '/fleet-system/modules/vehicle-usage/index.php';
+    return '/fleet-system/modules/vehicle-usage/';
 }
 
 function vehicleUsageFormatDate(?string $date): string

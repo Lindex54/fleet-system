@@ -110,7 +110,7 @@ function vehicleStartSession(): void
 // Returns the vehicles page URL used after redirects.
 function vehiclePageUrl(): string
 {
-    return '/fleet-system/modules/vehicles/index.php';
+    return '/fleet-system/modules/vehicles/';
 }
 
 // Returns the POST endpoint URL for vehicle form submissions.

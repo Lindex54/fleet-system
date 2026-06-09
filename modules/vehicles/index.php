@@ -138,7 +138,21 @@ include __DIR__ . '/../../includes/sidebar.php';
                                 data-vehicle-image-name="<?= htmlspecialchars($vehicle['vehicle_image_name'], ENT_QUOTES, 'UTF-8'); ?>"
                                 data-vehicle-image-is-image="<?= $vehicle['vehicle_image_is_image'] ? 'true' : 'false'; ?>"
                             >
-                                <td class="px-5 py-4 font-extrabold text-fleet-ink"><?= htmlspecialchars($vehicle['reg'], ENT_QUOTES, 'UTF-8'); ?></td>
+                                <td class="px-5 py-4">
+                                    <div class="flex items-center gap-3">
+                                        <?php if ($vehicle['vehicle_image_url'] !== '' && $vehicle['vehicle_image_is_image']): ?>
+                                            <img src="<?= htmlspecialchars($vehicle['vehicle_image_url'], ENT_QUOTES, 'UTF-8'); ?>" alt="<?= htmlspecialchars($vehicle['reg'], ENT_QUOTES, 'UTF-8'); ?>" class="h-10 w-10 rounded-full object-cover ring-2 ring-fleet-primary-soft">
+                                        <?php else: ?>
+                                            <span class="flex h-10 w-10 items-center justify-center rounded-full bg-fleet-primary-soft text-sm font-extrabold text-fleet-primary">
+                                                <?= htmlspecialchars(strtoupper(substr($vehicle['make'] !== '' ? $vehicle['make'] : $vehicle['reg'], 0, 1)), ENT_QUOTES, 'UTF-8'); ?>
+                                            </span>
+                                        <?php endif; ?>
+                                        <div>
+                                            <p class="font-extrabold text-fleet-ink"><?= htmlspecialchars($vehicle['reg'], ENT_QUOTES, 'UTF-8'); ?></p>
+                                            <p class="text-xs text-fleet-muted"><?= htmlspecialchars(trim($vehicle['make'] . ' ' . $vehicle['model']), ENT_QUOTES, 'UTF-8'); ?></p>
+                                        </div>
+                                    </div>
+                                </td>
                                 <td class="px-5 py-4 text-fleet-ink">
                                     <span class="block"><?= htmlspecialchars($vehicle['make'], ENT_QUOTES, 'UTF-8'); ?></span>
                                     <span class="mt-2 block"><?= htmlspecialchars($vehicle['model'], ENT_QUOTES, 'UTF-8'); ?></span>

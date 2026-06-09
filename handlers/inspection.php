@@ -33,13 +33,13 @@ function inspectionStartSession(): void
 // Returns the pre-inspection page URL used after redirects.
 function inspectionPageUrl(): string
 {
-    return '/fleet-system/modules/inspections/index.php';
+    return '/fleet-system/modules/inspections/';
 }
 
 // Returns the post-inspection page URL used after redirects.
 function postInspectionPageUrl(): string
 {
-    return '/fleet-system/modules/post-inspection/index.php';
+    return '/fleet-system/modules/post-inspection/';
 }
 
 // Returns the POST endpoint URL for pre-inspection form submissions.

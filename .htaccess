@@ -1,0 +1,9 @@
+DirectoryIndex index.php
+
+<IfModule mod_rewrite.c>
+RewriteEngine On
+
+# Canonicalize directory index URLs to cleaner folder paths.
+RewriteRule ^index\.php$ ./ [R=302,L]
+RewriteRule ^(.+)/index\.php$ $1/ [R=302,L]
+</IfModule>

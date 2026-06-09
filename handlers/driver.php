@@ -95,7 +95,7 @@ function driverStartSession(): void
 // Returns the drivers page URL used after redirects.
 function driverPageUrl(): string
 {
-    return '/fleet-system/modules/drivers/index.php';
+    return '/fleet-system/modules/drivers/';
 }
 
 // Returns the POST endpoint URL for driver form submissions.

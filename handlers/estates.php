@@ -19,7 +19,7 @@ function estateStartSession(): void
 // Returns the estates page URL used after redirects.
 function estatePageUrl(): string
 {
-    return '/fleet-system/modules/estates/index.php';
+    return '/fleet-system/modules/estates/';
 }
 
 // Returns the POST endpoint URL for estate project form submissions.

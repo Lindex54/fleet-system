@@ -19,7 +19,7 @@ function maintenanceStartSession(): void
 // Returns the maintenance page URL used after redirects.
 function maintenancePageUrl(): string
 {
-    return '/fleet-system/modules/maintenance/index.php';
+    return '/fleet-system/modules/maintenance/';
 }
 
 // Returns the POST endpoint URL for maintenance form submissions.

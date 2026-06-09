@@ -99,6 +99,11 @@ const driverSubmitButton = document.querySelector('[data-driver-submit-button]')
 const driverForm = document.querySelector('[data-driver-form]');
 const driverVehicleSelect = document.querySelector('[data-driver-vehicle-select]');
 const driverOtherVehiclesSelect = document.querySelector('[data-driver-other-vehicles-select]');
+const driverOtherVehiclesDropdown = document.querySelector('[data-driver-other-vehicles-dropdown]');
+const driverOtherVehiclesToggle = document.querySelector('[data-driver-other-vehicles-toggle]');
+const driverOtherVehiclesPanel = document.querySelector('[data-driver-other-vehicles-panel]');
+const driverOtherVehiclesSummary = document.querySelector('[data-driver-other-vehicles-summary]');
+const driverOtherVehicleCheckboxes = document.querySelectorAll('[data-driver-other-vehicle-checkbox]');
 const driverPhotoPathField = document.querySelector('[data-driver-photo-path-field]');
 const nationalIdPhotoPathField = document.querySelector('[data-national-id-photo-path-field]');
 const drivingLicenseScanPathField = document.querySelector('[data-driving-license-scan-path-field]');
@@ -1379,8 +1384,10 @@ function setDriverModalOpen(isOpen) {
   driverModal.classList.toggle('flex', isOpen);
   driverModal.setAttribute('aria-hidden', String(!isOpen));
   document.body.classList.toggle('overflow-hidden', isOpen);
+  setDriverOtherVehiclesDropdownOpen(false);
 
   if (isOpen) {
+    updateDriverOtherVehiclesDropdownState();
     driverModal.querySelector('input, select, button')?.focus();
   } else {
     openDriverModalButtons[0]?.focus();
@@ -1454,6 +1461,62 @@ function setDriverMultiSelectValues(selectElement, values) {
   Array.from(selectElement.options).forEach((option) => {
     option.selected = normalizedValues.has(option.value);
   });
+
+  updateDriverOtherVehiclesDropdownState();
+}
+
+function setDriverOtherVehiclesDropdownOpen(isOpen) {
+  if (!driverOtherVehiclesToggle || !driverOtherVehiclesPanel) {
+    return;
+  }
+
+  driverOtherVehiclesToggle.setAttribute('aria-expanded', String(isOpen));
+  driverOtherVehiclesPanel.classList.toggle('hidden', !isOpen);
+}
+
+function updateDriverOtherVehiclesDropdownState() {
+  if (!driverOtherVehiclesSelect || !driverOtherVehiclesSummary) {
+    return;
+  }
+
+  const selectedOptions = Array.from(driverOtherVehiclesSelect.options).filter((option) => option.selected && !option.disabled);
+
+  if (selectedOptions.length === 0) {
+    driverOtherVehiclesSummary.textContent = 'Select additional vehicles';
+  } else if (selectedOptions.length === 1) {
+    driverOtherVehiclesSummary.textContent = selectedOptions[0].textContent || '1 additional vehicle selected';
+  } else {
+    driverOtherVehiclesSummary.textContent = `${selectedOptions.length} additional vehicles selected`;
+  }
+
+  driverOtherVehicleCheckboxes.forEach((checkbox) => {
+    const matchingOption = Array.from(driverOtherVehiclesSelect.options).find((option) => option.value === checkbox.value);
+    if (!matchingOption) {
+      return;
+    }
+
+    checkbox.checked = matchingOption.selected;
+    checkbox.disabled = matchingOption.disabled;
+    checkbox.closest('label')?.classList.toggle('opacity-50', matchingOption.disabled);
+    checkbox.closest('label')?.classList.toggle('cursor-not-allowed', matchingOption.disabled);
+  });
+}
+
+function syncDriverOtherVehiclesCheckboxesToSelect() {
+  if (!driverOtherVehiclesSelect) {
+    return;
+  }
+
+  const selectedValues = Array.from(driverOtherVehicleCheckboxes)
+    .filter((checkbox) => checkbox.checked && !checkbox.disabled)
+    .map((checkbox) => checkbox.value);
+
+  const normalizedValues = new Set(selectedValues);
+  Array.from(driverOtherVehiclesSelect.options).forEach((option) => {
+    option.selected = normalizedValues.has(option.value) && !option.disabled;
+  });
+
+  updateDriverOtherVehiclesDropdownState();
 }
 
 // Shows one optional upload link in the driver details modal.
@@ -1693,6 +1756,8 @@ function syncDriverOtherVehicleChoices() {
       option.selected = false;
     }
   });
+
+  updateDriverOtherVehiclesDropdownState();
 }
 
 // Resets the shared driver modal back to a clean create state.
@@ -1867,6 +1932,15 @@ closeDriverViewModalButtons.forEach((button) => {
 
 driverVehicleSelect?.addEventListener('change', syncDriverOtherVehicleChoices);
 
+driverOtherVehiclesToggle?.addEventListener('click', () => {
+  const isExpanded = driverOtherVehiclesToggle.getAttribute('aria-expanded') === 'true';
+  setDriverOtherVehiclesDropdownOpen(!isExpanded);
+});
+
+driverOtherVehicleCheckboxes.forEach((checkbox) => {
+  checkbox.addEventListener('change', syncDriverOtherVehiclesCheckboxesToSelect);
+});
+
 driverModal?.addEventListener('click', (event) => {
   if (event.target === driverModal) {
     setDriverModalOpen(false);
@@ -1879,10 +1953,21 @@ driverViewModal?.addEventListener('click', (event) => {
   }
 });
 
+document.addEventListener('click', (event) => {
+  if (!driverOtherVehiclesDropdown || !driverOtherVehiclesPanel) {
+    return;
+  }
+
+  if (!driverOtherVehiclesDropdown.contains(event.target)) {
+    setDriverOtherVehiclesDropdownOpen(false);
+  }
+});
+
 if (driverModal?.dataset.openOnLoad === 'true') {
   document.body.classList.add('overflow-hidden');
   setDriverVehicleAvailability(driverIdField?.value || '');
   syncDriverOtherVehicleChoices();
+  updateDriverOtherVehiclesDropdownState();
 }
 
 printDriverViewButton?.addEventListener('click', printDriverDetailSheet);

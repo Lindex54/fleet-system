@@ -139,7 +139,7 @@ include __DIR__ . '/includes/sidebar.php';
                                                     <span class="rounded-full bg-white/18 px-3 py-1 text-xs font-bold text-white"><?= htmlspecialchars(ucwords(str_replace('_', ' ', (string) $needsRepairVehicle['overall_status'])), ENT_QUOTES, 'UTF-8'); ?></span>
                                                 </div>
                                             </div>
-                                            <a href="/fleet-system/modules/inspections/index.php" class="mt-5 inline-block text-sm font-semibold text-white underline">View pre-inspection reports</a>
+                                            <a href="/fleet-system/modules/inspections/" class="mt-5 inline-block text-sm font-semibold text-white underline">View pre-inspection reports</a>
                                         <?php else: ?>
                                             <p class="mt-4 text-sm text-white/85">No unresolved pre-inspection repair issues right now.</p>
                                         <?php endif; ?>
@@ -152,7 +152,7 @@ include __DIR__ . '/includes/sidebar.php';
                     <section class="dashboard-panel overflow-hidden">
                         <div class="dashboard-panel-head">
                             <h2 class="text-base font-extrabold text-fleet-ink">Recent Vehicle Logs</h2>
-                            <a href="/fleet-system/modules/logbook/index.php" class="text-sm font-semibold text-fleet-sidebar hover:text-fleet-primary">View all &rarr;</a>
+                            <a href="/fleet-system/modules/logbook/" class="text-sm font-semibold text-fleet-sidebar hover:text-fleet-primary">View all &rarr;</a>
                         </div>
                         <div class="overflow-x-auto">
                             <table class="w-full min-w-[620px] text-left text-sm">
@@ -214,7 +214,7 @@ include __DIR__ . '/includes/sidebar.php';
                     <section class="dashboard-panel">
                         <div class="dashboard-panel-head">
                             <h2 class="text-base font-extrabold text-fleet-ink">Active Maintenance</h2>
-                            <a href="/fleet-system/modules/maintenance/index.php" class="text-sm font-semibold text-fleet-sidebar hover:text-fleet-primary">View all &rarr;</a>
+                            <a href="/fleet-system/modules/maintenance/" class="text-sm font-semibold text-fleet-sidebar hover:text-fleet-primary">View all &rarr;</a>
                         </div>
                         <div>
                             <?php if ($activeMaintenance === []): ?>

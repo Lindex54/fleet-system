@@ -17,7 +17,7 @@ function logbookStartSession(): void
 // Returns the logbook page URL used after redirects.
 function logbookPageUrl(): string
 {
-    return '/fleet-system/modules/logbook/index.php';
+    return '/fleet-system/modules/logbook/';
 }
 
 // Returns the POST endpoint URL for logbook form submissions.

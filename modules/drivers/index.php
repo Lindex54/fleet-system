@@ -353,20 +353,48 @@ include __DIR__ . '/../../includes/sidebar.php';
                         <span class="mt-2 block text-xs text-fleet-muted">Only vehicles available in the database can be assigned.</span>
                     </label>
 
-                    <label class="block md:col-span-2">
+                    <div class="block md:col-span-2">
                         <span class="mb-2 block text-sm font-semibold text-fleet-ink">Other Vehicles</span>
-                        <select name="other_vehicles[]" multiple size="5" class="vehicle-form-control" data-driver-other-vehicles-select>
-                            <?php foreach ($driverVehicleOptions as $vehicleOption): ?>
-                                <option
-                                    value="<?= htmlspecialchars((string) $vehicleOption['id'], ENT_QUOTES, 'UTF-8'); ?>"
-                                    <?= in_array((string) $vehicleOption['id'], $driverFormData['other_vehicles'] ?? [], true) ? 'selected' : ''; ?>
-                                >
-                                    <?= htmlspecialchars($vehicleOption['registration_no'], ENT_QUOTES, 'UTF-8'); ?>
-                                </option>
-                            <?php endforeach; ?>
-                        </select>
-                        <span class="mt-2 block text-xs text-fleet-muted">Hold Ctrl or Cmd to select more than one additional vehicle this driver may use.</span>
-                    </label>
+                        <div class="relative" data-driver-other-vehicles-dropdown>
+                            <button
+                                type="button"
+                                class="vehicle-form-control flex w-full items-center justify-between gap-3 text-left"
+                                data-driver-other-vehicles-toggle
+                                aria-expanded="false"
+                            >
+                                <span class="truncate text-fleet-ink" data-driver-other-vehicles-summary>Select additional vehicles</span>
+                                <span class="text-xs font-extrabold uppercase tracking-[0.18em] text-fleet-muted">Choose</span>
+                            </button>
+                            <div class="mt-2 hidden rounded-lg border border-fleet-line bg-white p-2 shadow-lg" data-driver-other-vehicles-panel>
+                                <div class="max-h-56 space-y-1 overflow-y-auto pr-1">
+                                    <?php foreach ($driverVehicleOptions as $vehicleOption): ?>
+                                        <?php $isSelectedOtherVehicle = in_array((string) $vehicleOption['id'], $driverFormData['other_vehicles'] ?? [], true); ?>
+                                        <label class="flex cursor-pointer items-center gap-3 rounded-lg px-3 py-2 transition hover:bg-fleet-surface-muted">
+                                            <input
+                                                type="checkbox"
+                                                value="<?= htmlspecialchars((string) $vehicleOption['id'], ENT_QUOTES, 'UTF-8'); ?>"
+                                                class="h-4 w-4 rounded border-fleet-line text-fleet-primary focus:ring-fleet-primary"
+                                                data-driver-other-vehicle-checkbox
+                                                <?= $isSelectedOtherVehicle ? 'checked' : ''; ?>
+                                            >
+                                            <span class="text-sm font-medium text-fleet-ink"><?= htmlspecialchars($vehicleOption['registration_no'], ENT_QUOTES, 'UTF-8'); ?></span>
+                                        </label>
+                                    <?php endforeach; ?>
+                                </div>
+                            </div>
+                            <select name="other_vehicles[]" multiple class="hidden" data-driver-other-vehicles-select>
+                                <?php foreach ($driverVehicleOptions as $vehicleOption): ?>
+                                    <option
+                                        value="<?= htmlspecialchars((string) $vehicleOption['id'], ENT_QUOTES, 'UTF-8'); ?>"
+                                        <?= in_array((string) $vehicleOption['id'], $driverFormData['other_vehicles'] ?? [], true) ? 'selected' : ''; ?>
+                                    >
+                                        <?= htmlspecialchars($vehicleOption['registration_no'], ENT_QUOTES, 'UTF-8'); ?>
+                                    </option>
+                                <?php endforeach; ?>
+                            </select>
+                        </div>
+                        <span class="mt-2 block text-xs text-fleet-muted">Select one or more additional vehicles this driver may use.</span>
+                    </div>
 
                     <label class="block md:col-span-1">
                         <span class="mb-2 block text-sm font-semibold text-fleet-ink">Status</span>
