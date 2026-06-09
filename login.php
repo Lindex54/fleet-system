@@ -87,11 +87,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     $_SESSION['admin_role'] = 'admin';
 
                     if ((int) $user['must_change_password'] === 1) {
-                        header('Location: /fleet-system/change-password.php');
+                        header('Location: /fleet-system/change-password');
                         exit;
                     }
 
-                    header('Location: /fleet-system/dashboard.php');
+                    header('Location: /fleet-system/dashboard');
                     exit;
                 }
 
@@ -99,11 +99,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     $_SESSION['driver_id'] = (int) $user['driver_id'];
 
                     if ((int) $user['must_change_password'] === 1) {
-                        header('Location: /fleet-system/driver-panel/change-password.php');
+                        header('Location: /fleet-system/driver-panel/change-password');
                         exit;
                     }
 
-                    header('Location: /fleet-system/driver-panel/index.php');
+                    header('Location: /fleet-system/driver-panel/');
                     exit;
                 }
 
@@ -178,7 +178,9 @@ include __DIR__ . '/includes/header.php';
                     </div>
                 <?php endif; ?>
 
+                <!-- jQuery adds inline validation and submit-state feedback to the login form. -->
                 <form method="post">
+                    <div data-fleet-feedback-host></div>
                     <div class="login-card-field">
                         <label for="login-username">Username</label>
                         <div class="login-input-shell">
@@ -196,7 +198,7 @@ include __DIR__ . '/includes/header.php';
                         </div>
                     </div>
 
-                    <button type="submit" class="login-submit">
+                    <button type="submit" class="login-submit" data-loading-text="Signing In...">
                         <span>Log In</span>
                         <span class="login-submit-arrow" aria-hidden="true">&rarr;</span>
                     </button>

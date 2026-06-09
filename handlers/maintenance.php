@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 require_once __DIR__ . '/../config/database.php';
+require_once __DIR__ . '/../includes/ajax.php';
 
 // Maintenance constants and page/session helpers
 const MAINTENANCE_ALLOWED_TYPES = ['repair', 'routine_service', 'inspection', 'brake_service', 'other'];
@@ -324,6 +325,13 @@ function maintenanceAssertForeignKeysExist(PDO $pdo, int $vehicleId, ?int $servi
 function maintenanceHandleCreateOrUpdate(string $action): void
 {
     $formData = maintenanceBuildFormDataFromPost();
+    $responsePayload = [
+        'success' => false,
+        'message' => 'The maintenance record could not be saved.',
+        'reload' => false,
+        'action' => $action,
+    ];
+    $responseStatus = 200;
 
     try {
         $validated = maintenanceValidateFormData($formData);
@@ -416,6 +424,14 @@ function maintenanceHandleCreateOrUpdate(string $action): void
                     : 'The maintenance record has been created successfully.',
             ],
         ]);
+        $responsePayload = [
+            'success' => true,
+            'message' => $action === 'update'
+                ? 'The maintenance record has been updated successfully.'
+                : 'The maintenance record has been created successfully.',
+            'reload' => true,
+            'action' => $action,
+        ];
     } catch (RuntimeException $exception) {
         maintenanceSetFlash([
             'notification' => [
@@ -427,6 +443,13 @@ function maintenanceHandleCreateOrUpdate(string $action): void
             'open_modal' => true,
             'form_mode' => $action,
         ]);
+        $responsePayload = [
+            'success' => false,
+            'message' => $exception->getMessage(),
+            'reload' => false,
+            'action' => $action,
+        ];
+        $responseStatus = 422;
     } catch (Throwable $exception) {
         maintenanceSetFlash([
             'notification' => [
@@ -440,10 +463,18 @@ function maintenanceHandleCreateOrUpdate(string $action): void
             'open_modal' => true,
             'form_mode' => $action,
         ]);
+        $responsePayload = [
+            'success' => false,
+            'message' => $action === 'update'
+                ? 'A system error occurred while updating the maintenance record.'
+                : 'A system error occurred while saving the maintenance record.',
+            'reload' => false,
+            'action' => $action,
+        ];
+        $responseStatus = 500;
     }
 
-    header('Location: ' . maintenancePageUrl());
-    exit;
+    fleetFinishResponse(maintenancePageUrl(), $responsePayload, $responseStatus);
 }
 
 // Handles delete requests for maintenance records.
@@ -458,9 +489,23 @@ function maintenanceHandleDelete(): void
                 'message' => 'The selected maintenance record could not be identified.',
             ],
         ]);
-        header('Location: ' . maintenancePageUrl());
-        exit;
+        fleetFinishResponse(
+            maintenancePageUrl(),
+            [
+                'success' => false,
+                'message' => 'The selected maintenance record could not be identified.',
+                'reload' => false,
+            ],
+            422
+        );
     }
+
+    $responsePayload = [
+        'success' => false,
+        'message' => 'The maintenance record could not be deleted.',
+        'reload' => false,
+    ];
+    $responseStatus = 200;
 
     try {
         $statement = fleetDb()->prepare('DELETE FROM maintenance_records WHERE id = :id');
@@ -477,6 +522,11 @@ function maintenanceHandleDelete(): void
                 'message' => 'The selected maintenance record has been removed.',
             ],
         ]);
+        $responsePayload = [
+            'success' => true,
+            'message' => 'The selected maintenance record has been removed.',
+            'reload' => true,
+        ];
     } catch (RuntimeException $exception) {
         maintenanceSetFlash([
             'notification' => [
@@ -485,6 +535,12 @@ function maintenanceHandleDelete(): void
                 'message' => $exception->getMessage(),
             ],
         ]);
+        $responsePayload = [
+            'success' => false,
+            'message' => $exception->getMessage(),
+            'reload' => false,
+        ];
+        $responseStatus = 422;
     } catch (Throwable $exception) {
         maintenanceSetFlash([
             'notification' => [
@@ -493,18 +549,30 @@ function maintenanceHandleDelete(): void
                 'message' => 'A system error occurred while deleting the maintenance record.',
             ],
         ]);
+        $responsePayload = [
+            'success' => false,
+            'message' => 'A system error occurred while deleting the maintenance record.',
+            'reload' => false,
+        ];
+        $responseStatus = 500;
     }
 
-    header('Location: ' . maintenancePageUrl());
-    exit;
+    fleetFinishResponse(maintenancePageUrl(), $responsePayload, $responseStatus);
 }
 
 // Dispatches incoming maintenance POST requests by action type.
 function maintenanceHandleRequest(): void
 {
     if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
-        header('Location: ' . maintenancePageUrl());
-        exit;
+        fleetFinishResponse(
+            maintenancePageUrl(),
+            [
+                'success' => false,
+                'message' => 'Invalid request method.',
+                'reload' => false,
+            ],
+            405
+        );
     }
 
     $action = trim((string) ($_POST['maintenance_action'] ?? 'create'));

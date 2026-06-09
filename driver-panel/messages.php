@@ -167,8 +167,10 @@ include __DIR__ . '/includes/sidebar.php';
                     <span class="inline-flex rounded-lg border border-red-200 bg-fleet-danger-soft px-3 py-1 text-xs font-semibold text-fleet-danger">Action Needed</span>
                 </div>
 
-                <form action="<?= htmlspecialchars($messagesFormAction, ENT_QUOTES, 'UTF-8'); ?>" method="post" class="space-y-5">
+                <!-- jQuery adds inline validation and safe AJAX submission to incident reporting. -->
+                <form action="<?= htmlspecialchars($messagesFormAction, ENT_QUOTES, 'UTF-8'); ?>" method="post" class="space-y-5" data-fleet-ajax="true">
                     <input type="hidden" name="driver_panel_action" value="submit_incident">
+                    <div data-fleet-feedback-host></div>
 
                     <div class="grid gap-4 md:grid-cols-2">
                         <label class="block">
@@ -212,7 +214,7 @@ include __DIR__ . '/includes/sidebar.php';
                     </div>
 
                     <div class="flex justify-end">
-                        <button type="submit" class="inline-flex h-10 items-center rounded-lg bg-fleet-danger px-5 text-sm font-semibold text-white shadow-sm hover:bg-red-700">
+                        <button type="submit" class="inline-flex h-10 items-center rounded-lg bg-fleet-danger px-5 text-sm font-semibold text-white shadow-sm hover:bg-red-700" data-loading-text="Submitting Incident...">
                             Submit Incident Report
                         </button>
                     </div>

@@ -77,7 +77,7 @@ include __DIR__ . '/includes/sidebar.php';
                                             </span>
                                         </td>
                                         <td class="px-5 py-4 text-right">
-                                            <a href="<?= htmlspecialchars(($basePath ?: '') . '/driver-panel/history.php?trip_id=' . $trip['id'], ENT_QUOTES, 'UTF-8'); ?>" class="text-sm font-semibold text-fleet-sidebar hover:text-fleet-primary">
+                                            <a href="<?= htmlspecialchars(($basePath ?: '') . '/driver-panel/history?trip_id=' . $trip['id'], ENT_QUOTES, 'UTF-8'); ?>" class="text-sm font-semibold text-fleet-sidebar hover:text-fleet-primary">
                                                 View Details
                                             </a>
                                         </td>

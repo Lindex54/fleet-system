@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 require_once __DIR__ . '/../config/database.php';
+require_once __DIR__ . '/../includes/ajax.php';
 
 // Driver panel helpers use the existing schema and gracefully fall back while auth is not yet implemented.
 const DRIVER_PANEL_PRETRIP_CHECKLIST = [
@@ -30,32 +31,32 @@ function driverPanelHandlerUrl(): string
 
 function driverPanelDashboardUrl(): string
 {
-    return '/fleet-system/driver-panel/index.php';
+    return '/fleet-system/driver-panel/';
 }
 
 function driverPanelLoginUrl(): string
 {
-    return '/fleet-system/login.php';
+    return '/fleet-system/login';
 }
 
 function driverPanelPasswordChangeUrl(): string
 {
-    return '/fleet-system/driver-panel/change-password.php';
+    return '/fleet-system/driver-panel/change-password';
 }
 
 function driverPanelVehicleUrl(): string
 {
-    return '/fleet-system/driver-panel/my-vehicle.php';
+    return '/fleet-system/driver-panel/my-vehicle';
 }
 
 function driverPanelPreTripUrl(): string
 {
-    return '/fleet-system/driver-panel/pre-trip-inspection.php';
+    return '/fleet-system/driver-panel/pre-trip-inspection';
 }
 
 function driverPanelTripLogUrl(): string
 {
-    return '/fleet-system/driver-panel/trip-log.php';
+    return '/fleet-system/driver-panel/trip-log';
 }
 
 function driverPanelRequireAuthenticatedDriver(bool $allowPasswordChange = false): void
@@ -148,8 +149,15 @@ function driverPanelHandlePasswordChange(): void
             'type' => 'error',
             'message' => 'Your new password must be at least 8 characters long.',
         ]);
-        header('Location: ' . driverPanelPasswordChangeUrl());
-        exit;
+        fleetFinishResponse(
+            driverPanelPasswordChangeUrl(),
+            [
+                'success' => false,
+                'message' => 'Your new password must be at least 8 characters long.',
+                'reload' => false,
+            ],
+            422
+        );
     }
 
     if ($newPassword !== $confirmPassword) {
@@ -157,8 +165,15 @@ function driverPanelHandlePasswordChange(): void
             'type' => 'error',
             'message' => 'The new password and confirmation do not match.',
         ]);
-        header('Location: ' . driverPanelPasswordChangeUrl());
-        exit;
+        fleetFinishResponse(
+            driverPanelPasswordChangeUrl(),
+            [
+                'success' => false,
+                'message' => 'The new password and confirmation do not match.',
+                'reload' => false,
+            ],
+            422
+        );
     }
 
     try {
@@ -184,15 +199,30 @@ function driverPanelHandlePasswordChange(): void
             'type' => 'success',
             'message' => 'Your password has been updated.',
         ]);
-        header('Location: ' . driverPanelDashboardUrl());
-        exit;
+        // Sends JSON to jQuery requests while preserving the original redirect flow for normal posts.
+        fleetFinishResponse(
+            driverPanelDashboardUrl(),
+            [
+                'success' => true,
+                'message' => 'Your password has been updated.',
+                'redirect' => driverPanelDashboardUrl(),
+                'reload' => false,
+            ]
+        );
     } catch (Throwable $exception) {
         driverPanelSetPasswordFlash([
             'type' => 'error',
             'message' => 'Your password could not be updated right now.',
         ]);
-        header('Location: ' . driverPanelPasswordChangeUrl());
-        exit;
+        fleetFinishResponse(
+            driverPanelPasswordChangeUrl(),
+            [
+                'success' => false,
+                'message' => 'Your password could not be updated right now.',
+                'reload' => false,
+            ],
+            500
+        );
     }
 }
 
@@ -1064,6 +1094,12 @@ function driverPanelSaveInspectionItems(PDO $pdo, int $inspectionId, array $item
 function driverPanelHandlePreTripSubmission(): void
 {
     $formData = driverPanelBuildPreTripFormDataFromPost();
+    $responseStatus = 200;
+    $responsePayload = [
+        'success' => false,
+        'message' => 'Your pre-trip inspection could not be saved right now.',
+        'reload' => false,
+    ];
 
     try {
         $pdo = fleetDb();
@@ -1124,6 +1160,12 @@ function driverPanelHandlePreTripSubmission(): void
                 'message' => 'Your pre-trip inspection has been saved.',
             ],
         ]);
+        $responsePayload = [
+            'success' => true,
+            'message' => 'Your pre-trip inspection has been saved.',
+            'reload' => true,
+            'action' => 'submit_pre_trip',
+        ];
     } catch (RuntimeException $exception) {
         if (isset($pdo) && $pdo instanceof PDO && $pdo->inTransaction()) {
             $pdo->rollBack();
@@ -1137,6 +1179,13 @@ function driverPanelHandlePreTripSubmission(): void
             ],
             'form_data' => $formData,
         ]);
+        $responseStatus = 422;
+        $responsePayload = [
+            'success' => false,
+            'message' => $exception->getMessage(),
+            'reload' => false,
+            'action' => 'submit_pre_trip',
+        ];
     } catch (Throwable $exception) {
         if (isset($pdo) && $pdo instanceof PDO && $pdo->inTransaction()) {
             $pdo->rollBack();
@@ -1150,10 +1199,17 @@ function driverPanelHandlePreTripSubmission(): void
             ],
             'form_data' => $formData,
         ]);
+        $responseStatus = 500;
+        $responsePayload = [
+            'success' => false,
+            'message' => 'A system error occurred while saving the inspection.',
+            'reload' => false,
+            'action' => 'submit_pre_trip',
+        ];
     }
 
-    header('Location: ' . driverPanelPreTripUrl());
-    exit;
+    // Sends JSON to jQuery requests while preserving the original redirect flow for normal posts.
+    fleetFinishResponse(driverPanelPreTripUrl(), $responsePayload, $responseStatus);
 }
 
 function driverPanelFetchPreTripReports(PDO $pdo, int $driverId, ?int $vehicleId): array
@@ -1413,6 +1469,12 @@ function driverPanelValidateTripStart(array $formData, array $selectedVehicle): 
 function driverPanelHandleStartTrip(): void
 {
     $formData = driverPanelBuildTripStartFormDataFromPost();
+    $responseStatus = 200;
+    $responsePayload = [
+        'success' => false,
+        'message' => 'The trip could not be started right now.',
+        'reload' => false,
+    ];
 
     try {
         $pdo = fleetDb();
@@ -1466,6 +1528,12 @@ function driverPanelHandleStartTrip(): void
                 'message' => 'The trip has been opened and is now in progress.',
             ],
         ]);
+        $responsePayload = [
+            'success' => true,
+            'message' => 'The trip has been opened and is now in progress.',
+            'reload' => true,
+            'action' => 'start_trip',
+        ];
     } catch (RuntimeException $exception) {
         driverPanelSetTripFlash([
             'notification' => [
@@ -1475,6 +1543,13 @@ function driverPanelHandleStartTrip(): void
             ],
             'start_form_data' => $formData,
         ]);
+        $responseStatus = 422;
+        $responsePayload = [
+            'success' => false,
+            'message' => $exception->getMessage(),
+            'reload' => false,
+            'action' => 'start_trip',
+        ];
     } catch (Throwable $exception) {
         driverPanelSetTripFlash([
             'notification' => [
@@ -1484,10 +1559,17 @@ function driverPanelHandleStartTrip(): void
             ],
             'start_form_data' => $formData,
         ]);
+        $responseStatus = 500;
+        $responsePayload = [
+            'success' => false,
+            'message' => 'A system error occurred while starting the trip.',
+            'reload' => false,
+            'action' => 'start_trip',
+        ];
     }
 
-    header('Location: ' . driverPanelTripLogUrl());
-    exit;
+    // Sends JSON to jQuery requests while preserving the original redirect flow for normal posts.
+    fleetFinishResponse(driverPanelTripLogUrl(), $responsePayload, $responseStatus);
 }
 
 function driverPanelValidateTripEnd(array $formData, array $openTrip): array
@@ -1525,6 +1607,12 @@ function driverPanelValidateTripEnd(array $formData, array $openTrip): array
 function driverPanelHandleEndTrip(): void
 {
     $formData = driverPanelBuildTripEndFormDataFromPost();
+    $responseStatus = 200;
+    $responsePayload = [
+        'success' => false,
+        'message' => 'The trip could not be ended right now.',
+        'reload' => false,
+    ];
 
     try {
         $pdo = fleetDb();
@@ -1577,6 +1665,12 @@ function driverPanelHandleEndTrip(): void
                 'message' => 'The trip has been completed and saved to the logbook.',
             ],
         ]);
+        $responsePayload = [
+            'success' => true,
+            'message' => 'The trip has been completed and saved to the logbook.',
+            'reload' => true,
+            'action' => 'end_trip',
+        ];
     } catch (RuntimeException $exception) {
         if (isset($pdo) && $pdo instanceof PDO && $pdo->inTransaction()) {
             $pdo->rollBack();
@@ -1590,6 +1684,13 @@ function driverPanelHandleEndTrip(): void
             ],
             'end_form_data' => $formData,
         ]);
+        $responseStatus = 422;
+        $responsePayload = [
+            'success' => false,
+            'message' => $exception->getMessage(),
+            'reload' => false,
+            'action' => 'end_trip',
+        ];
     } catch (Throwable $exception) {
         if (isset($pdo) && $pdo instanceof PDO && $pdo->inTransaction()) {
             $pdo->rollBack();
@@ -1603,10 +1704,17 @@ function driverPanelHandleEndTrip(): void
             ],
             'end_form_data' => $formData,
         ]);
+        $responseStatus = 500;
+        $responsePayload = [
+            'success' => false,
+            'message' => 'A system error occurred while closing the trip.',
+            'reload' => false,
+            'action' => 'end_trip',
+        ];
     }
 
-    header('Location: ' . driverPanelTripLogUrl());
-    exit;
+    // Sends JSON to jQuery requests while preserving the original redirect flow for normal posts.
+    fleetFinishResponse(driverPanelTripLogUrl(), $responsePayload, $responseStatus);
 }
 
 function driverPanelFetchTripLogPageData(): array
@@ -2004,6 +2112,12 @@ function driverPanelValidateIncidentFormData(array $formData, array $driverProfi
 function driverPanelHandleIncidentReport(): void
 {
     $formData = driverPanelBuildIncidentFormDataFromPost();
+    $responseStatus = 200;
+    $responsePayload = [
+        'success' => false,
+        'message' => 'The incident report could not be saved right now.',
+        'reload' => false,
+    ];
 
     try {
         $pdo = fleetDb();
@@ -2055,6 +2169,12 @@ function driverPanelHandleIncidentReport(): void
                 'message' => 'Your incident report has been submitted to the transport office.',
             ],
         ]);
+        $responsePayload = [
+            'success' => true,
+            'message' => 'Your incident report has been submitted to the transport office.',
+            'reload' => true,
+            'action' => 'submit_incident',
+        ];
     } catch (RuntimeException $exception) {
         driverPanelSetMessagesFlash([
             'notification' => [
@@ -2064,6 +2184,13 @@ function driverPanelHandleIncidentReport(): void
             ],
             'incident_form_data' => $formData,
         ]);
+        $responseStatus = 422;
+        $responsePayload = [
+            'success' => false,
+            'message' => $exception->getMessage(),
+            'reload' => false,
+            'action' => 'submit_incident',
+        ];
     } catch (Throwable $exception) {
         driverPanelSetMessagesFlash([
             'notification' => [
@@ -2073,15 +2200,22 @@ function driverPanelHandleIncidentReport(): void
             ],
             'incident_form_data' => $formData,
         ]);
+        $responseStatus = 500;
+        $responsePayload = [
+            'success' => false,
+            'message' => 'A system error occurred while saving the incident report.',
+            'reload' => false,
+            'action' => 'submit_incident',
+        ];
     }
 
-    header('Location: ' . driverPanelMessagesUrlPath());
-    exit;
+    // Sends JSON to jQuery requests while preserving the original redirect flow for normal posts.
+    fleetFinishResponse(driverPanelMessagesUrlPath(), $responsePayload, $responseStatus);
 }
 
 function driverPanelMessagesUrlPath(): string
 {
-    return '/fleet-system/driver-panel/messages.php';
+    return '/fleet-system/driver-panel/messages';
 }
 
 function driverPanelFetchIncidentHistory(PDO $pdo, int $driverId): array
@@ -2176,8 +2310,15 @@ function driverPanelFetchMessagesPageData(): array
 function driverPanelHandleRequest(): void
 {
     if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
-        header('Location: ' . driverPanelDashboardUrl());
-        exit;
+        fleetFinishResponse(
+            driverPanelDashboardUrl(),
+            [
+                'success' => false,
+                'message' => 'Only POST requests are allowed for driver panel actions.',
+                'reload' => false,
+            ],
+            405
+        );
     }
 
     $action = trim((string) ($_POST['driver_panel_action'] ?? ''));
@@ -2202,8 +2343,15 @@ function driverPanelHandleRequest(): void
         driverPanelHandleIncidentReport();
     }
 
-    header('Location: ' . driverPanelDashboardUrl());
-    exit;
+    fleetFinishResponse(
+        driverPanelDashboardUrl(),
+        [
+            'success' => false,
+            'message' => 'The requested driver panel action is not supported.',
+            'reload' => false,
+        ],
+        400
+    );
 }
 
 if (basename(__FILE__) === basename((string) ($_SERVER['SCRIPT_FILENAME'] ?? ''))) {

@@ -12,7 +12,7 @@ if ((string) ($_SESSION['user_role'] ?? '') !== 'admin' || empty($_SESSION['admi
 }
 
 if ((int) ($_SESSION['must_change_password'] ?? 0) !== 1) {
-    header('Location: /fleet-system/dashboard.php');
+    header('Location: /fleet-system/dashboard');
     exit;
 }
 
@@ -46,7 +46,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             }
 
             $_SESSION['must_change_password'] = 0;
-            header('Location: /fleet-system/dashboard.php');
+            header('Location: /fleet-system/dashboard');
             exit;
         } catch (Throwable $exception) {
             $message = 'Your password could not be updated right now.';

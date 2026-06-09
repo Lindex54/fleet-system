@@ -199,8 +199,8 @@ include __DIR__ . '/../../includes/sidebar.php';
         data-open-on-load="<?= $shouldOpenMaintenanceModal ? 'true' : 'false'; ?>"
     >
         <div class="dashboard-scroll max-h-[calc(100vh-2.5rem)] w-full max-w-2xl overflow-y-auto rounded-lg border border-fleet-line bg-fleet-surface shadow-2xl" role="dialog" aria-modal="true" aria-labelledby="maintenance-modal-title">
-            <!-- Failed submissions reopen this modal and keep entered values in place. -->
-            <form class="p-6" action="<?= htmlspecialchars($maintenanceFormAction, ENT_QUOTES, 'UTF-8'); ?>" method="post" data-maintenance-form>
+            <!-- Failed submissions reopen this modal and keep entered values in place. jQuery adds safe validation and AJAX feedback here. -->
+            <form class="p-6" action="<?= htmlspecialchars($maintenanceFormAction, ENT_QUOTES, 'UTF-8'); ?>" method="post" data-maintenance-form data-fleet-ajax="true">
                 <input type="hidden" name="maintenance_action" value="<?= $maintenanceFormMode === 'update' ? 'update' : 'create'; ?>" data-maintenance-action-field>
                 <input type="hidden" name="record_id" value="<?= htmlspecialchars($maintenanceFormData['record_id'] ?? '', ENT_QUOTES, 'UTF-8'); ?>" data-maintenance-record-id-field>
 
@@ -208,6 +208,7 @@ include __DIR__ . '/../../includes/sidebar.php';
                     <h2 id="maintenance-modal-title" class="text-xl font-extrabold text-fleet-ink" data-maintenance-modal-title><?= $maintenanceFormMode === 'update' ? 'Edit Maintenance Record' : 'New Maintenance Record'; ?></h2>
                     <button type="button" data-close-maintenance-modal class="flex h-8 w-8 items-center justify-center rounded-lg text-2xl leading-none text-fleet-muted hover:bg-fleet-surface-muted hover:text-fleet-ink" aria-label="Close maintenance record form">&times;</button>
                 </div>
+                <div data-fleet-feedback-host></div>
 
                 <div class="grid gap-5 md:grid-cols-2">
                     <label class="block">
@@ -298,7 +299,7 @@ include __DIR__ . '/../../includes/sidebar.php';
 
                 <div class="mt-6 flex justify-end gap-3">
                     <button type="button" data-close-maintenance-modal class="h-10 rounded-lg border border-fleet-line bg-fleet-surface px-4 text-sm font-semibold text-fleet-ink shadow-sm hover:bg-fleet-surface-muted">Cancel</button>
-                    <button type="submit" class="h-10 rounded-lg bg-fleet-sidebar px-4 text-sm font-semibold text-white shadow-sm hover:bg-fleet-sidebar-active" data-maintenance-submit-button><?= $maintenanceFormMode === 'update' ? 'Save Changes' : 'Create Record'; ?></button>
+                    <button type="submit" class="h-10 rounded-lg bg-fleet-sidebar px-4 text-sm font-semibold text-white shadow-sm hover:bg-fleet-sidebar-active" data-maintenance-submit-button data-loading-text="Saving Maintenance..."><?= $maintenanceFormMode === 'update' ? 'Save Changes' : 'Create Record'; ?></button>
                 </div>
             </form>
         </div>

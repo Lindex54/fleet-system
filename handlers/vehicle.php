@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 require_once __DIR__ . '/../config/database.php';
+require_once __DIR__ . '/../includes/ajax.php';
 
 // Vehicle constants and lightweight page/session helpers
 const VEHICLE_ALLOWED_TYPES = ['sedan', 'suv', 'pickup', 'truck', 'van', 'bus', 'motorcycle', 'other'];
@@ -535,9 +536,23 @@ function vehicleHandleDelete(): void
             ],
         ]);
 
-        header('Location: ' . vehiclePageUrl());
-        exit;
+        fleetFinishResponse(
+            vehiclePageUrl(),
+            [
+                'success' => false,
+                'message' => 'The selected vehicle could not be identified.',
+                'reload' => false,
+            ],
+            422
+        );
     }
+
+    $responsePayload = [
+        'success' => false,
+        'message' => 'The vehicle could not be deleted.',
+        'reload' => false,
+    ];
+    $responseStatus = 200;
 
     try {
         $pdo = fleetDb();
@@ -559,6 +574,11 @@ function vehicleHandleDelete(): void
                 'message' => 'The selected vehicle has been removed from the fleet register.',
             ],
         ]);
+        $responsePayload = [
+            'success' => true,
+            'message' => 'The selected vehicle has been removed from the fleet register.',
+            'reload' => true,
+        ];
     } catch (RuntimeException $exception) {
         vehicleSetFlash([
             'notification' => [
@@ -567,6 +587,12 @@ function vehicleHandleDelete(): void
                 'message' => $exception->getMessage(),
             ],
         ]);
+        $responsePayload = [
+            'success' => false,
+            'message' => $exception->getMessage(),
+            'reload' => false,
+        ];
+        $responseStatus = 422;
     } catch (Throwable $exception) {
         vehicleSetFlash([
             'notification' => [
@@ -575,10 +601,15 @@ function vehicleHandleDelete(): void
                 'message' => 'A system error occurred while deleting the vehicle.',
             ],
         ]);
+        $responsePayload = [
+            'success' => false,
+            'message' => 'A system error occurred while deleting the vehicle.',
+            'reload' => false,
+        ];
+        $responseStatus = 500;
     }
 
-    header('Location: ' . vehiclePageUrl());
-    exit;
+    fleetFinishResponse(vehiclePageUrl(), $responsePayload, $responseStatus);
 }
 
 // POST handler for adding vehicles
@@ -593,6 +624,13 @@ function vehicleHandleUpsert(string $action): void
     $formData = vehicleBuildFormDataFromPost();
     $newUploads = [];
     $oldUploadsToDelete = [];
+    $responsePayload = [
+        'success' => false,
+        'message' => 'The vehicle could not be saved.',
+        'reload' => false,
+        'action' => $action,
+    ];
+    $responseStatus = 200;
 
     try {
         $validated = vehicleValidateFormData($formData);
@@ -613,6 +651,16 @@ function vehicleHandleUpsert(string $action): void
                 ),
             ],
         ]);
+        $responsePayload = [
+            'success' => true,
+            'message' => sprintf(
+                '%s has been %s in the fleet register.',
+                $validated['registration_number'],
+                $action === 'update' ? 'updated' : 'saved'
+            ),
+            'reload' => true,
+            'action' => $action,
+        ];
     } catch (RuntimeException $exception) {
         foreach ($newUploads as $newUpload) {
             vehicleDeleteStoredUpload($newUpload);
@@ -628,6 +676,13 @@ function vehicleHandleUpsert(string $action): void
             'open_modal' => true,
             'form_mode' => $action,
         ]);
+        $responsePayload = [
+            'success' => false,
+            'message' => $exception->getMessage(),
+            'reload' => false,
+            'action' => $action,
+        ];
+        $responseStatus = 422;
     } catch (PDOException $exception) {
         foreach ($newUploads as $newUpload) {
             vehicleDeleteStoredUpload($newUpload);
@@ -654,6 +709,13 @@ function vehicleHandleUpsert(string $action): void
             'open_modal' => true,
             'form_mode' => $action,
         ]);
+        $responsePayload = [
+            'success' => false,
+            'message' => $message,
+            'reload' => false,
+            'action' => $action,
+        ];
+        $responseStatus = 422;
     } catch (Throwable $exception) {
         foreach ($newUploads as $newUpload) {
             vehicleDeleteStoredUpload($newUpload);
@@ -671,18 +733,33 @@ function vehicleHandleUpsert(string $action): void
             'open_modal' => true,
             'form_mode' => $action,
         ]);
+        $responsePayload = [
+            'success' => false,
+            'message' => $action === 'update'
+                ? 'A system error occurred while updating the vehicle.'
+                : 'A system error occurred while saving the vehicle.',
+            'reload' => false,
+            'action' => $action,
+        ];
+        $responseStatus = 500;
     }
 
-    header('Location: ' . vehiclePageUrl());
-    exit;
+    fleetFinishResponse(vehiclePageUrl(), $responsePayload, $responseStatus);
 }
 
 // Dispatches incoming vehicle POST requests by action type.
 function vehicleHandleRequest(): void
 {
     if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
-        header('Location: ' . vehiclePageUrl());
-        exit;
+        fleetFinishResponse(
+            vehiclePageUrl(),
+            [
+                'success' => false,
+                'message' => 'Invalid request method.',
+                'reload' => false,
+            ],
+            405
+        );
     }
 
     $action = strtolower(trim((string) ($_POST['vehicle_action'] ?? 'create')));

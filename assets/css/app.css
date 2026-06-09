@@ -85,6 +85,16 @@
 .vehicle-usage-print-meta-row dt{font-weight:700}
 .vehicle-usage-print-meta-row dd{font-weight:500}
 .vehicle-usage-print-subject{margin-top:1.8rem;color:#111827;font-family:"Source Sans Pro",Helvetica Neue,Helvetica,Arial,sans-serif;font-size:1.3rem;font-weight:800;line-height:1.4;text-transform:uppercase}
+/* Shared jQuery feedback styles for inline validation, AJAX messages, upload previews, and empty-table states. */
+.fleet-field-error{margin-top:.45rem;color:var(--app-danger);font-size:.75rem;font-weight:600;line-height:1.5}
+.fleet-invalid-field{border-color:var(--app-danger)!important;box-shadow:0 0 0 3px rgba(220,38,38,.12)!important}
+.fleet-inline-feedback{margin-top:1rem;border:1px solid var(--app-line);border-radius:.75rem;padding:.85rem 1rem;font-size:.875rem;font-weight:600;line-height:1.6}
+.fleet-inline-feedback-success{border-color:var(--color-green-200);background:var(--app-success-soft);color:var(--app-success-strong)}
+.fleet-inline-feedback-error{border-color:var(--color-red-200);background:var(--app-danger-soft);color:var(--app-danger)}
+.fleet-file-meta{margin-top:.45rem;color:var(--app-muted);font-size:.75rem;font-weight:600}
+.fleet-file-preview{margin-top:.75rem;display:none;max-width:7rem;overflow:hidden;border:1px solid var(--app-line);border-radius:.75rem;background:var(--app-surface-muted);padding:.25rem}
+.fleet-file-preview img{width:100%;height:5.5rem;object-fit:cover;border-radius:.5rem}
+.fleet-no-records{display:none}
 @media print{
 body.print-target-active{background:#fff!important}
 body.print-target-active #app-sidebar,

@@ -161,8 +161,8 @@ include __DIR__ . '/../../includes/sidebar.php';
         data-open-on-load="<?= $shouldOpenProviderModal ? 'true' : 'false'; ?>"
     >
         <div class="dashboard-scroll max-h-[92vh] w-full max-w-2xl overflow-y-auto rounded-lg border border-fleet-line bg-fleet-surface shadow-2xl">
-            <!-- Failed submissions reopen this modal and keep entered values in place. -->
-            <form class="p-7" action="<?= htmlspecialchars($providerFormAction, ENT_QUOTES, 'UTF-8'); ?>" method="post" data-provider-form>
+            <!-- Failed submissions reopen this modal and keep entered values in place. jQuery adds safe validation and AJAX feedback here. -->
+            <form class="p-7" action="<?= htmlspecialchars($providerFormAction, ENT_QUOTES, 'UTF-8'); ?>" method="post" data-provider-form data-fleet-ajax="true">
                 <input type="hidden" name="provider_action" value="<?= $providerFormMode === 'update' ? 'update' : 'create'; ?>" data-provider-action-field>
                 <input type="hidden" name="provider_id" value="<?= htmlspecialchars($providerFormData['provider_id'] ?? '', ENT_QUOTES, 'UTF-8'); ?>" data-provider-id-field>
 
@@ -170,6 +170,7 @@ include __DIR__ . '/../../includes/sidebar.php';
                     <h2 class="text-2xl font-extrabold text-fleet-ink" data-provider-modal-title><?= $providerFormMode === 'update' ? 'Edit Service Provider' : 'Add Service Provider'; ?></h2>
                     <button type="button" data-close-provider-modal class="inline-flex h-9 w-9 items-center justify-center rounded-lg text-2xl leading-none text-fleet-muted transition hover:bg-slate-100 hover:text-fleet-ink" aria-label="Close provider form">&times;</button>
                 </div>
+                <div data-fleet-feedback-host></div>
 
                 <div class="space-y-6">
                     <div>
@@ -217,7 +218,7 @@ include __DIR__ . '/../../includes/sidebar.php';
 
                 <div class="mt-8 flex justify-end gap-3">
                     <button type="button" data-close-provider-modal class="inline-flex h-11 items-center justify-center rounded-lg border border-fleet-line bg-fleet-surface px-5 text-sm font-semibold text-fleet-ink shadow-sm transition hover:bg-slate-50">Cancel</button>
-                    <button type="submit" data-provider-submit-button class="inline-flex h-11 items-center justify-center rounded-lg bg-fleet-sidebar px-5 text-sm font-semibold text-white shadow-fleet-card transition hover:bg-fleet-sidebar-active"><?= $providerFormMode === 'update' ? 'Save Changes' : 'Add Provider'; ?></button>
+                    <button type="submit" data-provider-submit-button data-loading-text="Saving Provider..." class="inline-flex h-11 items-center justify-center rounded-lg bg-fleet-sidebar px-5 text-sm font-semibold text-white shadow-fleet-card transition hover:bg-fleet-sidebar-active"><?= $providerFormMode === 'update' ? 'Save Changes' : 'Add Provider'; ?></button>
                 </div>
             </form>
         </div>

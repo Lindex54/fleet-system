@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 require_once __DIR__ . '/../config/database.php';
+require_once __DIR__ . '/../includes/ajax.php';
 
 // Service provider constants used by validation and display helpers.
 const PROVIDER_ALLOWED_STATUSES = ['active', 'pending', 'inactive'];
@@ -164,6 +165,14 @@ function providerValidateFormData(array $formData): array
 function providerHandleCreateOrUpdate(string $action): void
 {
     $formData = providerBuildFormDataFromPost();
+    $responseStatus = 200;
+    $responsePayload = [
+        'success' => false,
+        'message' => $action === 'update'
+            ? 'The service provider could not be updated right now.'
+            : 'The service provider could not be added right now.',
+        'reload' => false,
+    ];
 
     try {
         $validated = providerValidateFormData($formData);
@@ -235,6 +244,14 @@ function providerHandleCreateOrUpdate(string $action): void
                     : 'The service provider has been saved successfully.',
             ],
         ]);
+        $responsePayload = [
+            'success' => true,
+            'message' => $action === 'update'
+                ? 'The service provider details have been updated successfully.'
+                : 'The service provider has been saved successfully.',
+            'reload' => true,
+            'action' => $action,
+        ];
     } catch (RuntimeException $exception) {
         providerSetFlash([
             'notification' => [
@@ -246,6 +263,13 @@ function providerHandleCreateOrUpdate(string $action): void
             'open_modal' => true,
             'form_mode' => $action,
         ]);
+        $responseStatus = 422;
+        $responsePayload = [
+            'success' => false,
+            'message' => $exception->getMessage(),
+            'reload' => false,
+            'action' => $action,
+        ];
     } catch (Throwable $exception) {
         providerSetFlash([
             'notification' => [
@@ -259,10 +283,19 @@ function providerHandleCreateOrUpdate(string $action): void
             'open_modal' => true,
             'form_mode' => $action,
         ]);
+        $responseStatus = 500;
+        $responsePayload = [
+            'success' => false,
+            'message' => $action === 'update'
+                ? 'A system error occurred while updating the service provider.'
+                : 'A system error occurred while saving the service provider.',
+            'reload' => false,
+            'action' => $action,
+        ];
     }
 
-    header('Location: ' . providerPageUrl());
-    exit;
+    // Returns JSON to jQuery submissions and preserves redirects for normal PHP form posts.
+    fleetFinishResponse(providerPageUrl(), $responsePayload, $responseStatus);
 }
 
 // Handles delete requests for service providers.
@@ -277,9 +310,23 @@ function providerHandleDelete(): void
                 'message' => 'The selected service provider could not be identified.',
             ],
         ]);
-        header('Location: ' . providerPageUrl());
-        exit;
+        fleetFinishResponse(
+            providerPageUrl(),
+            [
+                'success' => false,
+                'message' => 'The selected service provider could not be identified.',
+                'reload' => false,
+            ],
+            422
+        );
     }
+
+    $responseStatus = 200;
+    $responsePayload = [
+        'success' => false,
+        'message' => 'The selected service provider could not be deleted.',
+        'reload' => false,
+    ];
 
     try {
         $statement = fleetDb()->prepare('DELETE FROM service_providers WHERE id = :id');
@@ -296,6 +343,12 @@ function providerHandleDelete(): void
                 'message' => 'The selected service provider has been removed.',
             ],
         ]);
+        $responsePayload = [
+            'success' => true,
+            'message' => 'The selected service provider has been removed.',
+            'reload' => true,
+            'action' => 'delete',
+        ];
     } catch (RuntimeException $exception) {
         providerSetFlash([
             'notification' => [
@@ -304,6 +357,13 @@ function providerHandleDelete(): void
                 'message' => $exception->getMessage(),
             ],
         ]);
+        $responseStatus = 422;
+        $responsePayload = [
+            'success' => false,
+            'message' => $exception->getMessage(),
+            'reload' => false,
+            'action' => 'delete',
+        ];
     } catch (Throwable $exception) {
         providerSetFlash([
             'notification' => [
@@ -312,18 +372,32 @@ function providerHandleDelete(): void
                 'message' => 'A system error occurred while deleting the service provider.',
             ],
         ]);
+        $responseStatus = 500;
+        $responsePayload = [
+            'success' => false,
+            'message' => 'A system error occurred while deleting the service provider.',
+            'reload' => false,
+            'action' => 'delete',
+        ];
     }
 
-    header('Location: ' . providerPageUrl());
-    exit;
+    // Returns JSON to jQuery submissions and preserves redirects for normal PHP form posts.
+    fleetFinishResponse(providerPageUrl(), $responsePayload, $responseStatus);
 }
 
 // Dispatches incoming service provider POST requests by action type.
 function providerHandleRequest(): void
 {
     if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
-        header('Location: ' . providerPageUrl());
-        exit;
+        fleetFinishResponse(
+            providerPageUrl(),
+            [
+                'success' => false,
+                'message' => 'Only POST requests are allowed for service provider actions.',
+                'reload' => false,
+            ],
+            405
+        );
     }
 
     $action = trim((string) ($_POST['provider_action'] ?? 'create'));

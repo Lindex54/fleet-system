@@ -36,8 +36,10 @@ include __DIR__ . '/includes/sidebar.php';
                     </div>
                 <?php endif; ?>
 
+                <!-- jQuery adds inline validation and submit-state feedback to the password change form. -->
                 <form action="<?= htmlspecialchars(driverPanelHandlerUrl(), ENT_QUOTES, 'UTF-8'); ?>" method="post" class="mt-5 space-y-4">
                     <input type="hidden" name="driver_panel_action" value="change_password">
+                    <div data-fleet-feedback-host></div>
                     <label class="block">
                         <span class="mb-2 block text-sm font-semibold text-fleet-ink">New Password</span>
                         <input name="new_password" type="password" autocomplete="new-password" minlength="8" required class="vehicle-form-control">
@@ -46,7 +48,7 @@ include __DIR__ . '/includes/sidebar.php';
                         <span class="mb-2 block text-sm font-semibold text-fleet-ink">Confirm Password</span>
                         <input name="confirm_password" type="password" autocomplete="new-password" minlength="8" required class="vehicle-form-control">
                     </label>
-                    <button type="submit" class="h-10 rounded-lg bg-fleet-sidebar px-4 text-sm font-semibold text-white shadow-sm hover:bg-fleet-sidebar-active">Save Password</button>
+                    <button type="submit" class="h-10 rounded-lg bg-fleet-sidebar px-4 text-sm font-semibold text-white shadow-sm hover:bg-fleet-sidebar-active" data-loading-text="Saving Password...">Save Password</button>
                 </form>
             </section>
         </div>

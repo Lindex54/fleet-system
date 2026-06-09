@@ -249,8 +249,8 @@ include __DIR__ . '/../../includes/sidebar.php';
         $drivingLicenseScanPath = $driverFormData['driving_license_scan'] ?? '';
         ?>
         <div class="dashboard-scroll max-h-[calc(100vh-2.5rem)] w-full max-w-[760px] overflow-y-auto rounded-lg border border-fleet-line bg-fleet-surface shadow-2xl" role="dialog" aria-modal="true" aria-labelledby="driver-modal-title">
-            <!-- Failed submissions reopen this modal and keep entered values in place. -->
-            <form class="p-6" action="<?= htmlspecialchars($driverFormAction, ENT_QUOTES, 'UTF-8'); ?>" method="post" enctype="multipart/form-data" data-driver-form>
+            <!-- Failed submissions reopen this modal and keep entered values in place. jQuery adds safe frontend validation and AJAX support here. -->
+            <form class="p-6" action="<?= htmlspecialchars($driverFormAction, ENT_QUOTES, 'UTF-8'); ?>" method="post" enctype="multipart/form-data" data-driver-form data-fleet-ajax="true">
                 <input type="hidden" name="driver_action" value="<?= $driverFormMode === 'update' ? 'update' : 'create'; ?>" data-driver-action-field>
                 <input type="hidden" name="driver_id" value="<?= htmlspecialchars($driverFormData['driver_id'] ?? '', ENT_QUOTES, 'UTF-8'); ?>" data-driver-id-field>
                 <input type="hidden" name="existing_driver_photo" value="<?= htmlspecialchars($driverPhotoPath, ENT_QUOTES, 'UTF-8'); ?>" data-driver-photo-path-field>
@@ -261,6 +261,7 @@ include __DIR__ . '/../../includes/sidebar.php';
                     <h2 id="driver-modal-title" class="text-xl font-extrabold text-fleet-ink" data-driver-modal-title><?= $driverFormMode === 'update' ? 'Edit Driver' : 'Add New Driver'; ?></h2>
                     <button type="button" data-close-driver-modal class="flex h-8 w-8 items-center justify-center rounded-lg text-2xl leading-none text-fleet-muted hover:bg-fleet-surface-muted hover:text-fleet-ink" aria-label="Close driver form">&times;</button>
                 </div>
+                <div data-fleet-feedback-host></div>
 
                 <div class="grid gap-5 md:grid-cols-2">
                     <label class="block">
@@ -483,7 +484,7 @@ include __DIR__ . '/../../includes/sidebar.php';
 
                 <div class="mt-6 flex justify-end gap-3">
                     <button type="button" data-close-driver-modal class="h-10 rounded-lg border border-fleet-line bg-fleet-surface px-4 text-sm font-semibold text-fleet-ink shadow-sm hover:bg-fleet-surface-muted">Cancel</button>
-                    <button type="submit" class="h-10 rounded-lg bg-fleet-sidebar px-4 text-sm font-semibold text-white shadow-sm hover:bg-fleet-sidebar-active" data-driver-submit-button><?= $driverFormMode === 'update' ? 'Save Changes' : 'Add Driver'; ?></button>
+                    <button type="submit" class="h-10 rounded-lg bg-fleet-sidebar px-4 text-sm font-semibold text-white shadow-sm hover:bg-fleet-sidebar-active" data-driver-submit-button data-loading-text="Saving Driver..."><?= $driverFormMode === 'update' ? 'Save Changes' : 'Add Driver'; ?></button>
                 </div>
             </form>
         </div>

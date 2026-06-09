@@ -199,8 +199,8 @@ include __DIR__ . '/../../includes/sidebar.php';
         data-open-on-load="<?= $shouldOpenPostInspectionModal ? 'true' : 'false'; ?>"
     >
         <div class="dashboard-scroll max-h-[calc(100vh-2.5rem)] w-full max-w-[900px] overflow-y-auto rounded-lg border border-fleet-line bg-fleet-surface shadow-2xl" role="dialog" aria-modal="true" aria-labelledby="post-inspection-modal-title">
-            <!-- Failed submissions reopen this modal and keep entered values in place. -->
-            <form class="p-6" action="<?= htmlspecialchars($postInspectionFormAction, ENT_QUOTES, 'UTF-8'); ?>" method="post" data-post-inspection-form>
+            <!-- Failed submissions reopen this modal and keep entered values in place. jQuery adds safe validation and AJAX feedback here. -->
+            <form class="p-6" action="<?= htmlspecialchars($postInspectionFormAction, ENT_QUOTES, 'UTF-8'); ?>" method="post" data-post-inspection-form data-fleet-ajax="true">
                 <input type="hidden" name="inspection_scope" value="post">
                 <input type="hidden" name="inspection_action" value="<?= $postInspectionFormMode === 'update' ? 'update' : 'create'; ?>" data-post-inspection-action-field>
                 <input type="hidden" name="report_id" value="<?= htmlspecialchars($postInspectionFormData['report_id'] ?? '', ENT_QUOTES, 'UTF-8'); ?>" data-post-inspection-report-id-field>
@@ -212,6 +212,7 @@ include __DIR__ . '/../../includes/sidebar.php';
                     </div>
                     <button type="button" data-close-post-inspection-modal class="flex h-8 w-8 items-center justify-center rounded-lg text-2xl leading-none text-fleet-muted hover:bg-fleet-surface-muted hover:text-fleet-ink" aria-label="Close post-inspection form">&times;</button>
                 </div>
+                <div data-fleet-feedback-host></div>
 
                 <div class="form-section-title"><span>1</span>Inspection Details</div>
                 <div class="grid gap-4 md:grid-cols-2">
@@ -328,7 +329,7 @@ include __DIR__ . '/../../includes/sidebar.php';
 
                 <div class="mt-6 flex justify-end gap-3">
                     <button type="button" data-close-post-inspection-modal class="h-10 rounded-lg border border-fleet-line bg-fleet-surface px-4 text-sm font-semibold text-fleet-ink shadow-sm hover:bg-fleet-surface-muted">Cancel</button>
-                    <button type="submit" data-post-inspection-submit-button class="h-10 rounded-lg bg-fleet-sidebar px-4 text-sm font-semibold text-white shadow-sm hover:bg-fleet-sidebar-active"><?= $postInspectionFormMode === 'update' ? 'Save Changes' : 'Save Report'; ?></button>
+                    <button type="submit" data-post-inspection-submit-button data-loading-text="Saving Inspection..." class="h-10 rounded-lg bg-fleet-sidebar px-4 text-sm font-semibold text-white shadow-sm hover:bg-fleet-sidebar-active"><?= $postInspectionFormMode === 'update' ? 'Save Changes' : 'Save Report'; ?></button>
                 </div>
             </form>
         </div>

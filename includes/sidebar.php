@@ -24,7 +24,7 @@ require_once __DIR__ . '/sidebar-icons.php';
     </nav>
 
     <div class="border-t border-white/10 p-4">
-        <a href="<?= htmlspecialchars(($basePath ?: '') . '/logout.php', ENT_QUOTES, 'UTF-8'); ?>" class="flex h-10 items-center gap-3 rounded-lg px-3 text-sm font-semibold text-fleet-sidebar-text hover:bg-fleet-sidebar-soft hover:text-white">
+        <a href="<?= htmlspecialchars(($basePath ?: '') . '/logout', ENT_QUOTES, 'UTF-8'); ?>" class="flex h-10 items-center gap-3 rounded-lg px-3 text-sm font-semibold text-fleet-sidebar-text hover:bg-fleet-sidebar-soft hover:text-white">
             <span class="flex h-5 w-5 items-center justify-center text-sm">&larr;</span>
             <span>Sign Out</span>
         </a>

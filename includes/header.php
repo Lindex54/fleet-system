@@ -14,9 +14,11 @@ if ($documentRoot && $projectRoot && substr($projectRoot, 0, strlen($documentRoo
 $assetVersion = file_exists($projectRoot . '/assets/css/app.css') ? filemtime($projectRoot . '/assets/css/app.css') : time();
 $scriptVersion = file_exists($projectRoot . '/assets/js/app.js') ? filemtime($projectRoot . '/assets/js/app.js') : time();
 $moduleScriptVersion = file_exists($projectRoot . '/assets/js/module-modals.js') ? filemtime($projectRoot . '/assets/js/module-modals.js') : time();
+$jqueryFleetScriptVersion = file_exists($projectRoot . '/assets/js/fleet-jquery.js') ? filemtime($projectRoot . '/assets/js/fleet-jquery.js') : time();
 $assetPath = ($basePath ?: '') . '/assets/css/app.css?v=' . $assetVersion;
 $scriptPath = ($basePath ?: '') . '/assets/js/app.js?v=' . $scriptVersion;
 $moduleScriptPath = ($basePath ?: '') . '/assets/js/module-modals.js?v=' . $moduleScriptVersion;
+$jqueryFleetScriptPath = ($basePath ?: '') . '/assets/js/fleet-jquery.js?v=' . $jqueryFleetScriptVersion;
 ?>
 <!DOCTYPE html>
 <html lang="en">

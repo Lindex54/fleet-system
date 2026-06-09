@@ -106,15 +106,15 @@ include __DIR__ . '/includes/sidebar.php';
                     <h2 class="text-lg font-extrabold text-fleet-ink">Quick Access</h2>
                     <p class="mt-1 text-sm text-fleet-muted">Shortcuts tied to this vehicle and its daily operations</p>
                     <div class="mt-5 space-y-3">
-                        <a href="<?= htmlspecialchars(($basePath ?: '') . '/driver-panel/pre-trip-inspection.php', ENT_QUOTES, 'UTF-8'); ?>" class="driver-action-link flex items-center justify-between rounded-lg border border-fleet-line-soft bg-fleet-surface-muted px-4 py-4 text-sm font-semibold text-fleet-ink transition hover:border-fleet-primary hover:bg-blue-50/50">
+                        <a href="<?= htmlspecialchars(($basePath ?: '') . '/driver-panel/pre-trip-inspection', ENT_QUOTES, 'UTF-8'); ?>" class="driver-action-link flex items-center justify-between rounded-lg border border-fleet-line-soft bg-fleet-surface-muted px-4 py-4 text-sm font-semibold text-fleet-ink transition hover:border-fleet-primary hover:bg-blue-50/50">
                             <span>Go to Pre-Trip Inspection</span>
                             <span class="text-fleet-primary">&rarr;</span>
                         </a>
-                        <a href="<?= htmlspecialchars(($basePath ?: '') . '/driver-panel/trip-log.php', ENT_QUOTES, 'UTF-8'); ?>" class="driver-action-link flex items-center justify-between rounded-lg border border-fleet-line-soft bg-fleet-surface-muted px-4 py-4 text-sm font-semibold text-fleet-ink transition hover:border-fleet-primary hover:bg-blue-50/50">
+                        <a href="<?= htmlspecialchars(($basePath ?: '') . '/driver-panel/trip-log', ENT_QUOTES, 'UTF-8'); ?>" class="driver-action-link flex items-center justify-between rounded-lg border border-fleet-line-soft bg-fleet-surface-muted px-4 py-4 text-sm font-semibold text-fleet-ink transition hover:border-fleet-primary hover:bg-blue-50/50">
                             <span>Open Trip Log</span>
                             <span class="text-fleet-primary">&rarr;</span>
                         </a>
-                        <a href="<?= htmlspecialchars(($basePath ?: '') . '/driver-panel/history.php', ENT_QUOTES, 'UTF-8'); ?>" class="driver-action-link flex items-center justify-between rounded-lg border border-fleet-line-soft bg-fleet-surface-muted px-4 py-4 text-sm font-semibold text-fleet-ink transition hover:border-fleet-primary hover:bg-blue-50/50">
+                        <a href="<?= htmlspecialchars(($basePath ?: '') . '/driver-panel/history', ENT_QUOTES, 'UTF-8'); ?>" class="driver-action-link flex items-center justify-between rounded-lg border border-fleet-line-soft bg-fleet-surface-muted px-4 py-4 text-sm font-semibold text-fleet-ink transition hover:border-fleet-primary hover:bg-blue-50/50">
                             <span>View Driver History</span>
                             <span class="text-fleet-primary">&rarr;</span>
                         </a>

@@ -36,7 +36,7 @@ function fleetAuthIsPublicPath(string $path): bool
 
     $relativePath = '/' . ltrim($relativePath, '/');
 
-    return in_array($relativePath, ['/', '/index.php', '/home.php', '/login.php', '/logout.php', '/change-password.php'], true);
+    return in_array($relativePath, ['/', '/index.php', '/home', '/home.php', '/login', '/login.php', '/logout', '/logout.php', '/change-password', '/change-password.php'], true);
 }
 
 function fleetAuthIsDriverPanelPath(string $path): bool
@@ -51,12 +51,12 @@ function fleetAuthIsDriverPanelPath(string $path): bool
 
 function fleetAuthLoginUrl(): string
 {
-    return (fleetAuthBasePath() ?: '') . '/login.php';
+    return (fleetAuthBasePath() ?: '') . '/login';
 }
 
 function fleetAuthAdminPasswordUrl(): string
 {
-    return (fleetAuthBasePath() ?: '') . '/change-password.php';
+    return (fleetAuthBasePath() ?: '') . '/change-password';
 }
 
 function fleetAuthRequireAdmin(): void
@@ -75,7 +75,7 @@ function fleetAuthRequireAdmin(): void
         : $path;
     $relativePath = '/' . ltrim($relativePath, '/');
 
-    if ((int) ($_SESSION['must_change_password'] ?? 0) === 1 && $relativePath !== '/change-password.php') {
+    if ((int) ($_SESSION['must_change_password'] ?? 0) === 1 && !in_array($relativePath, ['/change-password', '/change-password.php'], true)) {
         header('Location: ' . fleetAuthAdminPasswordUrl());
         exit;
     }

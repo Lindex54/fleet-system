@@ -84,8 +84,10 @@ include __DIR__ . '/includes/sidebar.php';
                         A vehicle must be assigned before a pre-trip inspection can be submitted.
                     </div>
                 <?php else: ?>
-                    <form id="pre-trip-form" action="<?= htmlspecialchars($preTripFormAction, ENT_QUOTES, 'UTF-8'); ?>" method="post" class="space-y-6">
+                    <!-- jQuery adds inline validation and safe AJAX submission to the driver pre-trip form. -->
+                    <form id="pre-trip-form" action="<?= htmlspecialchars($preTripFormAction, ENT_QUOTES, 'UTF-8'); ?>" method="post" class="space-y-6" data-fleet-ajax="true">
                         <input type="hidden" name="driver_panel_action" value="submit_pre_trip">
+                        <div data-fleet-feedback-host></div>
 
                         <div class="grid gap-4 md:grid-cols-3">
                             <label class="block">
@@ -146,7 +148,7 @@ include __DIR__ . '/includes/sidebar.php';
                         </label>
 
                         <div class="flex justify-end">
-                            <button type="submit" class="inline-flex h-10 items-center rounded-lg bg-fleet-sidebar px-5 text-sm font-semibold text-white shadow-sm hover:bg-fleet-sidebar-active">
+                            <button type="submit" class="inline-flex h-10 items-center rounded-lg bg-fleet-sidebar px-5 text-sm font-semibold text-white shadow-sm hover:bg-fleet-sidebar-active" data-loading-text="Submitting Inspection...">
                                 Submit Inspection
                             </button>
                         </div>

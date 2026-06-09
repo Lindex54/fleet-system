@@ -68,10 +68,12 @@ include __DIR__ . '/../../includes/sidebar.php';
         <?php endif; ?>
 
         <section class="grid gap-6 xl:grid-cols-[minmax(320px,0.75fr)_minmax(0,1.25fr)]">
+            <!-- jQuery adds inline validation and double-submit protection to admin creation. -->
             <form action="<?= htmlspecialchars($adminFormAction, ENT_QUOTES, 'UTF-8'); ?>" method="post" class="rounded-lg border border-fleet-line bg-fleet-surface p-6 shadow-fleet-card">
                 <input type="hidden" name="admin_action" value="create">
                 <h2 class="text-lg font-extrabold text-fleet-ink">Create Admin</h2>
                 <p class="mt-1 text-sm text-fleet-muted">Username and one-time password are generated automatically.</p>
+                <div class="mt-4" data-fleet-feedback-host></div>
 
                 <div class="mt-5 space-y-4">
                     <label class="block">
@@ -92,7 +94,7 @@ include __DIR__ . '/../../includes/sidebar.php';
                     </label>
                 </div>
 
-                <button type="submit" class="mt-5 h-10 rounded-lg bg-fleet-sidebar px-4 text-sm font-semibold text-white shadow-sm hover:bg-fleet-sidebar-active">Add Admin</button>
+                <button type="submit" class="mt-5 h-10 rounded-lg bg-fleet-sidebar px-4 text-sm font-semibold text-white shadow-sm hover:bg-fleet-sidebar-active" data-loading-text="Creating Admin...">Add Admin</button>
             </form>
 
             <section class="overflow-hidden rounded-lg border border-fleet-line bg-fleet-surface shadow-fleet-card">

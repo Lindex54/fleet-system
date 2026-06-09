@@ -4,6 +4,21 @@ DirectoryIndex index.php
 RewriteEngine On
 
 # Canonicalize directory index URLs to cleaner folder paths.
-RewriteRule ^index\.php$ ./ [R=302,L]
-RewriteRule ^(.+)/index\.php$ $1/ [R=302,L]
+RewriteRule ^index\.php$ /fleet-system/ [R=302,L]
+RewriteRule ^(.+)/index\.php$ /fleet-system/$1/ [R=302,L]
+
+# Redirect direct page .php requests to extensionless URLs.
+RewriteCond %{THE_REQUEST} \s/+fleet-system/([^\s?]+)\.php[\s?] [NC]
+RewriteCond %1 !^handlers/ [NC]
+RewriteCond %1 !^config/ [NC]
+RewriteCond %1 !^includes/ [NC]
+RewriteCond %1 !^assets/ [NC]
+RewriteCond %1 !^uploads/ [NC]
+RewriteRule ^([^.]+)\.php$ /fleet-system/$1 [R=302,L]
+
+# Resolve extensionless page URLs to their PHP files.
+RewriteCond %{REQUEST_FILENAME} !-f
+RewriteCond %{REQUEST_FILENAME} !-d
+RewriteCond %{REQUEST_FILENAME}.php -f
+RewriteRule ^([^.]+)/?$ $1.php [L]
 </IfModule>

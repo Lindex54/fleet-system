@@ -91,8 +91,10 @@ include __DIR__ . '/includes/sidebar.php';
                             No trip vehicle has been enabled for this driver yet.
                         </div>
                     <?php elseif ($activeTrip === null): ?>
-                        <form action="<?= htmlspecialchars($tripFormAction, ENT_QUOTES, 'UTF-8'); ?>" method="post" class="space-y-5">
+                        <!-- jQuery adds inline validation and safe AJAX submission to trip start. -->
+                        <form action="<?= htmlspecialchars($tripFormAction, ENT_QUOTES, 'UTF-8'); ?>" method="post" class="space-y-5" data-fleet-ajax="true">
                             <input type="hidden" name="driver_panel_action" value="start_trip">
+                            <div data-fleet-feedback-host></div>
                             <div class="grid gap-4 md:grid-cols-2">
                                 <label class="block">
                                     <span class="mb-2 block text-sm font-semibold text-fleet-ink">Trip Vehicle *</span>
@@ -131,7 +133,7 @@ include __DIR__ . '/includes/sidebar.php';
                             </div>
 
                             <div class="flex justify-end">
-                                <button type="submit" class="inline-flex h-10 items-center rounded-lg bg-fleet-sidebar px-5 text-sm font-semibold text-white shadow-sm hover:bg-fleet-sidebar-active">
+                                <button type="submit" class="inline-flex h-10 items-center rounded-lg bg-fleet-sidebar px-5 text-sm font-semibold text-white shadow-sm hover:bg-fleet-sidebar-active" data-loading-text="Starting Trip...">
                                     Start Trip
                                 </button>
                             </div>
@@ -144,9 +146,11 @@ include __DIR__ . '/includes/sidebar.php';
                             <p class="mt-1 text-sm">Odometer start: <span class="font-semibold"><?= htmlspecialchars($activeTrip['odometer_start_label'], ENT_QUOTES, 'UTF-8'); ?></span></p>
                         </div>
 
-                        <form action="<?= htmlspecialchars($tripFormAction, ENT_QUOTES, 'UTF-8'); ?>" method="post" class="mt-5 space-y-5">
+                        <!-- jQuery adds inline validation and safe AJAX submission to trip completion. -->
+                        <form action="<?= htmlspecialchars($tripFormAction, ENT_QUOTES, 'UTF-8'); ?>" method="post" class="mt-5 space-y-5" data-fleet-ajax="true">
                             <input type="hidden" name="driver_panel_action" value="end_trip">
                             <input type="hidden" name="trip_id" value="<?= htmlspecialchars((string) ($tripEndFormData['trip_id'] ?? $activeTrip['id']), ENT_QUOTES, 'UTF-8'); ?>">
+                            <div data-fleet-feedback-host></div>
 
                             <div class="grid gap-4 md:grid-cols-2">
                                 <label class="block">
@@ -168,7 +172,7 @@ include __DIR__ . '/includes/sidebar.php';
                             </div>
 
                             <div class="flex justify-end">
-                                <button type="submit" class="inline-flex h-10 items-center rounded-lg bg-fleet-success px-5 text-sm font-semibold text-white shadow-sm hover:bg-green-700">
+                                <button type="submit" class="inline-flex h-10 items-center rounded-lg bg-fleet-success px-5 text-sm font-semibold text-white shadow-sm hover:bg-green-700" data-loading-text="Ending Trip...">
                                     End Trip
                                 </button>
                             </div>

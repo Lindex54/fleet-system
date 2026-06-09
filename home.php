@@ -2,9 +2,9 @@
 $activePage = 'home';
 include __DIR__ . '/includes/header.php';
 
-$homeUrl = ($basePath ?: '') . '/home.php';
-$loginUrl = ($basePath ?: '') . '/login.php';
-$dashboardUrl = ($basePath ?: '') . '/dashboard.php';
+$homeUrl = ($basePath ?: '') . '/home';
+$loginUrl = ($basePath ?: '') . '/login';
+$dashboardUrl = ($basePath ?: '') . '/dashboard';
 $heroImageUrl = ($basePath ?: '') . '/assets/images/hero/heroimage.png';
 ?>
 <main class="landing-page min-h-screen overflow-hidden bg-fleet-canvas">

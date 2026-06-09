@@ -207,9 +207,9 @@ include __DIR__ . '/../../includes/sidebar.php';
         data-open-on-load="<?= $shouldOpenVehicleModal ? 'true' : 'false'; ?>"
     >
         <div class="dashboard-scroll max-h-[calc(100vh-2.5rem)] w-full max-w-2xl overflow-y-auto rounded-lg border border-fleet-line bg-fleet-surface shadow-2xl" role="dialog" aria-modal="true" aria-labelledby="vehicle-modal-title">
-            <!-- Failed submissions reopen this modal and refill the fields from flash form data. -->
+            <!-- Failed submissions reopen this modal and refill the fields from flash form data. jQuery adds safe frontend validation and AJAX support here. -->
             <?php $vehicleImagePath = $vehicleFormData['vehicle_image'] ?? ''; ?>
-            <form class="p-6" action="<?= htmlspecialchars($vehicleFormAction, ENT_QUOTES, 'UTF-8'); ?>" method="post" enctype="multipart/form-data">
+            <form class="p-6" action="<?= htmlspecialchars($vehicleFormAction, ENT_QUOTES, 'UTF-8'); ?>" method="post" enctype="multipart/form-data" data-fleet-ajax="true" data-vehicle-form>
                 <input type="hidden" name="vehicle_action" value="<?= $vehicleFormMode === 'update' ? 'update' : 'create'; ?>" data-vehicle-action-field>
                 <input type="hidden" name="vehicle_id" value="<?= htmlspecialchars($vehicleFormData['vehicle_id'] ?? '', ENT_QUOTES, 'UTF-8'); ?>" data-vehicle-id-field>
                 <input type="hidden" name="existing_vehicle_image" value="<?= htmlspecialchars($vehicleImagePath, ENT_QUOTES, 'UTF-8'); ?>" data-vehicle-image-path-field>
@@ -217,6 +217,7 @@ include __DIR__ . '/../../includes/sidebar.php';
                     <h2 id="vehicle-modal-title" class="text-xl font-extrabold text-fleet-ink" data-vehicle-modal-title><?= $vehicleFormMode === 'update' ? 'Edit Vehicle' : 'Add New Vehicle'; ?></h2>
                     <button type="button" data-close-vehicle-modal class="flex h-8 w-8 items-center justify-center rounded-lg text-2xl leading-none text-fleet-muted hover:bg-fleet-surface-muted hover:text-fleet-ink" aria-label="Close add vehicle form">&times;</button>
                 </div>
+                <div data-fleet-feedback-host></div>
 
                 <div class="grid gap-5 md:grid-cols-2">
                     <label class="block">
@@ -319,7 +320,7 @@ include __DIR__ . '/../../includes/sidebar.php';
 
                 <div class="mt-6 flex justify-end gap-3">
                     <button type="button" data-close-vehicle-modal class="h-10 rounded-lg border border-fleet-line bg-fleet-surface px-4 text-sm font-semibold text-fleet-ink shadow-sm hover:bg-fleet-surface-muted">Cancel</button>
-                    <button type="submit" class="h-10 rounded-lg bg-fleet-sidebar px-4 text-sm font-semibold text-white shadow-sm hover:bg-fleet-sidebar-active" data-vehicle-submit-button><?= $vehicleFormMode === 'update' ? 'Save Changes' : 'Add Vehicle'; ?></button>
+                    <button type="submit" class="h-10 rounded-lg bg-fleet-sidebar px-4 text-sm font-semibold text-white shadow-sm hover:bg-fleet-sidebar-active" data-vehicle-submit-button data-loading-text="Saving Vehicle..."><?= $vehicleFormMode === 'update' ? 'Save Changes' : 'Add Vehicle'; ?></button>
                 </div>
             </form>
         </div>

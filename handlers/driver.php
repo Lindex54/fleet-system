@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 require_once __DIR__ . '/../config/database.php';
 require_once __DIR__ . '/../includes/auth.php';
+require_once __DIR__ . '/../includes/ajax.php';
 fleetAuthRequireAdmin();
 
 // Driver constants and page/session helpers
@@ -831,6 +832,13 @@ function driverHandleCreateOrUpdate(string $action): void
     $formData = driverBuildFormDataFromPost();
     $newUploads = [];
     $oldUploadsToDelete = [];
+    $responsePayload = [
+        'success' => false,
+        'message' => 'The driver could not be saved.',
+        'reload' => false,
+        'action' => $action,
+    ];
+    $responseStatus = 200;
 
     try {
         $validated = driverValidateFormData($formData, $action);
@@ -1004,6 +1012,19 @@ function driverHandleCreateOrUpdate(string $action): void
                 'one_time_password' => $credentials['one_time_password'] ?? '',
             ] : null,
         ]);
+        $responsePayload = [
+            'success' => true,
+            'message' => $action === 'update'
+                ? 'The driver record has been updated successfully.'
+                : 'Driver login created successfully.',
+            'reload' => true,
+            'action' => $action,
+            'credentials' => $action === 'create' ? [
+                'driver_code' => $credentials['driver_code'] ?? '',
+                'username' => $credentials['username'] ?? '',
+                'one_time_password' => $credentials['one_time_password'] ?? '',
+            ] : null,
+        ];
     } catch (RuntimeException $exception) {
         if (isset($pdo) && $pdo instanceof PDO && $pdo->inTransaction()) {
             $pdo->rollBack();
@@ -1023,6 +1044,13 @@ function driverHandleCreateOrUpdate(string $action): void
             'open_modal' => true,
             'form_mode' => $action,
         ]);
+        $responsePayload = [
+            'success' => false,
+            'message' => $exception->getMessage(),
+            'reload' => false,
+            'action' => $action,
+        ];
+        $responseStatus = 422;
     } catch (PDOException $exception) {
         if (isset($pdo) && $pdo instanceof PDO && $pdo->inTransaction()) {
             $pdo->rollBack();
@@ -1051,6 +1079,13 @@ function driverHandleCreateOrUpdate(string $action): void
             'open_modal' => true,
             'form_mode' => $action,
         ]);
+        $responsePayload = [
+            'success' => false,
+            'message' => $message,
+            'reload' => false,
+            'action' => $action,
+        ];
+        $responseStatus = 422;
     } catch (Throwable $exception) {
         if (isset($pdo) && $pdo instanceof PDO && $pdo->inTransaction()) {
             $pdo->rollBack();
@@ -1072,10 +1107,18 @@ function driverHandleCreateOrUpdate(string $action): void
             'open_modal' => true,
             'form_mode' => $action,
         ]);
+        $responsePayload = [
+            'success' => false,
+            'message' => $action === 'update'
+                ? 'A system error occurred while updating the driver.'
+                : 'A system error occurred while saving the driver.',
+            'reload' => false,
+            'action' => $action,
+        ];
+        $responseStatus = 500;
     }
 
-    header('Location: ' . driverPageUrl());
-    exit;
+    fleetFinishResponse(driverPageUrl(), $responsePayload, $responseStatus);
 }
 
 // POST handler for delete actions
@@ -1092,9 +1135,23 @@ function driverHandleDelete(): void
                 'message' => 'The selected driver could not be identified.',
             ],
         ]);
-        header('Location: ' . driverPageUrl());
-        exit;
+        fleetFinishResponse(
+            driverPageUrl(),
+            [
+                'success' => false,
+                'message' => 'The selected driver could not be identified.',
+                'reload' => false,
+            ],
+            422
+        );
     }
+
+    $responsePayload = [
+        'success' => false,
+        'message' => 'The driver could not be deleted.',
+        'reload' => false,
+    ];
+    $responseStatus = 200;
 
     try {
         $pdo = fleetDb();
@@ -1123,6 +1180,11 @@ function driverHandleDelete(): void
                 'message' => 'The selected driver has been removed from the system.',
             ],
         ]);
+        $responsePayload = [
+            'success' => true,
+            'message' => 'The selected driver has been removed from the system.',
+            'reload' => true,
+        ];
     } catch (RuntimeException $exception) {
         driverSetFlash([
             'notification' => [
@@ -1131,6 +1193,12 @@ function driverHandleDelete(): void
                 'message' => $exception->getMessage(),
             ],
         ]);
+        $responsePayload = [
+            'success' => false,
+            'message' => $exception->getMessage(),
+            'reload' => false,
+        ];
+        $responseStatus = 422;
     } catch (Throwable $exception) {
         driverSetFlash([
             'notification' => [
@@ -1139,10 +1207,15 @@ function driverHandleDelete(): void
                 'message' => 'A system error occurred while deleting the driver.',
             ],
         ]);
+        $responsePayload = [
+            'success' => false,
+            'message' => 'A system error occurred while deleting the driver.',
+            'reload' => false,
+        ];
+        $responseStatus = 500;
     }
 
-    header('Location: ' . driverPageUrl());
-    exit;
+    fleetFinishResponse(driverPageUrl(), $responsePayload, $responseStatus);
 }
 
 // Request dispatcher for the driver handler endpoint
@@ -1150,8 +1223,15 @@ function driverHandleDelete(): void
 function driverHandleRequest(): void
 {
     if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
-        header('Location: ' . driverPageUrl());
-        exit;
+        fleetFinishResponse(
+            driverPageUrl(),
+            [
+                'success' => false,
+                'message' => 'Invalid request method.',
+                'reload' => false,
+            ],
+            405
+        );
     }
 
     // One handler dispatches create, update, and delete requests for the driver page.

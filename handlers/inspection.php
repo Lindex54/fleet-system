@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 require_once __DIR__ . '/../config/database.php';
+require_once __DIR__ . '/../includes/ajax.php';
 
 // Inspection constants used by validation and display helpers.
 const PRE_INSPECTION_ALLOWED_STATUSES = ['good', 'fair', 'faulty', 'needs_repair'];
@@ -798,6 +799,14 @@ function postInspectionSaveSystemChecks(PDO $pdo, int $inspectionId, array $syst
 function inspectionHandleCreateOrUpdate(string $action): void
 {
     $formData = inspectionBuildFormDataFromPost();
+    $responsePayload = [
+        'success' => false,
+        'message' => 'The pre-inspection report could not be saved.',
+        'reload' => false,
+        'action' => $action,
+        'scope' => 'pre',
+    ];
+    $responseStatus = 200;
 
     try {
         $validated = inspectionValidateFormData($formData);
@@ -909,6 +918,15 @@ function inspectionHandleCreateOrUpdate(string $action): void
                     : 'The pre-inspection report has been saved successfully.',
             ],
         ]);
+        $responsePayload = [
+            'success' => true,
+            'message' => $action === 'update'
+                ? 'The pre-inspection report has been updated successfully.'
+                : 'The pre-inspection report has been saved successfully.',
+            'reload' => true,
+            'action' => $action,
+            'scope' => 'pre',
+        ];
     } catch (RuntimeException $exception) {
         if (isset($pdo) && $pdo instanceof PDO && $pdo->inTransaction()) {
             $pdo->rollBack();
@@ -924,6 +942,14 @@ function inspectionHandleCreateOrUpdate(string $action): void
             'open_modal' => true,
             'form_mode' => $action,
         ]);
+        $responsePayload = [
+            'success' => false,
+            'message' => $exception->getMessage(),
+            'reload' => false,
+            'action' => $action,
+            'scope' => 'pre',
+        ];
+        $responseStatus = 422;
     } catch (Throwable $exception) {
         if (isset($pdo) && $pdo instanceof PDO && $pdo->inTransaction()) {
             $pdo->rollBack();
@@ -941,10 +967,19 @@ function inspectionHandleCreateOrUpdate(string $action): void
             'open_modal' => true,
             'form_mode' => $action,
         ]);
+        $responsePayload = [
+            'success' => false,
+            'message' => $action === 'update'
+                ? 'A system error occurred while updating the pre-inspection report.'
+                : 'A system error occurred while saving the pre-inspection report.',
+            'reload' => false,
+            'action' => $action,
+            'scope' => 'pre',
+        ];
+        $responseStatus = 500;
     }
 
-    header('Location: ' . inspectionPageUrl());
-    exit;
+    fleetFinishResponse(inspectionPageUrl(), $responsePayload, $responseStatus);
 }
 
 // Handles delete requests for pre-inspection reports.
@@ -1004,6 +1039,14 @@ function inspectionHandleDelete(): void
 function postInspectionHandleCreateOrUpdate(string $action): void
 {
     $formData = postInspectionBuildFormDataFromPost();
+    $responsePayload = [
+        'success' => false,
+        'message' => 'The post-inspection report could not be saved.',
+        'reload' => false,
+        'action' => $action,
+        'scope' => 'post',
+    ];
+    $responseStatus = 200;
 
     try {
         $validated = postInspectionValidateFormData($formData);
@@ -1103,6 +1146,15 @@ function postInspectionHandleCreateOrUpdate(string $action): void
                     : 'The post-inspection report has been saved successfully.',
             ],
         ]);
+        $responsePayload = [
+            'success' => true,
+            'message' => $action === 'update'
+                ? 'The post-inspection report has been updated successfully.'
+                : 'The post-inspection report has been saved successfully.',
+            'reload' => true,
+            'action' => $action,
+            'scope' => 'post',
+        ];
     } catch (RuntimeException $exception) {
         if (isset($pdo) && $pdo instanceof PDO && $pdo->inTransaction()) {
             $pdo->rollBack();
@@ -1118,6 +1170,14 @@ function postInspectionHandleCreateOrUpdate(string $action): void
             'open_modal' => true,
             'form_mode' => $action,
         ]);
+        $responsePayload = [
+            'success' => false,
+            'message' => $exception->getMessage(),
+            'reload' => false,
+            'action' => $action,
+            'scope' => 'post',
+        ];
+        $responseStatus = 422;
     } catch (Throwable $exception) {
         if (isset($pdo) && $pdo instanceof PDO && $pdo->inTransaction()) {
             $pdo->rollBack();
@@ -1135,10 +1195,19 @@ function postInspectionHandleCreateOrUpdate(string $action): void
             'open_modal' => true,
             'form_mode' => $action,
         ]);
+        $responsePayload = [
+            'success' => false,
+            'message' => $action === 'update'
+                ? 'A system error occurred while updating the post-inspection report.'
+                : 'A system error occurred while saving the post-inspection report.',
+            'reload' => false,
+            'action' => $action,
+            'scope' => 'post',
+        ];
+        $responseStatus = 500;
     }
 
-    header('Location: ' . postInspectionPageUrl());
-    exit;
+    fleetFinishResponse(postInspectionPageUrl(), $responsePayload, $responseStatus);
 }
 
 // Handles delete requests for post-inspection reports.
@@ -1198,8 +1267,15 @@ function postInspectionHandleDelete(): void
 function inspectionHandleRequest(): void
 {
     if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
-        header('Location: ' . inspectionPageUrl());
-        exit;
+        fleetFinishResponse(
+            inspectionPageUrl(),
+            [
+                'success' => false,
+                'message' => 'Invalid request method.',
+                'reload' => false,
+            ],
+            405
+        );
     }
 
     $scope = trim((string) ($_POST['inspection_scope'] ?? 'pre'));
