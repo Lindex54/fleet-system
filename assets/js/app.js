@@ -19,10 +19,26 @@ sidebarBackdrop?.addEventListener('click', () => setSidebarOpen(false));
 // Search and filter controls used across data-heavy pages
 const vehicleSearch = document.querySelector('#vehicle-search');
 const vehicleRows = document.querySelectorAll('[data-vehicle-table] .vehicle-row');
+const vehicleRegistrationFilter = document.querySelector('#vehicle-filter-registration');
+const vehicleModelFilter = document.querySelector('#vehicle-filter-model');
+const vehicleDepartmentFilter = document.querySelector('#vehicle-filter-department');
+const vehicleTypeFilter = document.querySelector('#vehicle-filter-type');
+const vehicleStatusFilter = document.querySelector('#vehicle-filter-status');
+const vehiclePrintGroup = document.querySelector('#vehicle-print-group');
+const vehicleFilterApplyButton = document.querySelector('#vehicle-filter-apply');
+const vehicleFilterResetButton = document.querySelector('#vehicle-filter-reset');
+const vehicleFilterSummary = document.querySelector('[data-vehicle-filter-summary]');
+const printVehiclesButton = document.querySelector('[data-print-vehicles]');
 const logbookSearch = document.querySelector('#logbook-search');
 const logbookRows = document.querySelectorAll('[data-logbook-table] .logbook-row');
 const driverSearch = document.querySelector('#driver-search');
 const driverRows = document.querySelectorAll('[data-driver-table] .driver-row');
+const driverDepartmentFilter = document.querySelector('#driver-filter-department');
+const driverStatusFilter = document.querySelector('#driver-filter-status');
+const driverAssignedVehicleFilter = document.querySelector('#driver-filter-assigned-vehicle');
+const driverFilterApplyButton = document.querySelector('#driver-filter-apply');
+const driverFilterResetButton = document.querySelector('#driver-filter-reset');
+const driverFilterSummary = document.querySelector('[data-driver-filter-summary]');
 const printSelectedDriversButtons = document.querySelectorAll('[data-print-selected-drivers]');
 const PRINT_BANNER_URL = `${window.location.origin}/fleet-system/assets/images/branding/print_banner.png`;
 const maintenanceSearch = document.querySelector('#maintenance-search');
@@ -36,6 +52,9 @@ const providerSearch = document.querySelector('#provider-search');
 const providerCards = document.querySelectorAll('[data-provider-list] .provider-card');
 const communicationHistorySearch = document.querySelector('#communication-history-search');
 const communicationHistoryRows = document.querySelectorAll('[data-communication-history-table] .communication-history-row');
+const communicationHistoryViewModal = document.querySelector('#communication-history-view-modal');
+const openCommunicationHistoryViewButtons = document.querySelectorAll('[data-open-communication-history-view]');
+const closeCommunicationHistoryViewButtons = document.querySelectorAll('[data-close-communication-history-view-modal]');
 const estateProjectSearch = document.querySelector('#estate-project-search');
 const estateStatusFilter = document.querySelector('#estate-status-filter');
 const estateCategoryFilter = document.querySelector('#estate-category-filter');
@@ -51,15 +70,109 @@ const communicationRecipientLabel = document.querySelector('[data-communication-
 const communicationSendButton = document.querySelector('[data-communication-send]');
 const officerRecipients = new Set();
 
-vehicleSearch?.addEventListener('input', (event) => {
-  const query = event.target.value.trim().toLowerCase();
+function updateVehicleFilterSummary(count) {
+  if (!vehicleFilterSummary) {
+    return;
+  }
+
+  const filterParts = [];
+
+  if (vehicleRegistrationFilter?.value.trim()) {
+    filterParts.push(`reg. no. "${vehicleRegistrationFilter.value.trim()}"`);
+  }
+
+  if (vehicleModelFilter?.value) {
+    filterParts.push(`model "${vehicleModelFilter.value}"`);
+  }
+
+  if (vehicleDepartmentFilter?.value) {
+    filterParts.push(`department "${vehicleDepartmentFilter.value}"`);
+  }
+
+  if (vehicleTypeFilter?.value) {
+    filterParts.push(`type "${vehicleTypeFilter.value}"`);
+  }
+
+  if (vehicleStatusFilter?.value) {
+    filterParts.push(`status "${vehicleStatusFilter.value}"`);
+  }
+
+  if (filterParts.length === 0) {
+    vehicleFilterSummary.textContent = `Showing all ${count} vehicle${count === 1 ? '' : 's'}.`;
+    return;
+  }
+
+  vehicleFilterSummary.textContent = `Showing ${count} vehicle${count === 1 ? '' : 's'} filtered by ${filterParts.join(', ')}.`;
+}
+
+function filterVehicleRows() {
+  const query = vehicleSearch?.value.trim().toLowerCase() || '';
+  const registration = vehicleRegistrationFilter?.value.trim().toLowerCase() || '';
+  const model = (vehicleModelFilter?.value || '').trim().toLowerCase();
+  const department = (vehicleDepartmentFilter?.value || '').trim().toLowerCase();
+  const vehicleType = (vehicleTypeFilter?.value || '').trim().toLowerCase();
+  const status = (vehicleStatusFilter?.value || '').trim().toLowerCase();
+
+  let visibleCount = 0;
 
   vehicleRows.forEach((row) => {
     const haystack = row.dataset.search || row.textContent.toLowerCase();
-    row.classList.toggle('hidden', query.length > 0 && !haystack.includes(query));
+    const rowRegistration = (row.dataset.registrationNumber || '').toLowerCase();
+    const rowModel = (row.dataset.model || '').toLowerCase();
+    const rowDepartment = (row.dataset.department || '').toLowerCase();
+    const rowVehicleType = ((row.dataset.vehicleType || '') || '').toLowerCase();
+    const rowStatus = (row.dataset.statusLabel || '').toLowerCase();
+    const matchesSearch = query.length === 0 || haystack.includes(query);
+    const matchesRegistration = registration.length === 0 || rowRegistration === registration;
+    const matchesModel = model.length === 0 || rowModel === model;
+    const matchesDepartment = department.length === 0 || rowDepartment === department;
+    const matchesVehicleType = vehicleType.length === 0 || rowVehicleType === vehicleType;
+    const matchesStatus = status.length === 0 || rowStatus === status;
+    const isVisible = matchesSearch && matchesRegistration && matchesModel && matchesDepartment && matchesVehicleType && matchesStatus;
+
+    row.classList.toggle('hidden', !isVisible);
+
+    if (isVisible) {
+      visibleCount += 1;
+    }
   });
 
+  updateVehicleFilterSummary(visibleCount);
   vehicleTablePaginator?.refresh(true);
+}
+
+vehicleSearch?.addEventListener('input', filterVehicleRows);
+vehicleFilterApplyButton?.addEventListener('click', filterVehicleRows);
+vehicleFilterResetButton?.addEventListener('click', () => {
+  if (vehicleSearch) {
+    vehicleSearch.value = '';
+  }
+
+  if (vehicleRegistrationFilter) {
+    vehicleRegistrationFilter.value = '';
+  }
+
+  if (vehicleModelFilter) {
+    vehicleModelFilter.value = '';
+  }
+
+  if (vehicleDepartmentFilter) {
+    vehicleDepartmentFilter.value = '';
+  }
+
+  if (vehicleTypeFilter) {
+    vehicleTypeFilter.value = '';
+  }
+
+  if (vehicleStatusFilter) {
+    vehicleStatusFilter.value = '';
+  }
+
+  if (vehiclePrintGroup) {
+    vehiclePrintGroup.value = 'department';
+  }
+
+  filterVehicleRows();
 });
 
 logbookSearch?.addEventListener('input', (event) => {
@@ -73,15 +186,83 @@ logbookSearch?.addEventListener('input', (event) => {
   logbookTablePaginator?.refresh(true);
 });
 
-driverSearch?.addEventListener('input', (event) => {
-  const query = event.target.value.trim().toLowerCase();
+function updateDriverFilterSummary(count) {
+  if (!driverFilterSummary) {
+    return;
+  }
+
+  const filterParts = [];
+
+  if (driverDepartmentFilter?.value) {
+    filterParts.push(`department "${driverDepartmentFilter.value}"`);
+  }
+
+  if (driverStatusFilter?.value) {
+    filterParts.push(`status "${driverStatusFilter.value}"`);
+  }
+
+  if (driverAssignedVehicleFilter?.value) {
+    filterParts.push(`assigned vehicle "${driverAssignedVehicleFilter.value}"`);
+  }
+
+  if (filterParts.length === 0) {
+    driverFilterSummary.textContent = `Showing all ${count} driver${count === 1 ? '' : 's'}.`;
+    return;
+  }
+
+  driverFilterSummary.textContent = `Showing ${count} driver${count === 1 ? '' : 's'} filtered by ${filterParts.join(', ')}.`;
+}
+
+function filterDriverRows() {
+  const query = driverSearch?.value.trim().toLowerCase() || '';
+  const department = (driverDepartmentFilter?.value || '').trim().toLowerCase();
+  const status = (driverStatusFilter?.value || '').trim().toLowerCase();
+  const assignedVehicle = (driverAssignedVehicleFilter?.value || '').trim().toLowerCase();
+
+  let visibleCount = 0;
 
   driverRows.forEach((row) => {
     const haystack = row.dataset.search || row.textContent.toLowerCase();
-    row.classList.toggle('hidden', query.length > 0 && !haystack.includes(query));
+    const rowDepartment = (row.dataset.department || '').toLowerCase();
+    const rowStatus = (row.dataset.statusLabel || '').toLowerCase();
+    const rowAssignedVehicle = (row.dataset.assignedVehicle || '').toLowerCase();
+    const matchesSearch = query.length === 0 || haystack.includes(query);
+    const matchesDepartment = department.length === 0 || rowDepartment === department;
+    const matchesStatus = status.length === 0 || rowStatus === status;
+    const matchesAssignedVehicle = assignedVehicle.length === 0 || rowAssignedVehicle === assignedVehicle;
+    const isVisible = matchesSearch && matchesDepartment && matchesStatus && matchesAssignedVehicle;
+
+    row.classList.toggle('hidden', !isVisible);
+
+    if (isVisible) {
+      visibleCount += 1;
+    }
   });
 
+  updateDriverFilterSummary(visibleCount);
   driverTablePaginator?.refresh(true);
+}
+
+driverSearch?.addEventListener('input', filterDriverRows);
+driverFilterApplyButton?.addEventListener('click', filterDriverRows);
+driverFilterResetButton?.addEventListener('click', () => {
+  if (driverSearch) {
+    driverSearch.value = '';
+  }
+
+  if (driverDepartmentFilter) {
+    driverDepartmentFilter.value = '';
+  }
+
+  if (driverStatusFilter) {
+    driverStatusFilter.value = '';
+  }
+
+  if (driverAssignedVehicleFilter) {
+    driverAssignedVehicleFilter.value = '';
+  }
+
+  filterDriverRows();
 });
 
 // Applies the maintenance search text and status filter at the same time.
@@ -144,6 +325,55 @@ communicationHistorySearch?.addEventListener('input', (event) => {
   });
 
   communicationHistoryTablePaginator?.refresh(true);
+});
+
+function setCommunicationHistoryModalOpen(isOpen) {
+  if (!communicationHistoryViewModal) {
+    return;
+  }
+
+  communicationHistoryViewModal.classList.toggle('hidden', !isOpen);
+  communicationHistoryViewModal.classList.toggle('flex', isOpen);
+  communicationHistoryViewModal.setAttribute('aria-hidden', isOpen ? 'false' : 'true');
+  document.body.classList.toggle('overflow-hidden', isOpen);
+}
+
+function setCommunicationHistoryModalText(selector, value) {
+  const element = communicationHistoryViewModal?.querySelector(selector);
+  if (element) {
+    element.textContent = value;
+  }
+}
+
+openCommunicationHistoryViewButtons.forEach((button) => {
+  button.addEventListener('click', () => {
+    setCommunicationHistoryModalText('[data-communication-history-view-subject]', button.dataset.messageSubject || 'Message details');
+    setCommunicationHistoryModalText('[data-communication-history-view-datetime]', button.dataset.messageDatetime || 'Date not recorded');
+    setCommunicationHistoryModalText('[data-communication-history-view-sender]', button.dataset.messageSender || 'Unknown sender');
+    setCommunicationHistoryModalText('[data-communication-history-view-type]', button.dataset.messageType || 'Unknown type');
+    setCommunicationHistoryModalText('[data-communication-history-view-drivers]', button.dataset.messageDrivers || '0');
+    setCommunicationHistoryModalText('[data-communication-history-view-officers]', button.dataset.messageOfficers || '0');
+    setCommunicationHistoryModalText('[data-communication-history-view-body]', button.dataset.messageBody || 'No message body recorded.');
+    setCommunicationHistoryModalOpen(true);
+  });
+});
+
+closeCommunicationHistoryViewButtons.forEach((button) => {
+  button.addEventListener('click', () => {
+    setCommunicationHistoryModalOpen(false);
+  });
+});
+
+communicationHistoryViewModal?.addEventListener('click', (event) => {
+  if (event.target === communicationHistoryViewModal) {
+    setCommunicationHistoryModalOpen(false);
+  }
+});
+
+document.addEventListener('keydown', (event) => {
+  if (event.key === 'Escape' && communicationHistoryViewModal?.classList.contains('flex')) {
+    setCommunicationHistoryModalOpen(false);
+  }
 });
 
 // Applies the Estates search, status, and category filters entirely in the browser.
@@ -214,11 +444,6 @@ function createTablePaginator(table, rowSelector, pageSize = 10) {
   }
 
   const rows = Array.from(table.querySelectorAll(rowSelector));
-  if (rows.length <= pageSize) {
-    return {
-      refresh() {},
-    };
-  }
 
   const wrapper = table.closest('.overflow-x-auto') || table.parentElement;
   if (!wrapper) {
@@ -346,12 +571,224 @@ const vehicleUsageTablePaginators = Array.from(document.querySelectorAll('[data-
   .map((table) => createTablePaginator(table, '.vehicle-usage-log-row'))
   .filter(Boolean);
 
+if (vehicleRows.length > 0) {
+  filterVehicleRows();
+}
+
+if (driverRows.length > 0) {
+  filterDriverRows();
+}
+
 function getVisibleDriverRows() {
   return Array.from(driverRows).filter((row) => !row.classList.contains('hidden'));
 }
 
 function buildPrintBannerMarkup() {
   return `<div class="app-print-banner"><img src="${PRINT_BANNER_URL}" alt="Busitema University print banner"></div>`;
+}
+
+function escapeHtml(value) {
+  return String(value ?? '')
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
+function getVisibleVehicleRows() {
+  return Array.from(vehicleRows).filter((row) => !row.classList.contains('hidden'));
+}
+
+function getVehicleRowData(row) {
+  return {
+    registration: row.dataset.registrationNumber || '-',
+    make: row.dataset.make || '-',
+    model: row.dataset.model || '-',
+    year: row.dataset.year || '-',
+    vehicleType: row.dataset.vehicleType || '-',
+    fuelType: row.dataset.fuelType || '-',
+    department: row.dataset.department || '-',
+    currentMileage: row.dataset.currentMileage ? `${row.dataset.currentMileage} km` : '-',
+    insuranceExpiry: row.dataset.insuranceExpiry || 'Not set',
+    status: row.dataset.statusLabel || '-',
+    repairsDone: row.dataset.repairsDone || 'No repairs recorded.',
+  };
+}
+
+function buildVehicleDetailSheetMarkup(vehicle) {
+  return `
+    <div class="vehicle-print-sheet">
+      <div class="mb-6 border-b border-slate-200 pb-5">
+        <p style="font-size:12px;font-weight:800;letter-spacing:0.18em;text-transform:uppercase;color:#2563eb;">Vehicle Details</p>
+        <h1 style="margin:8px 0 0;font-size:30px;font-weight:800;color:#0f172a;">${escapeHtml(vehicle.registration)}</h1>
+        <p style="margin:8px 0 0;font-size:14px;color:#64748b;">${escapeHtml(`${vehicle.make} ${vehicle.model}`.trim())}</p>
+      </div>
+      <div style="display:grid;gap:20px;grid-template-columns:repeat(2,minmax(0,1fr));">
+        <section style="border:1px solid #cbd5e1;border-radius:18px;padding:20px;">
+          <p style="margin:0;font-size:12px;font-weight:800;letter-spacing:0.18em;text-transform:uppercase;color:#64748b;">Identity</p>
+          <dl style="margin:16px 0 0;display:grid;gap:12px;font-size:14px;">
+            <div style="display:flex;justify-content:space-between;gap:16px;"><dt style="color:#64748b;">Registration</dt><dd style="margin:0;font-weight:700;color:#0f172a;">${escapeHtml(vehicle.registration)}</dd></div>
+            <div style="display:flex;justify-content:space-between;gap:16px;"><dt style="color:#64748b;">Make</dt><dd style="margin:0;font-weight:700;color:#0f172a;">${escapeHtml(vehicle.make)}</dd></div>
+            <div style="display:flex;justify-content:space-between;gap:16px;"><dt style="color:#64748b;">Model</dt><dd style="margin:0;font-weight:700;color:#0f172a;">${escapeHtml(vehicle.model)}</dd></div>
+            <div style="display:flex;justify-content:space-between;gap:16px;"><dt style="color:#64748b;">Year</dt><dd style="margin:0;font-weight:700;color:#0f172a;">${escapeHtml(vehicle.year)}</dd></div>
+          </dl>
+        </section>
+        <section style="border:1px solid #cbd5e1;border-radius:18px;padding:20px;">
+          <p style="margin:0;font-size:12px;font-weight:800;letter-spacing:0.18em;text-transform:uppercase;color:#64748b;">Operational Details</p>
+          <dl style="margin:16px 0 0;display:grid;gap:12px;font-size:14px;">
+            <div style="display:flex;justify-content:space-between;gap:16px;"><dt style="color:#64748b;">Type</dt><dd style="margin:0;font-weight:700;color:#0f172a;">${escapeHtml(vehicle.vehicleType)}</dd></div>
+            <div style="display:flex;justify-content:space-between;gap:16px;"><dt style="color:#64748b;">Fuel</dt><dd style="margin:0;font-weight:700;color:#0f172a;">${escapeHtml(vehicle.fuelType)}</dd></div>
+            <div style="display:flex;justify-content:space-between;gap:16px;"><dt style="color:#64748b;">Department</dt><dd style="margin:0;font-weight:700;color:#0f172a;">${escapeHtml(vehicle.department)}</dd></div>
+            <div style="display:flex;justify-content:space-between;gap:16px;"><dt style="color:#64748b;">Status</dt><dd style="margin:0;font-weight:700;color:#0f172a;">${escapeHtml(vehicle.status)}</dd></div>
+          </dl>
+        </section>
+        <section style="border:1px solid #cbd5e1;border-radius:18px;padding:20px;">
+          <p style="margin:0;font-size:12px;font-weight:800;letter-spacing:0.18em;text-transform:uppercase;color:#64748b;">Compliance</p>
+          <dl style="margin:16px 0 0;display:grid;gap:12px;font-size:14px;">
+            <div style="display:flex;justify-content:space-between;gap:16px;"><dt style="color:#64748b;">Current Mileage</dt><dd style="margin:0;font-weight:700;color:#0f172a;">${escapeHtml(vehicle.currentMileage)}</dd></div>
+            <div style="display:flex;justify-content:space-between;gap:16px;"><dt style="color:#64748b;">Insurance Expiry</dt><dd style="margin:0;font-weight:700;color:#0f172a;">${escapeHtml(vehicle.insuranceExpiry)}</dd></div>
+          </dl>
+        </section>
+        <section style="border:1px solid #cbd5e1;border-radius:18px;padding:20px;">
+          <p style="margin:0;font-size:12px;font-weight:800;letter-spacing:0.18em;text-transform:uppercase;color:#64748b;">Repairs Done</p>
+          <p style="margin:16px 0 0;font-size:14px;line-height:1.7;color:#0f172a;">${escapeHtml(vehicle.repairsDone)}</p>
+        </section>
+      </div>
+    </div>
+  `;
+}
+
+function printVehicleSheetMarkup(title, markup) {
+  const printWindow = window.open('', '_blank', 'width=1200,height=800');
+  if (!printWindow) {
+    return;
+  }
+
+  const styles = Array.from(document.querySelectorAll('style, link[rel="stylesheet"]'))
+    .map((node) => node.outerHTML)
+    .join('');
+
+  printWindow.document.open();
+  printWindow.document.write(`
+    <!DOCTYPE html>
+    <html lang="en">
+      <head>
+        <meta charset="utf-8">
+        <title>${escapeHtml(title)}</title>
+        ${styles}
+        <style>
+          body { background:#fff; color:#0f172a; padding:24px; font-family:Arial,sans-serif; }
+          .app-print-banner { margin-bottom:24px; }
+          .app-print-banner img { display:block; width:100%; max-width:1200px; margin:0 auto; }
+          .vehicle-bulk-print-header { margin-bottom:24px; }
+          .vehicle-bulk-print-header h1 { margin:0 0 8px; font-size:30px; font-weight:800; }
+          .vehicle-bulk-print-header p { margin:0; color:#475569; font-size:14px; }
+          .vehicle-bulk-print-section { margin-top:28px; break-inside:avoid; }
+          .vehicle-bulk-print-section h2 { margin:0 0 14px; font-size:20px; font-weight:800; }
+          .vehicle-bulk-print-table { width:100%; border-collapse:collapse; }
+          .vehicle-bulk-print-table th, .vehicle-bulk-print-table td { border:1px solid #cbd5e1; padding:10px 12px; text-align:left; vertical-align:top; font-size:13px; }
+          .vehicle-bulk-print-table th { background:#e2e8f0; color:#334155; font-weight:700; }
+          .vehicle-bulk-print-table td { color:#0f172a; }
+          @media print {
+            body { padding:0; }
+          }
+        </style>
+      </head>
+      <body>
+        ${buildPrintBannerMarkup()}
+        ${markup}
+      </body>
+    </html>
+  `);
+  printWindow.document.close();
+  printWindow.focus();
+  printWindow.print();
+  printWindow.close();
+}
+
+function printVehiclesByCategory() {
+  const rowsToPrint = getVisibleVehicleRows();
+
+  if (rowsToPrint.length === 0) {
+    return;
+  }
+
+  if (rowsToPrint.length === 1) {
+    const vehicle = getVehicleRowData(rowsToPrint[0]);
+
+    printVehicleSheetMarkup('Vehicle Details', buildVehicleDetailSheetMarkup(vehicle));
+    return;
+  }
+
+  const groupField = vehiclePrintGroup?.value || 'department';
+  const groupLabels = {
+    department: 'Department',
+    model: 'Model',
+    vehicleType: 'Vehicle Type',
+    statusLabel: 'Status',
+  };
+  const groupedVehicles = new Map();
+
+  rowsToPrint.forEach((row) => {
+    const vehicle = getVehicleRowData(row);
+    const rawGroupValue = row.dataset[groupField] || '';
+    const groupValue = rawGroupValue.trim() || 'Uncategorized';
+
+    if (!groupedVehicles.has(groupValue)) {
+      groupedVehicles.set(groupValue, []);
+    }
+
+    groupedVehicles.get(groupValue).push(vehicle);
+  });
+
+  const sectionsMarkup = Array.from(groupedVehicles.entries())
+    .sort(([groupA], [groupB]) => groupA.localeCompare(groupB))
+    .map(([groupName, vehicles]) => `
+      <section class="vehicle-bulk-print-section">
+        <h2>${escapeHtml(groupName)} <span style="font-size:13px;font-weight:600;color:#64748b;">(${vehicles.length} vehicle${vehicles.length === 1 ? '' : 's'})</span></h2>
+        <table class="vehicle-bulk-print-table">
+          <thead>
+            <tr>
+              <th>Reg. No.</th>
+              <th>Make / Model</th>
+              <th>Year</th>
+              <th>Type</th>
+              <th>Department</th>
+              <th>Mileage</th>
+              <th>Insurance Expiry</th>
+              <th>Status</th>
+              <th>Repairs Done</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${vehicles.map((vehicle) => `
+              <tr>
+                <td>${escapeHtml(vehicle.registration)}</td>
+                <td>${escapeHtml(`${vehicle.make} ${vehicle.model}`.trim())}</td>
+                <td>${escapeHtml(vehicle.year)}</td>
+                <td>${escapeHtml(vehicle.vehicleType)}</td>
+                <td>${escapeHtml(vehicle.department)}</td>
+                <td>${escapeHtml(vehicle.currentMileage)}</td>
+                <td>${escapeHtml(vehicle.insuranceExpiry)}</td>
+                <td>${escapeHtml(vehicle.status)}</td>
+                <td>${escapeHtml(vehicle.repairsDone)}</td>
+              </tr>
+            `).join('')}
+          </tbody>
+        </table>
+      </section>
+    `).join('');
+
+  const markup = `
+    <header class="vehicle-bulk-print-header">
+      <h1>Fleet Vehicles Report</h1>
+      <p>${rowsToPrint.length} vehicle${rowsToPrint.length === 1 ? '' : 's'} grouped by ${escapeHtml(groupLabels[groupField] || 'Category')}.</p>
+    </header>
+    ${sectionsMarkup}
+  `;
+
+  printVehicleSheetMarkup('Fleet Vehicles Report', markup);
 }
 
 function buildDriverPrintContact(row) {
@@ -595,6 +1032,7 @@ const openEstateNewModalButtons = document.querySelectorAll('[data-open-estate-n
 const closeEstateNewModalButtons = document.querySelectorAll('[data-close-estate-new-modal]');
 const estateNewProgress = document.querySelector('[data-estate-new-progress]');
 const estateNewProgressLabel = document.querySelector('[data-estate-new-progress-label]');
+let activeVehicleViewRow = null;
 
 function setDeletePreview(modal, nameSelector, detailSelector, form, fallbackName, fallbackDetail) {
   const nameField = modal?.querySelector(nameSelector);
@@ -696,6 +1134,7 @@ function setVehicleViewModalOpen(isOpen) {
   if (isOpen) {
     vehicleViewModal.querySelector('button')?.focus();
   } else {
+    activeVehicleViewRow = null;
     openVehicleViewButtons[0]?.focus();
   }
 }
@@ -705,6 +1144,8 @@ function populateVehicleViewModal(button) {
   if (!row) {
     return;
   }
+
+  activeVehicleViewRow = row;
 
   const registration = row.dataset.registrationNumber || '-';
   const make = row.dataset.make || '-';
@@ -737,25 +1178,15 @@ function populateVehicleViewModal(button) {
 }
 
 function printVehicleDetailSheet() {
-  if (!vehicleDetailSheet) {
+  const visibleRows = getVisibleVehicleRows();
+  const sourceRow = activeVehicleViewRow || (visibleRows.length === 1 ? visibleRows[0] : null);
+
+  if (!sourceRow) {
     return;
   }
 
-  const printWindow = window.open('', '_blank', 'width=960,height=720');
-  if (!printWindow) {
-    return;
-  }
-
-  const styles = Array.from(document.querySelectorAll('style, link[rel="stylesheet"]'))
-    .map((node) => node.outerHTML)
-    .join('');
-
-  printWindow.document.open();
-  printWindow.document.write(`<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><title>Vehicle Details</title>${styles}<style>body{background:#fff;padding:24px;}.app-print-banner{margin-bottom:24px;}.app-print-banner img{display:block;width:100%;max-width:1200px;margin:0 auto;}button{display:none !important;}</style></head><body>${buildPrintBannerMarkup()}${vehicleDetailSheet.outerHTML}</body></html>`);
-  printWindow.document.close();
-  printWindow.focus();
-  printWindow.print();
-  printWindow.close();
+  const vehicle = getVehicleRowData(sourceRow);
+  printVehicleSheetMarkup('Vehicle Details', buildVehicleDetailSheetMarkup(vehicle));
 }
 
 function resetVehicleFormForCreate() {
@@ -940,6 +1371,7 @@ if (vehicleModal?.dataset.openOnLoad === 'true') {
 }
 
 printVehicleViewButton?.addEventListener('click', printVehicleDetailSheet);
+printVehiclesButton?.addEventListener('click', printVehiclesByCategory);
 
 document.addEventListener('keydown', (event) => {
   if (event.key === 'Escape' && vehicleViewModal && !vehicleViewModal.classList.contains('hidden')) {

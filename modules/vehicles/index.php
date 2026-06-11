@@ -4,6 +4,47 @@ $activePage = 'vehicles';
 require_once __DIR__ . '/../../handlers/vehicle.php';
 // Pull both the current vehicle rows and any flash UI state from the handler.
 extract(vehicleFetchPageData());
+
+$vehicleFilterDepartments = [];
+$vehicleFilterModels = [];
+$vehicleFilterRegistrations = [];
+$vehicleFilterTypes = [];
+$vehicleFilterStatuses = [];
+
+foreach ($vehicles as $vehicle) {
+    $departmentValue = trim((string) ($vehicle['department'] ?? ''));
+    $modelValue = trim((string) ($vehicle['model'] ?? ''));
+    $typeValue = trim((string) ($vehicle['type'] ?? ''));
+    $statusValue = trim((string) ($vehicle['status'] ?? ''));
+    $registrationValue = trim((string) ($vehicle['reg'] ?? ''));
+
+    if ($registrationValue !== '' && $registrationValue !== '-') {
+        $vehicleFilterRegistrations[strtolower($registrationValue)] = $registrationValue;
+    }
+
+    if ($departmentValue !== '' && $departmentValue !== '-') {
+        $vehicleFilterDepartments[strtolower($departmentValue)] = $departmentValue;
+    }
+
+    if ($modelValue !== '' && $modelValue !== '-') {
+        $vehicleFilterModels[strtolower($modelValue)] = $modelValue;
+    }
+
+    if ($typeValue !== '' && $typeValue !== '-') {
+        $vehicleFilterTypes[strtolower($typeValue)] = $typeValue;
+    }
+
+    if ($statusValue !== '' && $statusValue !== '-') {
+        $vehicleFilterStatuses[strtolower($statusValue)] = $statusValue;
+    }
+}
+
+natcasesort($vehicleFilterDepartments);
+natcasesort($vehicleFilterModels);
+natcasesort($vehicleFilterRegistrations);
+natcasesort($vehicleFilterTypes);
+natcasesort($vehicleFilterStatuses);
+
 include __DIR__ . '/../../includes/header.php';
 include __DIR__ . '/../../includes/sidebar.php';
 ?>
@@ -15,7 +56,7 @@ include __DIR__ . '/../../includes/sidebar.php';
                 <p class="mt-2 text-sm text-fleet-muted">University motor vehicle fleet registry</p>
             </div>
             <div class="flex flex-wrap items-center gap-3">
-                <button type="button" data-print-page class="inline-flex h-10 items-center gap-2 rounded-lg border border-fleet-line bg-fleet-surface px-4 text-sm font-semibold text-fleet-ink shadow-fleet-card hover:bg-fleet-surface-muted">
+                <button type="button" data-print-vehicles class="inline-flex h-10 items-center gap-2 rounded-lg border border-fleet-line bg-fleet-surface px-4 text-sm font-semibold text-fleet-ink shadow-fleet-card hover:bg-fleet-surface-muted">
                     <span class="text-base">P</span>
                     <span>Print</span>
                 </button>
@@ -72,12 +113,91 @@ include __DIR__ . '/../../includes/sidebar.php';
             </section>
         <?php endif; ?>
 
-        <div class="mb-6 max-w-md">
-            <label class="relative block">
-                <span class="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-fleet-muted">Q</span>
-                <input id="vehicle-search" type="search" class="h-11 w-full rounded-lg border border-fleet-line bg-fleet-surface py-2 pl-11 pr-4 text-sm text-fleet-ink shadow-sm outline-none transition placeholder:text-fleet-muted focus:border-fleet-primary focus:ring-4 focus:ring-blue-100" placeholder="Search vehicles...">
-            </label>
-        </div>
+        <section class="mb-6 rounded-2xl border border-fleet-line bg-fleet-surface p-5 shadow-fleet-card">
+            <div class="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+                <label class="block">
+                    <span class="mb-2 block text-sm font-semibold text-fleet-ink">Registration Number</span>
+                    <select id="vehicle-filter-registration" class="vehicle-form-control">
+                        <option value="">All registration numbers</option>
+                        <?php foreach ($vehicleFilterRegistrations as $vehicleFilterRegistration): ?>
+                            <option value="<?= htmlspecialchars($vehicleFilterRegistration, ENT_QUOTES, 'UTF-8'); ?>">
+                                <?= htmlspecialchars($vehicleFilterRegistration, ENT_QUOTES, 'UTF-8'); ?>
+                            </option>
+                        <?php endforeach; ?>
+                    </select>
+                </label>
+
+                <label class="block">
+                    <span class="mb-2 block text-sm font-semibold text-fleet-ink">Model</span>
+                    <select id="vehicle-filter-model" class="vehicle-form-control">
+                        <option value="">All models</option>
+                        <?php foreach ($vehicleFilterModels as $vehicleFilterModel): ?>
+                            <option value="<?= htmlspecialchars($vehicleFilterModel, ENT_QUOTES, 'UTF-8'); ?>">
+                                <?= htmlspecialchars($vehicleFilterModel, ENT_QUOTES, 'UTF-8'); ?>
+                            </option>
+                        <?php endforeach; ?>
+                    </select>
+                </label>
+
+                <label class="block">
+                    <span class="mb-2 block text-sm font-semibold text-fleet-ink">Department</span>
+                    <select id="vehicle-filter-department" class="vehicle-form-control">
+                        <option value="">All departments</option>
+                        <?php foreach ($vehicleFilterDepartments as $vehicleFilterDepartment): ?>
+                            <option value="<?= htmlspecialchars($vehicleFilterDepartment, ENT_QUOTES, 'UTF-8'); ?>">
+                                <?= htmlspecialchars($vehicleFilterDepartment, ENT_QUOTES, 'UTF-8'); ?>
+                            </option>
+                        <?php endforeach; ?>
+                    </select>
+                </label>
+
+                <label class="block">
+                    <span class="mb-2 block text-sm font-semibold text-fleet-ink">Vehicle Type</span>
+                    <select id="vehicle-filter-type" class="vehicle-form-control">
+                        <option value="">All types</option>
+                        <?php foreach ($vehicleFilterTypes as $vehicleFilterType): ?>
+                            <option value="<?= htmlspecialchars($vehicleFilterType, ENT_QUOTES, 'UTF-8'); ?>">
+                                <?= htmlspecialchars($vehicleFilterType, ENT_QUOTES, 'UTF-8'); ?>
+                            </option>
+                        <?php endforeach; ?>
+                    </select>
+                </label>
+
+                <label class="block">
+                    <span class="mb-2 block text-sm font-semibold text-fleet-ink">Status</span>
+                    <select id="vehicle-filter-status" class="vehicle-form-control">
+                        <option value="">All statuses</option>
+                        <?php foreach ($vehicleFilterStatuses as $vehicleFilterStatus): ?>
+                            <option value="<?= htmlspecialchars($vehicleFilterStatus, ENT_QUOTES, 'UTF-8'); ?>">
+                                <?= htmlspecialchars($vehicleFilterStatus, ENT_QUOTES, 'UTF-8'); ?>
+                            </option>
+                        <?php endforeach; ?>
+                    </select>
+                </label>
+
+                <label class="block">
+                    <span class="mb-2 block text-sm font-semibold text-fleet-ink">Print Category</span>
+                    <select id="vehicle-print-group" class="vehicle-form-control">
+                        <option value="department">Group by department</option>
+                        <option value="model">Group by model</option>
+                        <option value="vehicleType">Group by vehicle type</option>
+                        <option value="statusLabel">Group by status</option>
+                    </select>
+                </label>
+
+                <div class="flex items-end gap-3 md:col-span-2">
+                    <button type="button" id="vehicle-filter-apply" class="inline-flex h-10 items-center rounded-lg bg-fleet-sidebar px-5 text-sm font-semibold text-white shadow-sm hover:bg-fleet-sidebar-active">
+                        Apply Filters
+                    </button>
+                    <button type="button" id="vehicle-filter-reset" class="inline-flex h-10 items-center rounded-lg border border-fleet-line bg-fleet-surface px-4 text-sm font-semibold text-fleet-ink shadow-sm hover:bg-fleet-surface-muted">
+                        Reset Filters
+                    </button>
+                    <p class="text-sm text-fleet-muted" data-vehicle-filter-summary>
+                        Showing all vehicles.
+                    </p>
+                </div>
+            </div>
+        </section>
 
         <section class="<?= $hasVehicles ? 'hidden' : 'flex'; ?> min-h-[420px] items-center justify-center">
             <div class="text-center">
@@ -99,6 +219,18 @@ include __DIR__ . '/../../includes/sidebar.php';
         </section>
 
         <section data-print-root class="<?= $hasVehicles ? 'block' : 'hidden'; ?> overflow-hidden rounded-lg border border-fleet-line bg-fleet-surface shadow-fleet-card">
+            <div class="border-b border-fleet-line-soft px-4 py-4 sm:px-5">
+                <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                    <div>
+                        <h2 class="text-base font-extrabold text-fleet-ink">Vehicle Register</h2>
+                        <p class="mt-1 text-sm text-fleet-muted">Search and review the filtered vehicle list below.</p>
+                    </div>
+                    <label class="relative block w-full sm:max-w-md">
+                        <span class="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-fleet-muted">Q</span>
+                        <input id="vehicle-search" type="search" class="h-11 w-full rounded-lg border border-fleet-line bg-fleet-surface py-2 pl-11 pr-4 text-sm text-fleet-ink shadow-sm outline-none transition placeholder:text-fleet-muted focus:border-fleet-primary focus:ring-4 focus:ring-blue-100" placeholder="Search vehicles...">
+                    </label>
+                </div>
+            </div>
             <div class="overflow-x-auto">
                 <table class="w-full min-w-[1180px] text-left text-sm" data-vehicle-table>
                     <thead class="bg-fleet-surface-muted text-fleet-muted">

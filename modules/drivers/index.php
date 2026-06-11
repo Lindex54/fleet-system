@@ -4,6 +4,34 @@ $activePage = 'drivers';
 require_once __DIR__ . '/../../handlers/driver.php';
 // Load live drivers, assignment options, and any flash UI state from the handler.
 extract(driverFetchPageData());
+$todayDate = date('Y-m-d');
+
+$driverFilterDepartments = [];
+$driverFilterStatuses = [];
+$driverFilterVehicles = [];
+
+foreach ($drivers as $driver) {
+    $departmentValue = trim((string) ($driver['department'] ?? ''));
+    $statusValue = trim((string) ($driver['status'] ?? ''));
+    $assignedVehicleValue = trim((string) ($driver['assigned'] ?? ''));
+
+    if ($departmentValue !== '' && $departmentValue !== '-') {
+        $driverFilterDepartments[strtolower($departmentValue)] = $departmentValue;
+    }
+
+    if ($statusValue !== '' && $statusValue !== '-') {
+        $driverFilterStatuses[strtolower($statusValue)] = $statusValue;
+    }
+
+    if ($assignedVehicleValue !== '' && $assignedVehicleValue !== '-') {
+        $driverFilterVehicles[strtolower($assignedVehicleValue)] = $assignedVehicleValue;
+    }
+}
+
+natcasesort($driverFilterDepartments);
+natcasesort($driverFilterStatuses);
+natcasesort($driverFilterVehicles);
+
 include __DIR__ . '/../../includes/header.php';
 include __DIR__ . '/../../includes/sidebar.php';
 ?>
@@ -98,6 +126,59 @@ include __DIR__ . '/../../includes/sidebar.php';
             </section>
         <?php endif; ?>
 
+        <section class="mb-6 rounded-2xl border border-fleet-line bg-fleet-surface p-5 shadow-fleet-card">
+            <div class="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+                <label class="block">
+                    <span class="mb-2 block text-sm font-semibold text-fleet-ink">Department</span>
+                    <select id="driver-filter-department" class="vehicle-form-control">
+                        <option value="">All departments</option>
+                        <?php foreach ($driverFilterDepartments as $driverFilterDepartment): ?>
+                            <option value="<?= htmlspecialchars($driverFilterDepartment, ENT_QUOTES, 'UTF-8'); ?>">
+                                <?= htmlspecialchars($driverFilterDepartment, ENT_QUOTES, 'UTF-8'); ?>
+                            </option>
+                        <?php endforeach; ?>
+                    </select>
+                </label>
+
+                <label class="block">
+                    <span class="mb-2 block text-sm font-semibold text-fleet-ink">Status</span>
+                    <select id="driver-filter-status" class="vehicle-form-control">
+                        <option value="">All statuses</option>
+                        <?php foreach ($driverFilterStatuses as $driverFilterStatus): ?>
+                            <option value="<?= htmlspecialchars($driverFilterStatus, ENT_QUOTES, 'UTF-8'); ?>">
+                                <?= htmlspecialchars($driverFilterStatus, ENT_QUOTES, 'UTF-8'); ?>
+                            </option>
+                        <?php endforeach; ?>
+                    </select>
+                </label>
+
+                <label class="block">
+                    <span class="mb-2 block text-sm font-semibold text-fleet-ink">Assigned Vehicle</span>
+                    <select id="driver-filter-assigned-vehicle" class="vehicle-form-control">
+                        <option value="">All assigned vehicles</option>
+                        <?php foreach ($driverFilterVehicles as $driverFilterVehicle): ?>
+                            <option value="<?= htmlspecialchars($driverFilterVehicle, ENT_QUOTES, 'UTF-8'); ?>">
+                                <?= htmlspecialchars($driverFilterVehicle, ENT_QUOTES, 'UTF-8'); ?>
+                            </option>
+                        <?php endforeach; ?>
+                    </select>
+                </label>
+
+                <div class="flex items-end gap-3">
+                    <button type="button" id="driver-filter-apply" class="inline-flex h-10 items-center rounded-lg bg-fleet-sidebar px-5 text-sm font-semibold text-white shadow-sm hover:bg-fleet-sidebar-active">
+                        Apply Filters
+                    </button>
+                    <button type="button" id="driver-filter-reset" class="inline-flex h-10 items-center rounded-lg border border-fleet-line bg-fleet-surface px-4 text-sm font-semibold text-fleet-ink shadow-sm hover:bg-fleet-surface-muted">
+                        Reset Filters
+                    </button>
+                </div>
+
+                <div class="md:col-span-2 xl:col-span-4">
+                    <p class="text-sm text-fleet-muted" data-driver-filter-summary>Showing all drivers.</p>
+                </div>
+            </div>
+        </section>
+
         <section class="<?= $hasDrivers ? 'hidden' : 'flex'; ?> min-h-[420px] items-center justify-center">
             <div class="text-center">
                 <div class="mx-auto flex h-16 w-16 items-center justify-center rounded-2xl bg-slate-200 text-fleet-muted">
@@ -119,11 +200,16 @@ include __DIR__ . '/../../includes/sidebar.php';
 
         <section data-print-root class="<?= $hasDrivers ? 'block' : 'hidden'; ?> overflow-hidden rounded-lg border border-fleet-line bg-fleet-surface shadow-fleet-card">
             <div class="border-b border-fleet-line-soft px-4 py-4 sm:px-5">
-                <!-- Search appears only when there are actual driver rows to filter. -->
-                <label class="relative block max-w-md">
-                    <span class="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-fleet-muted">Q</span>
-                    <input id="driver-search" type="search" class="h-11 w-full rounded-lg border border-fleet-line bg-fleet-surface py-2 pl-11 pr-4 text-sm text-fleet-ink shadow-sm outline-none transition placeholder:text-fleet-muted focus:border-fleet-primary focus:ring-4 focus:ring-blue-100" placeholder="Search drivers...">
-                </label>
+                <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                    <div>
+                        <h2 class="text-base font-extrabold text-fleet-ink">Driver Records</h2>
+                        <p class="mt-1 text-sm text-fleet-muted">Search and review the filtered driver list below.</p>
+                    </div>
+                    <label class="relative block w-full sm:max-w-md">
+                        <span class="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-fleet-muted">Q</span>
+                        <input id="driver-search" type="search" class="h-11 w-full rounded-lg border border-fleet-line bg-fleet-surface py-2 pl-11 pr-4 text-sm text-fleet-ink shadow-sm outline-none transition placeholder:text-fleet-muted focus:border-fleet-primary focus:ring-4 focus:ring-blue-100" placeholder="Search drivers...">
+                    </label>
+                </div>
             </div>
 
             <div class="overflow-x-auto">
@@ -313,12 +399,29 @@ include __DIR__ . '/../../includes/sidebar.php';
 
                     <label class="block">
                         <span class="mb-2 block text-sm font-semibold text-fleet-ink">License Issue Date *</span>
-                        <input name="license_issue_date" type="date" required data-driver-required-on-create class="vehicle-form-control" value="<?= htmlspecialchars($driverFormData['license_issue_date'] ?? '', ENT_QUOTES, 'UTF-8'); ?>">
+                        <input
+                            name="license_issue_date"
+                            type="date"
+                            required
+                            data-driver-required-on-create
+                            data-driver-license-issue-date
+                            max="<?= htmlspecialchars($todayDate, ENT_QUOTES, 'UTF-8'); ?>"
+                            class="vehicle-form-control"
+                            value="<?= htmlspecialchars($driverFormData['license_issue_date'] ?? '', ENT_QUOTES, 'UTF-8'); ?>"
+                        >
                     </label>
 
                     <label class="block">
                         <span class="mb-2 block text-sm font-semibold text-fleet-ink">License Expiry *</span>
-                        <input name="license_expiry" type="date" required data-driver-required-on-create class="vehicle-form-control" value="<?= htmlspecialchars($driverFormData['license_expiry'] ?? '', ENT_QUOTES, 'UTF-8'); ?>">
+                        <input
+                            name="license_expiry"
+                            type="date"
+                            required
+                            data-driver-required-on-create
+                            data-driver-license-expiry-date
+                            class="vehicle-form-control"
+                            value="<?= htmlspecialchars($driverFormData['license_expiry'] ?? '', ENT_QUOTES, 'UTF-8'); ?>"
+                        >
                     </label>
 
                     <label class="block md:col-span-2">

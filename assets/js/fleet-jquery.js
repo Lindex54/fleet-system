@@ -16,6 +16,9 @@ $(document).ready(function () {
 
   // Shows a clean "no records found" state when existing table filters hide every row.
   initializeFleetTableFeedback();
+
+  // Keeps driver license issue/expiry date rules in sync for both add and edit flows.
+  initializeDriverLicenseDateValidation();
 });
 
 // Shows a reusable success or error message near the active form.
@@ -188,6 +191,10 @@ function validateFleetForm($form) {
     }
   });
 
+  if ($form.is('[data-driver-form]') && !validateDriverLicenseDates($form)) {
+    isValid = false;
+  }
+
   if (!isValid) {
     const $firstInvalid = $form.find('.fleet-invalid-field').first();
     if ($firstInvalid.length) {
@@ -196,6 +203,130 @@ function validateFleetForm($form) {
   }
 
   return isValid;
+}
+
+function parseFleetDateValue(value) {
+  const trimmedValue = $.trim(value || '');
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(trimmedValue)) {
+    return null;
+  }
+
+  const parts = trimmedValue.split('-').map(Number);
+  const parsedDate = new Date(parts[0], parts[1] - 1, parts[2]);
+
+  if (
+    Number.isNaN(parsedDate.getTime()) ||
+    parsedDate.getFullYear() !== parts[0] ||
+    parsedDate.getMonth() !== parts[1] - 1 ||
+    parsedDate.getDate() !== parts[2]
+  ) {
+    return null;
+  }
+
+  parsedDate.setHours(0, 0, 0, 0);
+  return parsedDate;
+}
+
+function formatFleetDateForInput(date) {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+
+  return `${year}-${month}-${day}`;
+}
+
+function isDriverCreateMode($form) {
+  return ($form.find('[data-driver-action-field]').val() || 'create') !== 'update';
+}
+
+function syncDriverLicenseExpiryConstraints($form) {
+  const $issueDate = $form.find('[data-driver-license-issue-date]');
+  const $expiryDate = $form.find('[data-driver-license-expiry-date]');
+
+  if (!$issueDate.length || !$expiryDate.length) {
+    return;
+  }
+
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+
+  const issueDate = parseFleetDateValue($issueDate.val());
+  let minimumExpiryDate = isDriverCreateMode($form) ? new Date(today.getTime()) : null;
+
+  if (issueDate) {
+    const nextDay = new Date(issueDate.getTime());
+    nextDay.setDate(nextDay.getDate() + 1);
+
+    if (!minimumExpiryDate || nextDay > minimumExpiryDate) {
+      minimumExpiryDate = nextDay;
+    }
+  }
+
+  $issueDate.attr('max', formatFleetDateForInput(today));
+
+  if (minimumExpiryDate) {
+    $expiryDate.attr('min', formatFleetDateForInput(minimumExpiryDate));
+  } else {
+    $expiryDate.removeAttr('min');
+  }
+}
+
+function validateDriverLicenseDates($form) {
+  const $issueDate = $form.find('[data-driver-license-issue-date]');
+  const $expiryDate = $form.find('[data-driver-license-expiry-date]');
+
+  if (!$issueDate.length || !$expiryDate.length) {
+    return true;
+  }
+
+  clearFleetFieldError($issueDate);
+  clearFleetFieldError($expiryDate);
+
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+
+  const issueValue = $.trim($issueDate.val() || '');
+  const expiryValue = $.trim($expiryDate.val() || '');
+  const issueDate = issueValue !== '' ? parseFleetDateValue(issueValue) : null;
+  const expiryDate = expiryValue !== '' ? parseFleetDateValue(expiryValue) : null;
+  const createMode = isDriverCreateMode($form);
+
+  if (issueValue !== '' && !issueDate) {
+    showFleetFieldError($issueDate, 'Enter a valid license issue date.');
+    return false;
+  }
+
+  if (expiryValue !== '' && !expiryDate) {
+    showFleetFieldError($expiryDate, 'Enter a valid license expiry date.');
+    return false;
+  }
+
+  if (issueDate && issueDate > today) {
+    showFleetFieldError($issueDate, 'License issue date cannot be in the future.');
+    return false;
+  }
+
+  if (expiryValue !== '' && issueValue === '') {
+    showFleetFieldError($issueDate, 'License issue date is required whenever a license expiry date is provided.');
+    return false;
+  }
+
+  if (issueDate && expiryDate && expiryDate.getTime() === issueDate.getTime()) {
+    showFleetFieldError($expiryDate, 'License expiry date cannot be the same as the license issue date.');
+    return false;
+  }
+
+  if (issueDate && expiryDate && expiryDate < issueDate) {
+    showFleetFieldError($expiryDate, 'License expiry date must be later than the license issue date.');
+    return false;
+  }
+
+  if (createMode && expiryDate && expiryDate < today) {
+    showFleetFieldError($expiryDate, 'License expiry date cannot be earlier than today when creating a new driver.');
+    return false;
+  }
+
+  return true;
 }
 
 // Binds global validation cleanup and double-submit protection to active forms.
@@ -375,6 +506,37 @@ function initializeFleetDynamicFields() {
     const isFaulty = $radio.val() === 'faulty' && $radio.is(':checked');
 
     $remarks.toggleClass('fleet-invalid-field', isFaulty && $.trim($remarks.val() || '') === '');
+  });
+}
+
+function initializeDriverLicenseDateValidation() {
+  const bindDriverForm = function bindDriverForm(_, formElement) {
+    const $form = $(formElement);
+    const $issueDate = $form.find('[data-driver-license-issue-date]');
+    const $expiryDate = $form.find('[data-driver-license-expiry-date]');
+
+    if (!$issueDate.length || !$expiryDate.length) {
+      return;
+    }
+
+    syncDriverLicenseExpiryConstraints($form);
+
+    $form.on('change input', '[data-driver-license-issue-date], [data-driver-license-expiry-date], [data-driver-action-field]', function handleDriverLicenseDates() {
+      syncDriverLicenseExpiryConstraints($form);
+      validateDriverLicenseDates($form);
+    });
+  };
+
+  $('form[data-driver-form]').each(bindDriverForm);
+
+  $(document).on('click', '[data-open-driver-modal], [data-edit-driver-entry]', function deferDriverModalSync() {
+    window.setTimeout(function syncAfterDriverModalUpdate() {
+      $('form[data-driver-form]').each(function refreshDriverForm() {
+        const $form = $(this);
+        syncDriverLicenseExpiryConstraints($form);
+        validateDriverLicenseDates($form);
+      });
+    }, 0);
   });
 }
 

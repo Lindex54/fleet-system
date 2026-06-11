@@ -6,7 +6,9 @@ require_once dirname(__DIR__, 2) . '/includes/sidebar-icons.php';
 ?>
 <aside id="app-sidebar" class="fixed inset-y-0 left-0 z-30 flex w-64 -translate-x-full flex-col bg-fleet-sidebar text-fleet-sidebar-text shadow-xl transition-transform duration-200 lg:translate-x-0">
     <div class="flex h-20 items-center gap-3 px-5">
-        <div class="flex h-9 w-9 items-center justify-center rounded bg-fleet-primary text-xs font-black text-white">BU</div>
+        <div class="flex h-10 w-10 items-center justify-center overflow-hidden rounded-lg bg-white p-1 shadow-sm">
+            <img src="<?= htmlspecialchars($brandingLogoPath ?? (($basePath ?: '') . '/assets/images/branding/logo1.png'), ENT_QUOTES, 'UTF-8'); ?>" alt="BUESMIS logo" class="h-full w-full object-contain">
+        </div>
         <div>
             <p class="text-sm font-extrabold leading-5 text-white">Driver Panel</p>
             <p class="text-xs text-fleet-sidebar-muted">Busitema University Fleet</p>

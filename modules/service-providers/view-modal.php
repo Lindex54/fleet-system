@@ -1,5 +1,5 @@
 <div id="provider-view-modal" class="fixed inset-0 z-50 hidden items-center justify-center bg-black/75 px-4 py-6" aria-hidden="true">
-    <div class="dashboard-scroll max-h-[calc(100vh-2.5rem)] w-full max-w-[760px] overflow-y-auto rounded-lg border border-fleet-line bg-fleet-surface shadow-2xl" role="dialog" aria-modal="true" aria-labelledby="provider-view-modal-title">
+    <div class="dashboard-scroll max-h-[calc(100vh-2.5rem)] w-full overflow-y-auto rounded-lg border border-fleet-line bg-fleet-surface shadow-2xl" style="max-width: 760px;" role="dialog" aria-modal="true" aria-labelledby="provider-view-modal-title">
         <div class="p-6" data-provider-detail-sheet>
             <div class="mb-6 flex items-start justify-between gap-4">
                 <div>

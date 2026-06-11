@@ -537,7 +537,9 @@ function driverValidateFormData(array $formData, string $action = 'create'): arr
         throw new RuntimeException('Please select a valid driver status.');
     }
 
+    $today = new DateTimeImmutable('today');
     $licenseIssueDate = null;
+    $licenseIssueDateObject = null;
     if ($formData['license_issue_date'] !== '') {
         $date = DateTimeImmutable::createFromFormat('Y-m-d', $formData['license_issue_date']);
         $errors = DateTimeImmutable::getLastErrors();
@@ -546,10 +548,16 @@ function driverValidateFormData(array $formData, string $action = 'create'): arr
             throw new RuntimeException('Please enter a valid license issue date.');
         }
 
+        if ($date > $today) {
+            throw new RuntimeException('License issue date cannot be in the future.');
+        }
+
         $licenseIssueDate = $date->format('Y-m-d');
+        $licenseIssueDateObject = $date;
     }
 
     $licenseExpiry = null;
+    $licenseExpiryObject = null;
     if ($formData['license_expiry'] !== '') {
         $date = DateTimeImmutable::createFromFormat('Y-m-d', $formData['license_expiry']);
         $errors = DateTimeImmutable::getLastErrors();
@@ -559,6 +567,21 @@ function driverValidateFormData(array $formData, string $action = 'create'): arr
         }
 
         $licenseExpiry = $date->format('Y-m-d');
+        $licenseExpiryObject = $date;
+    }
+
+    if ($licenseExpiryObject !== null && $licenseIssueDateObject === null) {
+        throw new RuntimeException('License issue date is required whenever a license expiry date is provided.');
+    }
+
+    if ($licenseIssueDateObject !== null && $licenseExpiryObject !== null) {
+        if ($licenseExpiryObject <= $licenseIssueDateObject) {
+            throw new RuntimeException('License expiry date must be later than the license issue date.');
+        }
+    }
+
+    if ($action === 'create' && $licenseExpiryObject !== null && $licenseExpiryObject < $today) {
+        throw new RuntimeException('License expiry date cannot be earlier than today when creating a new driver.');
     }
 
     $assignedVehicleId = null;

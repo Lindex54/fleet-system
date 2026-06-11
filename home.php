@@ -6,12 +6,15 @@ $homeUrl = ($basePath ?: '') . '/home';
 $loginUrl = ($basePath ?: '') . '/login';
 $dashboardUrl = ($basePath ?: '') . '/dashboard';
 $heroImageUrl = ($basePath ?: '') . '/assets/images/hero/heroimage.png';
+$brandingLogoImage = ($basePath ?: '') . '/assets/images/branding/logo1.png';
 ?>
 <main class="landing-page min-h-screen overflow-hidden bg-fleet-canvas">
     <header class="absolute inset-x-0 top-0 z-50 border-b border-fleet-line bg-white/95 backdrop-blur">
         <div class="mx-auto flex h-20 max-w-7xl items-center justify-between px-5 sm:px-6 lg:px-8">
             <a href="<?= htmlspecialchars($homeUrl, ENT_QUOTES, 'UTF-8'); ?>" class="flex items-center gap-4">
-                <span class="flex h-12 w-12 items-center justify-center rounded-[1rem] bg-fleet-sidebar text-xl font-black text-white shadow-sm">BU</span>
+                <span class="flex h-12 w-12 items-center justify-center overflow-hidden rounded-[1rem] bg-white p-1 shadow-sm">
+                    <img src="<?= htmlspecialchars($brandingLogoImage, ENT_QUOTES, 'UTF-8'); ?>" alt="BUESMIS logo" class="h-full w-full object-contain">
+                </span>
                 <span>
                     <span class="block text-xl font-black tracking-tight text-fleet-sidebar">BUESMIS</span>
                     <span class="-mt-1 block text-sm text-fleet-muted">Busitema University Fleet Services</span>

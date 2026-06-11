@@ -130,7 +130,19 @@ include __DIR__ . '/../../includes/sidebar.php';
                                     <span class="inline-flex rounded-lg bg-fleet-sidebar px-3 py-1 text-xs font-extrabold text-white shadow-fleet-card"><?= htmlspecialchars($message['type'], ENT_QUOTES, 'UTF-8'); ?></span>
                                 </td>
                                 <td class="px-5 py-4 text-right">
-                                    <button type="button" class="inline-flex h-8 w-8 items-center justify-center rounded-lg text-fleet-ink transition hover:bg-blue-50 hover:text-fleet-primary" aria-label="View message">
+                                    <button
+                                        type="button"
+                                        class="inline-flex h-8 w-8 items-center justify-center rounded-lg text-fleet-ink transition hover:bg-blue-50 hover:text-fleet-primary"
+                                        aria-label="View message"
+                                        data-open-communication-history-view
+                                        data-message-datetime="<?= htmlspecialchars($message['datetime'], ENT_QUOTES, 'UTF-8'); ?>"
+                                        data-message-subject="<?= htmlspecialchars($message['subject'], ENT_QUOTES, 'UTF-8'); ?>"
+                                        data-message-sender="<?= htmlspecialchars($message['sender'], ENT_QUOTES, 'UTF-8'); ?>"
+                                        data-message-drivers="<?= (int) $message['drivers']; ?>"
+                                        data-message-officers="<?= (int) $message['officers']; ?>"
+                                        data-message-type="<?= htmlspecialchars($message['type'], ENT_QUOTES, 'UTF-8'); ?>"
+                                        data-message-body="<?= htmlspecialchars($message['message'], ENT_QUOTES, 'UTF-8'); ?>"
+                                    >
                                         <svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
                                             <path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12z"></path>
                                             <circle cx="12" cy="12" r="3"></circle>
@@ -145,4 +157,46 @@ include __DIR__ . '/../../includes/sidebar.php';
         </section>
     </div>
 </main>
+<div id="communication-history-view-modal" class="fixed inset-0 z-50 hidden items-center justify-center bg-black/75 px-4 py-6" aria-hidden="true">
+    <div class="dashboard-scroll max-h-[calc(100vh-2.5rem)] w-full overflow-y-auto rounded-lg border border-fleet-line bg-fleet-surface shadow-2xl" style="max-width: 760px;" role="dialog" aria-modal="true" aria-labelledby="communication-history-view-modal-title">
+        <div class="p-6">
+            <div class="flex items-start justify-between gap-4">
+                <div>
+                    <p class="text-xs font-extrabold uppercase tracking-[0.18em] text-fleet-primary">Communication Record</p>
+                    <h2 id="communication-history-view-modal-title" class="mt-2 text-2xl font-extrabold text-fleet-ink" data-communication-history-view-subject>Message details</h2>
+                    <p class="mt-1 text-sm text-fleet-muted" data-communication-history-view-datetime>Select a sent communication to review its full details.</p>
+                </div>
+                <button type="button" data-close-communication-history-view-modal class="flex h-8 w-8 items-center justify-center rounded-lg text-2xl leading-none text-fleet-muted hover:bg-fleet-surface-muted hover:text-fleet-ink" aria-label="Close message details">&times;</button>
+            </div>
+
+            <div class="mt-6 grid gap-4 md:grid-cols-2">
+                <div class="rounded-2xl border border-fleet-line bg-white p-5">
+                    <p class="text-xs font-extrabold uppercase tracking-[0.18em] text-fleet-muted">Sent By</p>
+                    <p class="mt-3 text-lg font-extrabold text-fleet-ink" data-communication-history-view-sender>-</p>
+                </div>
+                <div class="rounded-2xl border border-fleet-line bg-white p-5">
+                    <p class="text-xs font-extrabold uppercase tracking-[0.18em] text-fleet-muted">Message Type</p>
+                    <p class="mt-3 text-lg font-extrabold text-fleet-ink" data-communication-history-view-type>-</p>
+                </div>
+                <div class="rounded-2xl border border-fleet-line bg-white p-5">
+                    <p class="text-xs font-extrabold uppercase tracking-[0.18em] text-fleet-muted">Driver Recipients</p>
+                    <p class="mt-3 text-lg font-extrabold text-fleet-ink" data-communication-history-view-drivers>-</p>
+                </div>
+                <div class="rounded-2xl border border-fleet-line bg-white p-5">
+                    <p class="text-xs font-extrabold uppercase tracking-[0.18em] text-fleet-muted">Officer Recipients</p>
+                    <p class="mt-3 text-lg font-extrabold text-fleet-ink" data-communication-history-view-officers>-</p>
+                </div>
+            </div>
+
+            <div class="mt-4 rounded-2xl border border-fleet-line bg-white p-5">
+                <p class="text-xs font-extrabold uppercase tracking-[0.18em] text-fleet-muted">Message Body</p>
+                <p class="mt-4 whitespace-pre-line text-sm leading-7 text-fleet-ink" data-communication-history-view-body>No message selected.</p>
+            </div>
+
+            <div class="mt-6 flex justify-end">
+                <button type="button" data-close-communication-history-view-modal class="h-10 rounded-lg bg-fleet-sidebar px-4 text-sm font-semibold text-white shadow-sm hover:bg-fleet-sidebar-active">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
 <?php include __DIR__ . '/../../includes/footer.php'; ?>
