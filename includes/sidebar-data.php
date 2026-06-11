@@ -16,5 +16,7 @@ $navItems = [
     ['key' => 'providers', 'label' => 'Service Providers', 'href' => ($basePath ?: '') . '/modules/service-providers/', 'icon' => 'building'],
     ['key' => 'communications', 'label' => 'Communications', 'href' => ($basePath ?: '') . '/modules/communications/', 'icon' => 'message'],
     ['key' => 'history', 'label' => 'Comm. History', 'href' => ($basePath ?: '') . '/modules/communication-history/', 'icon' => 'history'],
+    ['key' => 'recent-logs', 'label' => 'Recent Logs', 'href' => ($basePath ?: '') . '/modules/recent-logs/', 'icon' => 'history'],
+    ['key' => 'recent-activities', 'label' => 'Recent Activities', 'href' => ($basePath ?: '') . '/modules/recent-activities/', 'icon' => 'history'],
     ['key' => 'estates', 'label' => 'Estates & Works', 'href' => ($basePath ?: '') . '/modules/estates/', 'icon' => 'hard-hat'],
 ];

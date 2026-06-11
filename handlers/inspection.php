@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 require_once __DIR__ . '/../config/database.php';
 require_once __DIR__ . '/../includes/ajax.php';
+require_once __DIR__ . '/../includes/activity-tracker.php';
 
 // Inspection constants used by validation and display helpers.
 const PRE_INSPECTION_ALLOWED_STATUSES = ['good', 'fair', 'faulty', 'needs_repair'];
@@ -908,6 +909,21 @@ function inspectionHandleCreateOrUpdate(string $action): void
         $inspectionId = $action === 'update' ? (int) $reportId : (int) $pdo->lastInsertId();
         inspectionSaveItems($pdo, $inspectionId, $validated['items']);
         $pdo->commit();
+        fleetTrackActivity([
+            'module_key' => 'pre-inspection',
+            'action_key' => $action === 'update' ? 'updated' : 'created',
+            'action_label' => $action === 'update' ? 'Updated pre-inspection' : 'Created pre-inspection',
+            'description' => $action === 'update'
+                ? 'Updated a pre-inspection report.'
+                : 'Created a pre-inspection report.',
+            'target_type' => 'inspection',
+            'target_id' => $inspectionId,
+            'target_label' => $validated['inspector_name'],
+            'metadata' => [
+                'vehicle_id' => $validated['vehicle_id'],
+                'overall_status' => $validated['overall_status'],
+            ],
+        ], $pdo);
 
         inspectionSetFlash([
             'notification' => [
@@ -999,12 +1015,26 @@ function inspectionHandleDelete(): void
     }
 
     try {
-        $statement = fleetDb()->prepare("DELETE FROM inspections WHERE id = :id AND inspection_type = 'pre'");
+        $pdo = fleetDb();
+        $lookup = $pdo->prepare("SELECT inspector_name FROM inspections WHERE id = :id AND inspection_type = 'pre'");
+        $lookup->execute(['id' => $reportId]);
+        $existingReport = $lookup->fetch() ?: null;
+        $statement = $pdo->prepare("DELETE FROM inspections WHERE id = :id AND inspection_type = 'pre'");
         $statement->execute(['id' => $reportId]);
 
         if ($statement->rowCount() === 0) {
             throw new RuntimeException('The selected pre-inspection report no longer exists.');
         }
+
+        fleetTrackActivity([
+            'module_key' => 'pre-inspection',
+            'action_key' => 'deleted',
+            'action_label' => 'Deleted pre-inspection',
+            'description' => 'Removed a pre-inspection report.',
+            'target_type' => 'inspection',
+            'target_id' => (int) $reportId,
+            'target_label' => (string) (($existingReport['inspector_name'] ?? 'Pre-inspection report')),
+        ], $pdo);
 
         inspectionSetFlash([
             'notification' => [
@@ -1136,6 +1166,21 @@ function postInspectionHandleCreateOrUpdate(string $action): void
         $inspectionId = $action === 'update' ? (int) $reportId : (int) $pdo->lastInsertId();
         postInspectionSaveSystemChecks($pdo, $inspectionId, $validated['system_checks']);
         $pdo->commit();
+        fleetTrackActivity([
+            'module_key' => 'post-inspection',
+            'action_key' => $action === 'update' ? 'updated' : 'created',
+            'action_label' => $action === 'update' ? 'Updated post-inspection' : 'Created post-inspection',
+            'description' => $action === 'update'
+                ? 'Updated a post-inspection report.'
+                : 'Created a post-inspection report.',
+            'target_type' => 'inspection',
+            'target_id' => $inspectionId,
+            'target_label' => $validated['inspector_name'],
+            'metadata' => [
+                'vehicle_id' => $validated['vehicle_id'],
+                'overall_status' => $validated['overall_status'],
+            ],
+        ], $pdo);
 
         postInspectionSetFlash([
             'notification' => [
@@ -1227,12 +1272,26 @@ function postInspectionHandleDelete(): void
     }
 
     try {
-        $statement = fleetDb()->prepare("DELETE FROM inspections WHERE id = :id AND inspection_type = 'post'");
+        $pdo = fleetDb();
+        $lookup = $pdo->prepare("SELECT inspector_name FROM inspections WHERE id = :id AND inspection_type = 'post'");
+        $lookup->execute(['id' => $reportId]);
+        $existingReport = $lookup->fetch() ?: null;
+        $statement = $pdo->prepare("DELETE FROM inspections WHERE id = :id AND inspection_type = 'post'");
         $statement->execute(['id' => $reportId]);
 
         if ($statement->rowCount() === 0) {
             throw new RuntimeException('The selected post-inspection report no longer exists.');
         }
+
+        fleetTrackActivity([
+            'module_key' => 'post-inspection',
+            'action_key' => 'deleted',
+            'action_label' => 'Deleted post-inspection',
+            'description' => 'Removed a post-inspection report.',
+            'target_type' => 'inspection',
+            'target_id' => (int) $reportId,
+            'target_label' => (string) (($existingReport['inspector_name'] ?? 'Post-inspection report')),
+        ], $pdo);
 
         postInspectionSetFlash([
             'notification' => [

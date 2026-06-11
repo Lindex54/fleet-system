@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 require_once __DIR__ . '/../config/database.php';
+require_once __DIR__ . '/../includes/activity-tracker.php';
 
 // Estate project constants used by validation and display helpers.
 const ESTATE_ALLOWED_STATUSES = ['planned', 'approved', 'in_progress', 'on_hold', 'completed', 'cancelled'];
@@ -481,7 +482,23 @@ function estateHandleCreateOrUpdate(string $action): void
         $statement->bindValue(':progress_percent', $validated['progress_percent'], PDO::PARAM_INT);
         $statement->bindValue(':description', $validated['description'], $validated['description'] === null ? PDO::PARAM_NULL : PDO::PARAM_STR);
         $statement->execute();
+        $targetProjectId = $action === 'update' ? (int) $projectId : (int) $pdo->lastInsertId();
         $pdo->commit();
+        fleetTrackActivity([
+            'module_key' => 'estates',
+            'action_key' => $action === 'update' ? 'updated' : 'created',
+            'action_label' => $action === 'update' ? 'Updated project' : 'Created project',
+            'description' => $action === 'update'
+                ? 'Updated an estate project.'
+                : 'Created a new estate project.',
+            'target_type' => 'estate_project',
+            'target_id' => $targetProjectId,
+            'target_label' => $validated['project_name'],
+            'metadata' => [
+                'status' => $validated['status'],
+                'priority' => $validated['priority'],
+            ],
+        ], $pdo);
 
         estateSetFlash([
             'notification' => [
@@ -547,12 +564,26 @@ function estateHandleDelete(): void
     }
 
     try {
-        $statement = fleetDb()->prepare('DELETE FROM estate_projects WHERE id = :id');
+        $pdo = fleetDb();
+        $lookup = $pdo->prepare('SELECT project_name FROM estate_projects WHERE id = :id');
+        $lookup->execute(['id' => $projectId]);
+        $existingProject = $lookup->fetch() ?: null;
+        $statement = $pdo->prepare('DELETE FROM estate_projects WHERE id = :id');
         $statement->execute(['id' => $projectId]);
 
         if ($statement->rowCount() === 0) {
             throw new RuntimeException('The selected estate project no longer exists.');
         }
+
+        fleetTrackActivity([
+            'module_key' => 'estates',
+            'action_key' => 'deleted',
+            'action_label' => 'Deleted project',
+            'description' => 'Removed an estate project.',
+            'target_type' => 'estate_project',
+            'target_id' => (int) $projectId,
+            'target_label' => (string) (($existingProject['project_name'] ?? 'Estate project')),
+        ], $pdo);
 
         estateSetFlash([
             'notification' => [

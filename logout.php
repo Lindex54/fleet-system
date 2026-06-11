@@ -1,9 +1,20 @@
 <?php
 declare(strict_types=1);
 
+require_once __DIR__ . '/includes/activity-tracker.php';
+
 if (session_status() !== PHP_SESSION_ACTIVE) {
     session_start();
 }
+
+fleetTrackAuthEvent([
+    'user_id' => $_SESSION['user_id'] ?? null,
+    'username' => $_SESSION['username'] ?? null,
+    'name' => $_SESSION['user_name'] ?? null,
+    'role' => $_SESSION['user_role'] ?? null,
+    'event_type' => 'logout',
+    'event_description' => 'User signed out',
+]);
 
 $_SESSION = [];
 

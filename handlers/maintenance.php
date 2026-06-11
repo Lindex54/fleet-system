@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 require_once __DIR__ . '/../config/database.php';
 require_once __DIR__ . '/../includes/ajax.php';
+require_once __DIR__ . '/../includes/activity-tracker.php';
 
 // Maintenance constants and page/session helpers
 const MAINTENANCE_ALLOWED_TYPES = ['repair', 'routine_service', 'inspection', 'brake_service', 'other'];
@@ -414,6 +415,22 @@ function maintenanceHandleCreateOrUpdate(string $action): void
         $statement->bindValue(':status', $validated['status']);
         $statement->bindValue(':remarks', $validated['remarks'], $validated['remarks'] === null ? PDO::PARAM_NULL : PDO::PARAM_STR);
         $statement->execute();
+        $targetRecordId = $action === 'update' ? (int) $recordId : (int) $pdo->lastInsertId();
+        fleetTrackActivity([
+            'module_key' => 'maintenance',
+            'action_key' => $action === 'update' ? 'updated' : 'created',
+            'action_label' => $action === 'update' ? 'Updated maintenance' : 'Created maintenance',
+            'description' => $action === 'update'
+                ? 'Updated a maintenance record.'
+                : 'Created a maintenance record.',
+            'target_type' => 'maintenance_record',
+            'target_id' => $targetRecordId,
+            'target_label' => $validated['description'],
+            'metadata' => [
+                'vehicle_id' => $validated['vehicle_id'],
+                'status' => $validated['status'],
+            ],
+        ], $pdo);
 
         maintenanceSetFlash([
             'notification' => [
@@ -508,12 +525,26 @@ function maintenanceHandleDelete(): void
     $responseStatus = 200;
 
     try {
-        $statement = fleetDb()->prepare('DELETE FROM maintenance_records WHERE id = :id');
+        $pdo = fleetDb();
+        $lookup = $pdo->prepare('SELECT description FROM maintenance_records WHERE id = :id');
+        $lookup->execute(['id' => $recordId]);
+        $existingRecord = $lookup->fetch() ?: null;
+        $statement = $pdo->prepare('DELETE FROM maintenance_records WHERE id = :id');
         $statement->execute(['id' => $recordId]);
 
         if ($statement->rowCount() === 0) {
             throw new RuntimeException('The selected maintenance record no longer exists.');
         }
+
+        fleetTrackActivity([
+            'module_key' => 'maintenance',
+            'action_key' => 'deleted',
+            'action_label' => 'Deleted maintenance',
+            'description' => 'Removed a maintenance record.',
+            'target_type' => 'maintenance_record',
+            'target_id' => (int) $recordId,
+            'target_label' => (string) (($existingRecord['description'] ?? 'Maintenance record')),
+        ], $pdo);
 
         maintenanceSetFlash([
             'notification' => [

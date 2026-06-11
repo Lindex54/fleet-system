@@ -235,6 +235,36 @@ include __DIR__ . '/includes/sidebar.php';
 
                     <section class="dashboard-panel">
                         <div class="dashboard-panel-head">
+                            <h2 class="text-base font-extrabold text-fleet-ink">Active Admins</h2>
+                            <span class="rounded-full bg-green-100 px-3 py-1 text-xs font-semibold text-fleet-success"><?= $activeAdminCount; ?> active</span>
+                        </div>
+                        <div>
+                            <?php if ($activeAdmins === []): ?>
+                                <p class="text-sm text-fleet-muted">No active admins found.</p>
+                            <?php else: ?>
+                                <div class="space-y-4">
+                                    <?php foreach ($activeAdmins as $user): ?>
+                                        <div class="flex items-center justify-between gap-4 rounded-[1.25rem] border border-fleet-line-soft bg-fleet-surface-muted px-4 py-3">
+                                            <div class="flex items-center gap-3">
+                                                <span class="h-2.5 w-2.5 rounded-full bg-green-300"></span>
+                                                <div>
+                                                    <p class="text-sm font-semibold text-fleet-ink"><?= htmlspecialchars($user['name'], ENT_QUOTES, 'UTF-8'); ?></p>
+                                                    <p class="text-xs text-fleet-muted"><?= htmlspecialchars($user['email'], ENT_QUOTES, 'UTF-8'); ?></p>
+                                                </div>
+                                            </div>
+                                            <div class="text-right">
+                                                <span class="rounded-full bg-white px-3 py-1 text-xs font-semibold text-fleet-sidebar shadow-sm"><?= htmlspecialchars($user['role'], ENT_QUOTES, 'UTF-8'); ?></span>
+                                                <p class="mt-2 text-xs text-fleet-muted"><?= htmlspecialchars($user['last_seen'], ENT_QUOTES, 'UTF-8'); ?></p>
+                                            </div>
+                                        </div>
+                                    <?php endforeach; ?>
+                                </div>
+                            <?php endif; ?>
+                        </div>
+                    </section>
+
+                    <section class="dashboard-panel">
+                        <div class="dashboard-panel-head">
                             <h2 class="text-base font-extrabold text-fleet-ink">Active Users</h2>
                             <span class="rounded-full bg-green-100 px-3 py-1 text-xs font-semibold text-fleet-success"><?= $onlineCount; ?> active</span>
                         </div>

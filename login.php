@@ -2,6 +2,7 @@
 declare(strict_types=1);
 
 require_once __DIR__ . '/config/database.php';
+require_once __DIR__ . '/includes/activity-tracker.php';
 
 if (session_status() !== PHP_SESSION_ACTIVE) {
     session_start();
@@ -61,6 +62,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $user = $statement->fetch();
 
             if (!$user || !password_verify($password, (string) $user['password_hash'])) {
+                fleetTrackAuthEvent([
+                    'user_id' => $user['user_id'] ?? null,
+                    'username' => $username,
+                    'name' => $user['name'] ?? null,
+                    'email' => $user['email'] ?? null,
+                    'role' => $user['role'] ?? null,
+                    'event_type' => 'login_failed',
+                    'event_description' => 'Failed login attempt',
+                ]);
                 $errorMessage = 'Invalid username or password.';
             } elseif ((string) $user['user_status'] !== 'active') {
                 $errorMessage = 'This account is not active.';
@@ -75,12 +85,22 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 unset($_SESSION['driver_id'], $_SESSION['admin_user_id'], $_SESSION['admin_role']);
 
                 $_SESSION['user_id'] = (int) $user['user_id'];
+                $_SESSION['username'] = (string) $user['username'];
                 $_SESSION['user_name'] = (string) $user['name'];
                 $_SESSION['user_role'] = (string) $user['role'];
                 $_SESSION['must_change_password'] = (int) $user['must_change_password'];
 
                 $updateLogin = $pdo->prepare('UPDATE users SET last_login_at = NOW() WHERE id = :id');
                 $updateLogin->execute(['id' => (int) $user['user_id']]);
+                fleetTrackAuthEvent([
+                    'user_id' => (int) $user['user_id'],
+                    'username' => (string) $user['username'],
+                    'name' => (string) $user['name'],
+                    'email' => (string) $user['email'],
+                    'role' => (string) $user['role'],
+                    'event_type' => 'login',
+                    'event_description' => 'User signed in successfully',
+                ], $pdo);
 
                 if ((string) $user['role'] === 'admin') {
                     $_SESSION['admin_user_id'] = (int) $user['user_id'];

@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 require_once __DIR__ . '/../config/database.php';
+require_once __DIR__ . '/../includes/activity-tracker.php';
 
 // Logbook page/session helpers
 // Starts the session used for logbook flash notifications if it is not already active.
@@ -603,7 +604,24 @@ function logbookHandleCreateOrUpdate(string $action): void
         $statement->bindValue(':fuel_cost', $validated['fuel_cost'], $validated['fuel_cost'] === null ? PDO::PARAM_NULL : PDO::PARAM_STR);
         $statement->bindValue(':remarks', $validated['remarks'], $validated['remarks'] === null ? PDO::PARAM_NULL : PDO::PARAM_STR);
         $statement->execute();
+        $logEntryId = $action === 'update' ? (int) $entryId : (int) $pdo->lastInsertId();
         $pdo->commit();
+        fleetTrackActivity([
+            'module_key' => 'logbook',
+            'action_key' => $action === 'update' ? 'updated' : 'created',
+            'action_label' => $action === 'update' ? 'Updated trip log' : 'Created trip log',
+            'description' => $action === 'update'
+                ? 'Updated a vehicle trip log entry.'
+                : 'Added a new vehicle trip log entry.',
+            'target_type' => 'trip_log',
+            'target_id' => $logEntryId,
+            'target_label' => $validated['destination'],
+            'metadata' => [
+                'trip_date' => $validated['trip_date'],
+                'vehicle_id' => $validated['vehicle_id'],
+                'driver_id' => $validated['driver_id'],
+            ],
+        ], $pdo);
 
         logbookSetFlash([
             'notification' => [
@@ -672,12 +690,26 @@ function logbookHandleDelete(): void
     }
 
     try {
-        $statement = fleetDb()->prepare('DELETE FROM vehicle_logs WHERE id = :id');
+        $pdo = fleetDb();
+        $lookup = $pdo->prepare('SELECT destination FROM vehicle_logs WHERE id = :id');
+        $lookup->execute(['id' => $entryId]);
+        $existingLog = $lookup->fetch() ?: null;
+        $statement = $pdo->prepare('DELETE FROM vehicle_logs WHERE id = :id');
         $statement->execute(['id' => $entryId]);
 
         if ($statement->rowCount() === 0) {
             throw new RuntimeException('The selected log entry no longer exists.');
         }
+
+        fleetTrackActivity([
+            'module_key' => 'logbook',
+            'action_key' => 'deleted',
+            'action_label' => 'Deleted trip log',
+            'description' => 'Removed a vehicle trip log entry.',
+            'target_type' => 'trip_log',
+            'target_id' => (int) $entryId,
+            'target_label' => (string) (($existingLog['destination'] ?? 'Trip log entry')),
+        ], $pdo);
 
         logbookSetFlash([
             'notification' => [

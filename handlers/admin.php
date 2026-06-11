@@ -3,6 +3,7 @@ declare(strict_types=1);
 
 require_once __DIR__ . '/../config/database.php';
 require_once __DIR__ . '/../includes/auth.php';
+require_once __DIR__ . '/../includes/activity-tracker.php';
 fleetAuthRequireAdmin();
 
 const ADMIN_USERNAME_PREFIX = 'BUESMISadmin';
@@ -176,6 +177,20 @@ function adminHandleCreate(): void
         ]);
 
         $pdo->commit();
+        $adminUserId = (int) $pdo->lastInsertId();
+        fleetTrackActivity([
+            'module_key' => 'admins',
+            'action_key' => 'created',
+            'action_label' => 'Created admin',
+            'description' => 'Created a new administrator account.',
+            'target_type' => 'admin',
+            'target_id' => $adminUserId,
+            'target_label' => $formData['name'],
+            'metadata' => [
+                'username' => $username,
+                'status' => $formData['status'],
+            ],
+        ], $pdo);
 
         adminSetFlash([
             'notification' => [

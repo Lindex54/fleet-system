@@ -3,6 +3,7 @@ declare(strict_types=1);
 
 require_once __DIR__ . '/config/database.php';
 require_once __DIR__ . '/includes/auth.php';
+require_once __DIR__ . '/includes/activity-tracker.php';
 
 fleetAuthStartSession();
 
@@ -46,6 +47,22 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             }
 
             $_SESSION['must_change_password'] = 0;
+            fleetTrackAuthEvent([
+                'user_id' => (int) $_SESSION['admin_user_id'],
+                'name' => (string) ($_SESSION['user_name'] ?? ''),
+                'role' => 'admin',
+                'event_type' => 'password_changed',
+                'event_description' => 'Admin password changed successfully',
+            ]);
+            fleetTrackActivity([
+                'module_key' => 'account',
+                'action_key' => 'password_changed',
+                'action_label' => 'Changed password',
+                'description' => 'Admin updated account password.',
+                'target_type' => 'account',
+                'target_id' => (int) $_SESSION['admin_user_id'],
+                'target_label' => (string) ($_SESSION['user_name'] ?? 'Admin account'),
+            ]);
             header('Location: /fleet-system/dashboard');
             exit;
         } catch (Throwable $exception) {

@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 require_once __DIR__ . '/../config/database.php';
 require_once __DIR__ . '/../includes/ajax.php';
+require_once __DIR__ . '/../includes/activity-tracker.php';
 
 // Driver panel helpers use the existing schema and gracefully fall back while auth is not yet implemented.
 const DRIVER_PANEL_PRETRIP_CHECKLIST = [
@@ -195,6 +196,22 @@ function driverPanelHandlePasswordChange(): void
         }
 
         $_SESSION['must_change_password'] = 0;
+        fleetTrackAuthEvent([
+            'user_id' => (int) $_SESSION['user_id'],
+            'name' => (string) ($_SESSION['user_name'] ?? ''),
+            'role' => 'driver',
+            'event_type' => 'password_changed',
+            'event_description' => 'Driver password changed successfully',
+        ], $pdo);
+        fleetTrackActivity([
+            'module_key' => 'driver-panel',
+            'action_key' => 'password_changed',
+            'action_label' => 'Changed password',
+            'description' => 'Driver updated account password.',
+            'target_type' => 'account',
+            'target_id' => (int) $_SESSION['user_id'],
+            'target_label' => (string) ($_SESSION['user_name'] ?? 'Driver account'),
+        ], $pdo);
         driverPanelSetPasswordFlash([
             'type' => 'success',
             'message' => 'Your password has been updated.',
@@ -1152,6 +1169,19 @@ function driverPanelHandlePreTripSubmission(): void
         $inspectionId = (int) $pdo->lastInsertId();
         driverPanelSaveInspectionItems($pdo, $inspectionId, $validated['items']);
         $pdo->commit();
+        fleetTrackActivity([
+            'module_key' => 'driver-panel',
+            'action_key' => 'submitted_pre_trip',
+            'action_label' => 'Submitted pre-trip',
+            'description' => 'Driver submitted a pre-trip inspection.',
+            'target_type' => 'inspection',
+            'target_id' => $inspectionId,
+            'target_label' => (string) ($_SESSION['user_name'] ?? 'Driver inspection'),
+            'metadata' => [
+                'vehicle_id' => $validated['vehicle_id'],
+                'overall_status' => $validated['overall_status'],
+            ],
+        ], $pdo);
 
         driverPanelSetPreTripFlash([
             'notification' => [
@@ -1520,6 +1550,19 @@ function driverPanelHandleStartTrip(): void
             'purpose' => $validated['purpose'],
             'odometer_start' => $validated['odometer_start'],
         ]);
+        $tripId = (int) $pdo->lastInsertId();
+        fleetTrackActivity([
+            'module_key' => 'driver-panel',
+            'action_key' => 'started_trip',
+            'action_label' => 'Started trip',
+            'description' => 'Driver started a trip.',
+            'target_type' => 'trip_log',
+            'target_id' => $tripId,
+            'target_label' => $validated['destination'],
+            'metadata' => [
+                'vehicle_id' => $validated['vehicle_id'],
+            ],
+        ], $pdo);
 
         driverPanelSetTripFlash([
             'notification' => [
@@ -1657,6 +1700,15 @@ function driverPanelHandleEndTrip(): void
         ]);
 
         $pdo->commit();
+        fleetTrackActivity([
+            'module_key' => 'driver-panel',
+            'action_key' => 'ended_trip',
+            'action_label' => 'Ended trip',
+            'description' => 'Driver completed a trip.',
+            'target_type' => 'trip_log',
+            'target_id' => (int) $validated['trip_id'],
+            'target_label' => (string) ($openTrip['destination'] ?? 'Completed trip'),
+        ], $pdo);
 
         driverPanelSetTripFlash([
             'notification' => [
@@ -2161,6 +2213,19 @@ function driverPanelHandleIncidentReport(): void
         $statement->bindValue(':description', $validated['description']);
         $statement->bindValue(':urgency', $validated['urgency']);
         $statement->execute();
+        $incidentId = (int) $pdo->lastInsertId();
+        fleetTrackActivity([
+            'module_key' => 'driver-panel',
+            'action_key' => 'reported_incident',
+            'action_label' => 'Reported incident',
+            'description' => 'Driver submitted an incident report.',
+            'target_type' => 'incident_report',
+            'target_id' => $incidentId,
+            'target_label' => $validated['subject'],
+            'metadata' => [
+                'urgency' => $validated['urgency'],
+            ],
+        ], $pdo);
 
         driverPanelSetMessagesFlash([
             'notification' => [

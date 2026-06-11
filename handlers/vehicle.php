@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 require_once __DIR__ . '/../config/database.php';
 require_once __DIR__ . '/../includes/ajax.php';
+require_once __DIR__ . '/../includes/activity-tracker.php';
 
 // Vehicle constants and lightweight page/session helpers
 const VEHICLE_ALLOWED_TYPES = ['sedan', 'suv', 'pickup', 'truck', 'van', 'bus', 'motorcycle', 'other'];
@@ -566,6 +567,15 @@ function vehicleHandleDelete(): void
         }
 
         vehicleDeleteStoredUpload($existingRecord['vehicle_image'] ?? null);
+        fleetTrackActivity([
+            'module_key' => 'vehicles',
+            'action_key' => 'deleted',
+            'action_label' => 'Deleted vehicle',
+            'description' => 'Removed a vehicle from the fleet register.',
+            'target_type' => 'vehicle',
+            'target_id' => (int) $vehicleId,
+            'target_label' => (string) ($existingRecord['registration_no'] ?? 'Vehicle record'),
+        ], $pdo);
 
         vehicleSetFlash([
             'notification' => [
@@ -635,6 +645,24 @@ function vehicleHandleUpsert(string $action): void
     try {
         $validated = vehicleValidateFormData($formData);
         vehiclePersistRecord($validated, $action, $newUploads, $oldUploadsToDelete);
+        $targetVehicleId = $action === 'update'
+            ? (int) ($_POST['vehicle_id'] ?? 0)
+            : (int) fleetDb()->lastInsertId();
+        fleetTrackActivity([
+            'module_key' => 'vehicles',
+            'action_key' => $action === 'update' ? 'updated' : 'created',
+            'action_label' => $action === 'update' ? 'Updated vehicle' : 'Created vehicle',
+            'description' => $action === 'update'
+                ? 'Updated vehicle information in the fleet register.'
+                : 'Added a new vehicle to the fleet register.',
+            'target_type' => 'vehicle',
+            'target_id' => $targetVehicleId > 0 ? $targetVehicleId : null,
+            'target_label' => $validated['registration_number'],
+            'metadata' => [
+                'status' => $validated['status'],
+                'vehicle_type' => $validated['vehicle_type'],
+            ],
+        ]);
 
         foreach ($oldUploadsToDelete as $oldUpload) {
             vehicleDeleteStoredUpload($oldUpload);

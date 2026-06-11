@@ -15,7 +15,9 @@ function dashboardFetchPageData(): array
     $serviceDueAlerts = [];
     $vehicleLogs = [];
     $activeMaintenance = [];
+    $activeAdmins = [];
     $activeUsers = [];
+    $activeAdminCount = 0;
     $onlineCount = 0;
     $needsRepairVehicle = null;
 
@@ -150,10 +152,27 @@ function dashboardFetchPageData(): array
             ];
         }
 
+        $adminStatement = $pdo->query(
+            "SELECT name, email, role, status, last_login_at
+            FROM users
+            WHERE status = 'active' AND role = 'admin'
+            ORDER BY COALESCE(last_login_at, '1970-01-01 00:00:00') DESC, id DESC
+            LIMIT 5"
+        );
+
+        foreach ($adminStatement->fetchAll() as $row) {
+            $activeAdmins[] = [
+                'name' => $row['name'],
+                'email' => $row['email'],
+                'role' => $row['role'],
+                'last_seen' => $row['last_login_at'] ? date('d M Y H:i', strtotime((string) $row['last_login_at'])) : 'No login recorded',
+            ];
+        }
+
         $userStatement = $pdo->query(
             "SELECT name, email, role, status, last_login_at
             FROM users
-            WHERE status = 'active'
+            WHERE status = 'active' AND role <> 'admin'
             ORDER BY COALESCE(last_login_at, '1970-01-01 00:00:00') DESC, id DESC
             LIMIT 5"
         );
@@ -167,6 +186,7 @@ function dashboardFetchPageData(): array
             ];
         }
 
+        $activeAdminCount = count($activeAdmins);
         $onlineCount = count($activeUsers);
     } catch (Throwable $exception) {
         $metrics = [
@@ -184,7 +204,9 @@ function dashboardFetchPageData(): array
         'serviceDueAlerts' => $serviceDueAlerts,
         'vehicleLogs' => $vehicleLogs,
         'activeMaintenance' => $activeMaintenance,
+        'activeAdmins' => $activeAdmins,
         'activeUsers' => $activeUsers,
+        'activeAdminCount' => $activeAdminCount,
         'onlineCount' => $onlineCount,
         'needsRepairVehicle' => $needsRepairVehicle,
     ];

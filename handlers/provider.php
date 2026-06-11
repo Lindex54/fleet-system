@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 require_once __DIR__ . '/../config/database.php';
 require_once __DIR__ . '/../includes/ajax.php';
+require_once __DIR__ . '/../includes/activity-tracker.php';
 
 // Service provider constants used by validation and display helpers.
 const PROVIDER_ALLOWED_STATUSES = ['active', 'pending', 'inactive'];
@@ -234,6 +235,21 @@ function providerHandleCreateOrUpdate(string $action): void
         $statement->bindValue(':specialty', $validated['specialty'], $validated['specialty'] === null ? PDO::PARAM_NULL : PDO::PARAM_STR);
         $statement->bindValue(':status', $validated['status']);
         $statement->execute();
+        $targetProviderId = $action === 'update' ? (int) $providerId : (int) $pdo->lastInsertId();
+        fleetTrackActivity([
+            'module_key' => 'providers',
+            'action_key' => $action === 'update' ? 'updated' : 'created',
+            'action_label' => $action === 'update' ? 'Updated provider' : 'Created provider',
+            'description' => $action === 'update'
+                ? 'Updated a service provider profile.'
+                : 'Added a new service provider.',
+            'target_type' => 'service_provider',
+            'target_id' => $targetProviderId,
+            'target_label' => $validated['name'],
+            'metadata' => [
+                'status' => $validated['status'],
+            ],
+        ], $pdo);
 
         providerSetFlash([
             'notification' => [
@@ -329,12 +345,26 @@ function providerHandleDelete(): void
     ];
 
     try {
-        $statement = fleetDb()->prepare('DELETE FROM service_providers WHERE id = :id');
+        $pdo = fleetDb();
+        $lookup = $pdo->prepare('SELECT name FROM service_providers WHERE id = :id');
+        $lookup->execute(['id' => $providerId]);
+        $existingProvider = $lookup->fetch() ?: null;
+        $statement = $pdo->prepare('DELETE FROM service_providers WHERE id = :id');
         $statement->execute(['id' => $providerId]);
 
         if ($statement->rowCount() === 0) {
             throw new RuntimeException('The selected service provider no longer exists.');
         }
+
+        fleetTrackActivity([
+            'module_key' => 'providers',
+            'action_key' => 'deleted',
+            'action_label' => 'Deleted provider',
+            'description' => 'Removed a service provider.',
+            'target_type' => 'service_provider',
+            'target_id' => (int) $providerId,
+            'target_label' => (string) (($existingProvider['name'] ?? 'Service provider')),
+        ], $pdo);
 
         providerSetFlash([
             'notification' => [

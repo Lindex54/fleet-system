@@ -5,6 +5,7 @@ declare(strict_types=1);
 require_once __DIR__ . '/../config/database.php';
 require_once __DIR__ . '/../includes/auth.php';
 require_once __DIR__ . '/../includes/ajax.php';
+require_once __DIR__ . '/../includes/activity-tracker.php';
 fleetAuthRequireAdmin();
 
 // Driver constants and page/session helpers
@@ -993,6 +994,21 @@ function driverHandleCreateOrUpdate(string $action): void
         driverSyncVehicleAssignment($pdo, $driverId, $validated['assigned_vehicle_id']);
         driverSyncSecondaryVehicles($pdo, $driverId, $validated['other_vehicle_ids'], $validated['assigned_vehicle_id']);
         $pdo->commit();
+        fleetTrackActivity([
+            'module_key' => 'drivers',
+            'action_key' => $action === 'update' ? 'updated' : 'created',
+            'action_label' => $action === 'update' ? 'Updated driver' : 'Created driver',
+            'description' => $action === 'update'
+                ? 'Updated an existing driver record.'
+                : 'Created a new driver account and profile.',
+            'target_type' => 'driver',
+            'target_id' => $driverId,
+            'target_label' => $validated['full_name'],
+            'metadata' => [
+                'status' => $validated['status'],
+                'assigned_vehicle_id' => $validated['assigned_vehicle_id'],
+            ],
+        ], $pdo);
 
         foreach ($oldUploadsToDelete as $oldUpload) {
             driverDeleteStoredUpload($oldUpload);
@@ -1172,6 +1188,15 @@ function driverHandleDelete(): void
         driverDeleteStoredUpload($existingRecord['driver_photo'] ?? null);
         driverDeleteStoredUpload($existingRecord['national_id_photo'] ?? null);
         driverDeleteStoredUpload($existingRecord['driving_license_scan'] ?? null);
+        fleetTrackActivity([
+            'module_key' => 'drivers',
+            'action_key' => 'deleted',
+            'action_label' => 'Deleted driver',
+            'description' => 'Removed a driver from the system.',
+            'target_type' => 'driver',
+            'target_id' => (int) $driverId,
+            'target_label' => (string) ($existingRecord['full_name'] ?? 'Driver record'),
+        ], $pdo);
 
         driverSetFlash([
             'notification' => [
