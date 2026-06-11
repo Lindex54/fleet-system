@@ -1,25 +1,35 @@
 <?php
-// Static frontend page for fleet analytics and reporting.
+// Live fleet analytics page backed by aggregated database queries.
 $activePage = 'reports';
-require_once __DIR__ . '/../../includes/data.php';
-extract(fleetData('reports'));
+require_once __DIR__ . '/../../handlers/reports.php';
+extract(reportsFetchPageData());
 include __DIR__ . '/../../includes/header.php';
 include __DIR__ . '/../../includes/sidebar.php';
 ?>
 <main class="min-h-screen lg:pl-64">
-    <div class="mx-auto max-w-[1180px] px-4 py-8 sm:px-6 lg:px-8">
+    <div class="mx-auto max-w-[1320px] px-4 py-8 sm:px-6 lg:px-8">
         <div class="mb-7 flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
             <div>
                 <h1 class="text-2xl font-extrabold tracking-normal text-fleet-ink sm:text-3xl">Fleet Reports</h1>
-                <p class="mt-2 text-sm text-fleet-muted">Cost analysis and fleet utilization overview</p>
+                <p class="mt-2 text-sm text-fleet-muted">Live cost analysis and fleet utilization overview from the database.</p>
+                <p class="mt-1 text-xs font-semibold uppercase tracking-[0.16em] text-fleet-primary">Scope: <?= htmlspecialchars($reportPeriodLabel, ENT_QUOTES, 'UTF-8'); ?></p>
             </div>
-            <select class="vehicle-form-control h-10 w-40">
-                <option>All Time</option>
-                <option>This Month</option>
-                <option>This Quarter</option>
-                <option>This Year</option>
-            </select>
+            <form action="<?= htmlspecialchars($reportsPageUrl, ENT_QUOTES, 'UTF-8'); ?>" method="get">
+                <select name="period" class="vehicle-form-control h-10 w-40" onchange="this.form.submit()">
+                    <option value="all" <?= ($reportFilters['period'] ?? 'all') === 'all' ? 'selected' : ''; ?>>All Time</option>
+                    <option value="month" <?= ($reportFilters['period'] ?? '') === 'month' ? 'selected' : ''; ?>>This Month</option>
+                    <option value="quarter" <?= ($reportFilters['period'] ?? '') === 'quarter' ? 'selected' : ''; ?>>This Quarter</option>
+                    <option value="year" <?= ($reportFilters['period'] ?? '') === 'year' ? 'selected' : ''; ?>>This Year</option>
+                </select>
+            </form>
         </div>
+
+        <?php if (!empty($reportNotification)): ?>
+            <section class="mb-6 rounded-2xl border border-red-200 bg-red-50 px-5 py-4 text-red-900">
+                <h2 class="text-sm font-extrabold uppercase tracking-[0.18em]"><?= htmlspecialchars($reportNotification['title'], ENT_QUOTES, 'UTF-8'); ?></h2>
+                <p class="mt-2 text-sm"><?= htmlspecialchars($reportNotification['message'], ENT_QUOTES, 'UTF-8'); ?></p>
+            </section>
+        <?php endif; ?>
 
         <section class="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
             <?php foreach ($summaryCards as $card): ?>
@@ -40,76 +50,161 @@ include __DIR__ . '/../../includes/sidebar.php';
             <?php endforeach; ?>
         </section>
 
+        <section class="mt-6 grid gap-4 md:grid-cols-2">
+            <?php foreach ($reportHighlights as $highlight): ?>
+                <article class="rounded-2xl border border-fleet-line bg-fleet-surface p-5 shadow-fleet-card">
+                    <p class="text-xs font-extrabold uppercase tracking-[0.18em] text-fleet-muted"><?= htmlspecialchars($highlight['label'], ENT_QUOTES, 'UTF-8'); ?></p>
+                    <p class="mt-3 text-2xl font-extrabold text-fleet-ink"><?= htmlspecialchars($highlight['value'], ENT_QUOTES, 'UTF-8'); ?></p>
+                    <p class="mt-2 text-sm text-fleet-muted"><?= htmlspecialchars($highlight['detail'], ENT_QUOTES, 'UTF-8'); ?></p>
+                </article>
+            <?php endforeach; ?>
+        </section>
+
         <section class="mt-6 grid gap-6 xl:grid-cols-2">
             <article class="interactive-card rounded-lg border border-fleet-line bg-fleet-surface p-6 shadow-fleet-card">
-                <h2 class="text-base font-extrabold text-fleet-ink">Maintenance Cost by Vehicle</h2>
-                <div class="mt-8 flex h-64 items-center">
-                    <div class="mr-3 w-20 text-right text-xs text-fleet-muted">UAJ 433X</div>
-                    <div class="relative flex h-56 flex-1 flex-col justify-end border-b border-l border-fleet-line">
-                        <div class="absolute inset-x-0 bottom-0 grid h-full grid-cols-4 text-xs text-fleet-muted">
-                            <span class="border-r border-dashed border-fleet-line"></span>
-                            <span class="border-r border-dashed border-fleet-line"></span>
-                            <span class="border-r border-dashed border-fleet-line"></span>
-                            <span></span>
-                        </div>
-                        <div class="report-chart-group relative z-10 mb-6 ml-0 h-32 w-[70%] rounded-r bg-fleet-sidebar">
-                            <div class="report-tooltip right-4 top-1/2 -translate-y-1/2">
-                                <p class="font-semibold text-fleet-ink">UAJ 433X</p>
-                                <p class="mt-2 text-fleet-sidebar">value : UGX 4,200,000</p>
-                            </div>
-                        </div>
-                        <div class="absolute -bottom-7 inset-x-0 grid grid-cols-4 text-center text-sm text-fleet-muted">
-                            <span>0.0M</span>
-                            <span>1.5M</span>
-                            <span>3.0M</span>
-                            <span>6.0M</span>
-                        </div>
+                <div class="flex items-start justify-between gap-4">
+                    <div>
+                        <h2 class="text-base font-extrabold text-fleet-ink">Maintenance Cost by Vehicle</h2>
+                        <p class="mt-1 text-sm text-fleet-muted">Highest maintenance spend for the selected period.</p>
                     </div>
+                    <span class="rounded-full bg-fleet-primary-soft px-3 py-1 text-xs font-semibold text-fleet-primary"><?= count($maintenanceByVehicle); ?> vehicle(s)</span>
                 </div>
+
+                <?php if ($maintenanceByVehicle === []): ?>
+                    <div class="mt-8 rounded-2xl border border-dashed border-fleet-line px-5 py-10 text-center text-sm text-fleet-muted">
+                        No maintenance cost records found for this period.
+                    </div>
+                <?php else: ?>
+                    <div class="mt-8 space-y-5">
+                        <?php foreach ($maintenanceByVehicle as $row): ?>
+                            <div class="grid gap-3 md:grid-cols-[150px_minmax(0,1fr)_120px] md:items-center">
+                                <div>
+                                    <p class="text-sm font-extrabold text-fleet-ink"><?= htmlspecialchars($row['vehicle'], ENT_QUOTES, 'UTF-8'); ?></p>
+                                    <p class="text-xs text-fleet-muted"><?= htmlspecialchars($row['make_model'], ENT_QUOTES, 'UTF-8'); ?></p>
+                                </div>
+                                <div class="relative h-4 overflow-hidden rounded-full bg-fleet-primary-soft">
+                                    <div class="absolute inset-y-0 left-0 rounded-full bg-fleet-sidebar" style="width: <?= (int) $row['bar_width']; ?>%"></div>
+                                </div>
+                                <div class="text-right">
+                                    <p class="text-sm font-extrabold text-fleet-ink"><?= htmlspecialchars($row['formatted_cost'], ENT_QUOTES, 'UTF-8'); ?></p>
+                                    <p class="text-xs text-fleet-muted"><?= (int) $row['record_count']; ?> record(s)</p>
+                                </div>
+                            </div>
+                        <?php endforeach; ?>
+                    </div>
+                <?php endif; ?>
             </article>
 
             <article class="interactive-card rounded-lg border border-fleet-line bg-fleet-surface p-6 shadow-fleet-card">
-                <h2 class="text-base font-extrabold text-fleet-ink">Cost by Maintenance Type</h2>
-                <div class="mt-8 flex h-64 items-center justify-center">
-                    <div class="relative flex items-center gap-3">
-                        <span class="text-sm text-fleet-sidebar">repair</span>
-                        <div class="h-px w-9 bg-fleet-sidebar"></div>
-                        <div class="report-chart-group relative h-44 w-44 rounded-full bg-fleet-sidebar">
-                            <div class="absolute inset-9 rounded-full bg-fleet-surface"></div>
-                            <div class="report-tooltip left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 text-center">
-                                <p class="font-semibold text-fleet-ink">repair</p>
-                                <p class="mt-2 text-fleet-sidebar">UGX 4,200,000</p>
-                            </div>
-                        </div>
+                <div class="flex items-start justify-between gap-4">
+                    <div>
+                        <h2 class="text-base font-extrabold text-fleet-ink">Cost by Maintenance Type</h2>
+                        <p class="mt-1 text-sm text-fleet-muted">How maintenance spending is distributed across work types.</p>
                     </div>
+                    <span class="rounded-full bg-fleet-warning-soft px-3 py-1 text-xs font-semibold text-fleet-warning-strong"><?= count($maintenanceByType); ?> type(s)</span>
                 </div>
+
+                <?php if ($maintenanceByType === []): ?>
+                    <div class="mt-8 rounded-2xl border border-dashed border-fleet-line px-5 py-10 text-center text-sm text-fleet-muted">
+                        No maintenance type data found for this period.
+                    </div>
+                <?php else: ?>
+                    <div class="mt-8 space-y-4">
+                        <?php foreach ($maintenanceByType as $index => $type): ?>
+                            <?php
+                            $barClass = match ($index % 4) {
+                                1 => 'bg-fleet-warning',
+                                2 => 'bg-fleet-success',
+                                3 => 'bg-fleet-primary',
+                                default => 'bg-fleet-sidebar',
+                            };
+                            ?>
+                            <div class="rounded-2xl border border-fleet-line bg-fleet-surface-muted p-4">
+                                <div class="flex items-center justify-between gap-4">
+                                    <div>
+                                        <p class="text-sm font-extrabold text-fleet-ink"><?= htmlspecialchars($type['type'], ENT_QUOTES, 'UTF-8'); ?></p>
+                                        <p class="mt-1 text-xs text-fleet-muted"><?= (int) $type['record_count']; ?> record(s)</p>
+                                    </div>
+                                    <div class="text-right">
+                                        <p class="text-sm font-extrabold text-fleet-ink"><?= htmlspecialchars($type['formatted_cost'], ENT_QUOTES, 'UTF-8'); ?></p>
+                                        <p class="mt-1 text-xs text-fleet-muted"><?= (int) $type['share']; ?>% of total</p>
+                                    </div>
+                                </div>
+                                <div class="mt-4 h-3 overflow-hidden rounded-full bg-white">
+                                    <div class="h-full rounded-full <?= $barClass; ?>" style="width: <?= max(6, (int) $type['share']); ?>%"></div>
+                                </div>
+                            </div>
+                        <?php endforeach; ?>
+                    </div>
+                <?php endif; ?>
             </article>
         </section>
 
         <section class="interactive-card mt-6 rounded-lg border border-fleet-line bg-fleet-surface p-6 shadow-fleet-card">
-            <h2 class="text-base font-extrabold text-fleet-ink">Trips by Vehicle</h2>
-            <div class="mt-8 h-64">
-                <div class="relative h-56 border-b border-l border-fleet-line">
-                    <div class="absolute inset-0 grid grid-rows-4 text-xs text-fleet-muted">
-                        <span class="border-t border-dashed border-fleet-line"></span>
-                        <span class="border-t border-dashed border-fleet-line"></span>
-                        <span class="border-t border-dashed border-fleet-line"></span>
-                        <span class="border-t border-dashed border-fleet-line"></span>
-                    </div>
-                    <div class="report-chart-group absolute bottom-0 left-[12%] h-full w-[80%] rounded-t bg-fleet-warning">
-                        <div class="report-tooltip left-1/2 top-6 -translate-x-1/2 text-center">
-                            <p class="font-semibold text-fleet-ink">UAJ 433X</p>
-                            <p class="mt-2 text-fleet-sidebar">2 trips</p>
+            <div class="flex items-start justify-between gap-4">
+                <div>
+                    <h2 class="text-base font-extrabold text-fleet-ink">Trips by Vehicle</h2>
+                    <p class="mt-1 text-sm text-fleet-muted">Vehicle activity ranking based on recorded trips.</p>
+                </div>
+                <span class="rounded-full bg-fleet-success-soft px-3 py-1 text-xs font-semibold text-fleet-success"><?= count($tripsByVehicle); ?> vehicle(s)</span>
+            </div>
+
+            <?php if ($tripsByVehicle === []): ?>
+                <div class="mt-8 rounded-2xl border border-dashed border-fleet-line px-5 py-10 text-center text-sm text-fleet-muted">
+                    No trip history found for this period.
+                </div>
+            <?php else: ?>
+                <div class="mt-8 grid gap-6 xl:grid-cols-[minmax(0,1.15fr)_minmax(320px,0.85fr)]">
+                    <div class="relative h-72 rounded-2xl border border-fleet-line-soft bg-fleet-surface-muted px-5 pb-8 pt-6">
+                        <div class="pointer-events-none absolute inset-x-5 top-6 bottom-8 grid grid-rows-4">
+                            <span class="border-t border-dashed border-fleet-line"></span>
+                            <span class="border-t border-dashed border-fleet-line"></span>
+                            <span class="border-t border-dashed border-fleet-line"></span>
+                            <span class="border-t border-dashed border-fleet-line"></span>
+                        </div>
+                        <div class="relative flex h-full items-end gap-4">
+                            <?php foreach ($tripsByVehicle as $row): ?>
+                                <div class="report-chart-group group flex flex-1 flex-col items-center justify-end gap-3">
+                                    <div class="report-tooltip left-1/2 top-0 -translate-x-1/2 text-center">
+                                        <p class="font-semibold text-fleet-ink"><?= htmlspecialchars($row['vehicle'], ENT_QUOTES, 'UTF-8'); ?></p>
+                                        <p class="mt-2 text-fleet-sidebar"><?= (int) $row['trip_count']; ?> trip(s)</p>
+                                        <p class="mt-1 text-fleet-muted"><?= htmlspecialchars($row['formatted_distance'], ENT_QUOTES, 'UTF-8'); ?></p>
+                                    </div>
+                                    <div class="w-full rounded-t-2xl bg-fleet-warning transition-transform duration-150 group-hover:-translate-y-1" style="height: <?= (int) $row['bar_height']; ?>%"></div>
+                                    <div class="w-full text-center">
+                                        <p class="truncate text-xs font-extrabold text-fleet-ink"><?= htmlspecialchars($row['vehicle'], ENT_QUOTES, 'UTF-8'); ?></p>
+                                        <p class="truncate text-[11px] text-fleet-muted"><?= htmlspecialchars($row['make_model'], ENT_QUOTES, 'UTF-8'); ?></p>
+                                    </div>
+                                </div>
+                            <?php endforeach; ?>
                         </div>
                     </div>
-                    <div class="absolute -bottom-7 left-[50%] -translate-x-1/2 text-xs text-fleet-muted">UAJ 433X</div>
-                    <div class="absolute -left-6 top-0 text-sm text-fleet-muted">2</div>
-                    <div class="absolute -left-8 top-1/4 text-sm text-fleet-muted">1.5</div>
-                    <div class="absolute -left-6 top-1/2 text-sm text-fleet-muted">1</div>
-                    <div class="absolute -left-8 top-3/4 text-sm text-fleet-muted">0.5</div>
-                    <div class="absolute -left-6 bottom-0 text-sm text-fleet-muted">0</div>
+
+                    <div class="space-y-4">
+                        <?php foreach ($tripsByVehicle as $row): ?>
+                            <article class="rounded-2xl border border-fleet-line bg-fleet-surface-muted p-4">
+                                <div class="flex items-start justify-between gap-4">
+                                    <div>
+                                        <p class="text-sm font-extrabold text-fleet-ink"><?= htmlspecialchars($row['vehicle'], ENT_QUOTES, 'UTF-8'); ?></p>
+                                        <p class="mt-1 text-xs text-fleet-muted"><?= htmlspecialchars($row['make_model'], ENT_QUOTES, 'UTF-8'); ?></p>
+                                    </div>
+                                    <span class="rounded-full bg-white px-3 py-1 text-xs font-semibold text-fleet-sidebar shadow-sm"><?= (int) $row['trip_count']; ?> trip(s)</span>
+                                </div>
+                                <div class="mt-4 grid gap-3 sm:grid-cols-2">
+                                    <div class="rounded-xl bg-white px-3 py-3">
+                                        <p class="text-[11px] font-extrabold uppercase tracking-[0.16em] text-fleet-muted">Distance</p>
+                                        <p class="mt-1 text-sm font-extrabold text-fleet-ink"><?= htmlspecialchars($row['formatted_distance'], ENT_QUOTES, 'UTF-8'); ?></p>
+                                    </div>
+                                    <div class="rounded-xl bg-white px-3 py-3">
+                                        <p class="text-[11px] font-extrabold uppercase tracking-[0.16em] text-fleet-muted">Fuel Cost</p>
+                                        <p class="mt-1 text-sm font-extrabold text-fleet-ink"><?= htmlspecialchars($row['formatted_fuel_cost'], ENT_QUOTES, 'UTF-8'); ?></p>
+                                    </div>
+                                </div>
+                            </article>
+                        <?php endforeach; ?>
+                    </div>
                 </div>
-            </div>
+            <?php endif; ?>
         </section>
     </div>
 </main>

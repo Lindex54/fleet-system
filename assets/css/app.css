@@ -96,6 +96,13 @@
 .fleet-file-preview{margin-top:.75rem;display:none;max-width:7rem;overflow:hidden;border:1px solid var(--app-line);border-radius:.75rem;background:var(--app-surface-muted);padding:.25rem}
 .fleet-file-preview img{width:100%;height:5.5rem;object-fit:cover;border-radius:.5rem}
 .fleet-no-records{display:none}
+button,
+input[type=button],
+input[type=submit],
+input[type=reset],
+[role=button]{
+cursor:pointer
+}
 @media print{
 body.print-target-active{background:#fff!important}
 body.print-target-active #app-sidebar,
