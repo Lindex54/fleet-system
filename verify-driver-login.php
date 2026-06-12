@@ -2,7 +2,7 @@
 declare(strict_types=1);
 
 require_once __DIR__ . '/vendor/autoload.php';
-require_once __DIR__ . '/includes/driver-login-verification-test.php';
+require_once __DIR__ . '/includes/driver-login-verification.php';
 
 $themeAssets = driverLoginVerificationThemeAssets();
 $status = 'error';
@@ -36,6 +36,7 @@ try {
             $message = 'The new password and confirmation do not match.';
         } else {
             $activatedDriver = driverLoginVerificationActivateDriver($pdo, $verification, $newPassword);
+            driverLoginVerificationSendWelcomeNotification($pdo, $activatedDriver);
             driverLoginVerificationStartDriverSession($pdo, $activatedDriver);
             header('Location: /fleet-system/driver-panel/');
             exit;

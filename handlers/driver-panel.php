@@ -5,6 +5,7 @@ declare(strict_types=1);
 require_once __DIR__ . '/../config/database.php';
 require_once __DIR__ . '/../includes/ajax.php';
 require_once __DIR__ . '/../includes/activity-tracker.php';
+require_once __DIR__ . '/../includes/driver-login-verification.php';
 
 // Driver panel helpers use the existing schema and gracefully fall back while auth is not yet implemented.
 const DRIVER_PANEL_PRETRIP_CHECKLIST = [
@@ -312,16 +313,46 @@ function driverPanelBuildLicenseExpiryStatus(?string $expiryDate): array
 
     $today = new DateTimeImmutable(date('Y-m-d'));
     $daysLeft = (int) $today->diff($expiry)->format('%r%a');
+    $expiryLabel = $expiry->format('j F Y');
 
     if ($daysLeft < 0) {
         return [
-            'label' => 'Expired',
+            'label' => 'Expired on ' . $expiryLabel,
             'classes' => 'border-red-200 bg-fleet-danger-soft text-fleet-danger',
         ];
     }
 
+    if ($daysLeft === 0) {
+        return [
+            'label' => 'Expires today (' . $expiryLabel . ')',
+            'classes' => 'border-orange-200 bg-fleet-warning-soft text-fleet-warning-strong',
+        ];
+    }
+
+    $interval = $today->diff($expiry);
+    $yearsLeft = $interval->y;
+    $monthsLeft = $interval->m;
+    $daysRemainder = $interval->d;
+    $parts = [];
+
+    if ($yearsLeft > 0) {
+        $parts[] = $yearsLeft . ' year' . ($yearsLeft === 1 ? '' : 's');
+    }
+
+    if ($monthsLeft > 0) {
+        $parts[] = $monthsLeft . ' month' . ($monthsLeft === 1 ? '' : 's');
+    }
+
+    if ($daysRemainder > 0) {
+        $parts[] = $daysRemainder . ' day' . ($daysRemainder === 1 ? '' : 's');
+    }
+
+    if ($parts === []) {
+        $parts[] = 'less than 1 day';
+    }
+
     return [
-        'label' => $daysLeft . ' day' . ($daysLeft === 1 ? '' : 's') . ' left',
+        'label' => implode(', ', $parts) . ' left (expires ' . $expiryLabel . ')',
         'classes' => $daysLeft <= 30
             ? 'border-orange-200 bg-fleet-warning-soft text-fleet-warning-strong'
             : 'border-green-200 bg-fleet-success-soft text-fleet-success',
@@ -404,6 +435,15 @@ function driverPanelFindCurrentDriver(PDO $pdo): ?array
         header('Location: ' . driverPanelPasswordChangeUrl());
         exit;
     }
+
+    // Keep the driver dashboard message center aligned with the welcome email flow.
+    driverLoginVerificationStoreWelcomeMessage($pdo, [
+        'driver_id' => (int) $driver['id'],
+        'user_id' => (int) $driver['user_id'],
+        'email' => (string) ($driver['email'] ?? ''),
+        'name' => (string) ($driver['full_name'] ?? 'Driver'),
+        'full_name' => (string) ($driver['full_name'] ?? 'Driver'),
+    ]);
 
     return $driver;
 }

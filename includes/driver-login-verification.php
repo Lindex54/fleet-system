@@ -2,6 +2,7 @@
 declare(strict_types=1);
 
 require_once __DIR__ . '/../config/database.php';
+require_once __DIR__ . '/../vendor/autoload.php';
 
 use PHPMailer\PHPMailer\Exception;
 use PHPMailer\PHPMailer\PHPMailer;
@@ -308,4 +309,161 @@ function driverLoginVerificationSendEmail(string $username, string $email, strin
         // Return PHPMailer's exact error so the test page can report send failures clearly.
         throw new RuntimeException('Verification email could not be sent: ' . $mail->ErrorInfo, 0, $exception);
     }
+}
+
+/**
+ * Stores the welcome message in the communications tables so it appears in the driver dashboard.
+ */
+function driverLoginVerificationStoreWelcomeMessage(
+    PDO $pdo,
+    array $driver,
+    string $deliveryStatus = 'sent',
+    ?string $sentAt = null,
+    ?string $failureReason = null
+): void
+{
+    $subject = 'Welcome to Fleet Management System';
+    $driverId = (int) ($driver['driver_id'] ?? 0);
+    $userId = (int) ($driver['user_id'] ?? 0);
+    $recipientEmail = strtolower((string) ($driver['email'] ?? ''));
+    $recipientName = (string) ($driver['name'] ?? $driver['full_name'] ?? 'Driver');
+
+    if ($driverId <= 0 || $userId <= 0 || $recipientEmail === '') {
+        return;
+    }
+
+    $existing = $pdo->prepare(
+        "SELECT cr.id
+         FROM communication_recipients cr
+         INNER JOIN communications c ON c.id = cr.communication_id
+         WHERE cr.driver_id = :driver_id
+           AND c.subject = :subject
+         LIMIT 1"
+    );
+    $existing->execute([
+        'driver_id' => $driverId,
+        'subject' => $subject,
+    ]);
+
+    // Guard against duplicate welcome messages if the activation flow is retried.
+    if ($existing->fetchColumn() !== false) {
+        return;
+    }
+
+    $message = "Hello {$recipientName},\n\n"
+        . "Welcome to the Fleet Management System.\n\n"
+        . "Your driver account is now active and ready to use. We are glad to have you on board.\n\n"
+        . "Regards,\n"
+        . "Transport Office";
+
+    $pdo->beginTransaction();
+
+    try {
+        $insertCommunication = $pdo->prepare(
+            "INSERT INTO communications (sender_user_id, subject, message, message_type)
+             VALUES (NULL, :subject, :message, 'system')"
+        );
+        $insertCommunication->execute([
+            'subject' => $subject,
+            'message' => $message,
+        ]);
+
+        $communicationId = (int) $pdo->lastInsertId();
+
+        $insertRecipient = $pdo->prepare(
+            "INSERT INTO communication_recipients (
+                communication_id,
+                driver_id,
+                user_id,
+                recipient_name,
+                recipient_email,
+                recipient_type,
+                delivery_status,
+                sent_at,
+                failure_reason
+             ) VALUES (
+                :communication_id,
+                :driver_id,
+                :user_id,
+                :recipient_name,
+                :recipient_email,
+                'driver',
+                :delivery_status,
+                :sent_at,
+                :failure_reason
+             )"
+        );
+        $insertRecipient->execute([
+            'communication_id' => $communicationId,
+            'driver_id' => $driverId,
+            'user_id' => $userId,
+            'recipient_name' => $recipientName,
+            'recipient_email' => $recipientEmail,
+            'delivery_status' => $deliveryStatus,
+            'sent_at' => $sentAt,
+            'failure_reason' => $failureReason,
+        ]);
+
+        $pdo->commit();
+    } catch (Throwable $exception) {
+        if ($pdo->inTransaction()) {
+            $pdo->rollBack();
+        }
+
+        throw $exception;
+    }
+}
+
+/**
+ * Sends a one-time welcome email and records it in the driver message history.
+ */
+function driverLoginVerificationSendWelcomeNotification(PDO $pdo, array $driver): void
+{
+    $mailConfig = require __DIR__ . '/../config/mail.php';
+    if (!is_array($mailConfig)) {
+        throw new RuntimeException('Mail configuration is invalid.');
+    }
+
+    $recipientEmail = strtolower((string) ($driver['email'] ?? ''));
+    $recipientName = (string) ($driver['name'] ?? $driver['full_name'] ?? 'Driver');
+    $subject = 'Welcome to Fleet Management System';
+    $message = "Hello {$recipientName},\n\n"
+        . "Welcome to the Fleet Management System.\n\n"
+        . "Your driver account is now active and ready to use. We are glad to have you on board.\n\n"
+        . "Regards,\n"
+        . "Transport Office";
+
+    $deliveryStatus = 'pending';
+    $sentAt = null;
+    $failureReason = null;
+
+    try {
+        $mail = new PHPMailer(true);
+        $mail->isSMTP();
+        $mail->Host = (string) ($mailConfig['host'] ?? '');
+        $mail->SMTPAuth = true;
+        $mail->Username = (string) ($mailConfig['username'] ?? '');
+        $mail->Password = (string) ($mailConfig['password'] ?? '');
+        $mail->SMTPSecure = PHPMailer::ENCRYPTION_STARTTLS;
+        $mail->Port = (int) ($mailConfig['port'] ?? 587);
+
+        $fromAddress = (string) ($mailConfig['from_address'] ?? $mail->Username);
+        $fromName = 'Transport Office';
+
+        $mail->setFrom($fromAddress, $fromName);
+        $mail->addAddress($recipientEmail, $recipientName);
+        $mail->isHTML(false);
+        $mail->Subject = $subject;
+        $mail->Body = $message;
+        $mail->send();
+
+        $deliveryStatus = 'sent';
+        $sentAt = (new DateTimeImmutable())->format('Y-m-d H:i:s');
+    } catch (Throwable $exception) {
+        $deliveryStatus = 'failed';
+        $failureReason = $exception->getMessage();
+        error_log('Welcome email failed: ' . $exception->getMessage());
+    }
+
+    driverLoginVerificationStoreWelcomeMessage($pdo, $driver, $deliveryStatus, $sentAt, $failureReason);
 }

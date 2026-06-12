@@ -4,7 +4,7 @@ declare(strict_types=1);
 require_once __DIR__ . '/config/database.php';
 require_once __DIR__ . '/includes/activity-tracker.php';
 require_once __DIR__ . '/vendor/autoload.php';
-require_once __DIR__ . '/includes/driver-login-verification-test.php';
+require_once __DIR__ . '/includes/driver-login-verification.php';
 
 if (session_status() !== PHP_SESSION_ACTIVE) {
     session_start();
