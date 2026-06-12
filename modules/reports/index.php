@@ -60,14 +60,17 @@ include __DIR__ . '/../../includes/sidebar.php';
             <?php endforeach; ?>
         </section>
 
-        <section class="mt-6 grid gap-6 xl:grid-cols-2">
+        <section class="mt-6">
             <article class="interactive-card rounded-lg border border-fleet-line bg-fleet-surface p-6 shadow-fleet-card">
                 <div class="flex items-start justify-between gap-4">
                     <div>
                         <h2 class="text-base font-extrabold text-fleet-ink">Maintenance Cost by Vehicle</h2>
                         <p class="mt-1 text-sm text-fleet-muted">Highest maintenance spend for the selected period.</p>
                     </div>
-                    <span class="rounded-full bg-fleet-primary-soft px-3 py-1 text-xs font-semibold text-fleet-primary"><?= count($maintenanceByVehicle); ?> vehicle(s)</span>
+                    <div class="flex items-center gap-3">
+                        <a href="/fleet-system/modules/maintenance/" class="text-sm font-semibold text-fleet-sidebar hover:text-fleet-primary">View all &rarr;</a>
+                        <span class="rounded-full bg-fleet-primary-soft px-3 py-1 text-xs font-semibold text-fleet-primary"><?= count($maintenanceByVehicle); ?> vehicle(s)</span>
+                    </div>
                 </div>
 
                 <?php if ($maintenanceByVehicle === []): ?>
@@ -76,62 +79,25 @@ include __DIR__ . '/../../includes/sidebar.php';
                     </div>
                 <?php else: ?>
                     <div class="mt-8 space-y-5">
-                        <?php foreach ($maintenanceByVehicle as $row): ?>
+                        <?php foreach ($maintenanceByVehicle as $index => $row): ?>
+                            <?php
+                            $vehicleBarClass = match ($index % 3) {
+                                1 => 'bg-fleet-warning',
+                                2 => 'bg-fleet-success',
+                                default => 'bg-fleet-primary',
+                            };
+                            ?>
                             <div class="grid gap-3 md:grid-cols-[150px_minmax(0,1fr)_120px] md:items-center">
                                 <div>
                                     <p class="text-sm font-extrabold text-fleet-ink"><?= htmlspecialchars($row['vehicle'], ENT_QUOTES, 'UTF-8'); ?></p>
                                     <p class="text-xs text-fleet-muted"><?= htmlspecialchars($row['make_model'], ENT_QUOTES, 'UTF-8'); ?></p>
                                 </div>
                                 <div class="relative h-4 overflow-hidden rounded-full bg-fleet-primary-soft">
-                                    <div class="absolute inset-y-0 left-0 rounded-full bg-fleet-sidebar" style="width: <?= (int) $row['bar_width']; ?>%"></div>
+                                    <div class="absolute inset-y-0 left-0 rounded-full <?= $vehicleBarClass; ?>" style="width: <?= (int) $row['bar_width']; ?>%"></div>
                                 </div>
                                 <div class="text-right">
                                     <p class="text-sm font-extrabold text-fleet-ink"><?= htmlspecialchars($row['formatted_cost'], ENT_QUOTES, 'UTF-8'); ?></p>
                                     <p class="text-xs text-fleet-muted"><?= (int) $row['record_count']; ?> record(s)</p>
-                                </div>
-                            </div>
-                        <?php endforeach; ?>
-                    </div>
-                <?php endif; ?>
-            </article>
-
-            <article class="interactive-card rounded-lg border border-fleet-line bg-fleet-surface p-6 shadow-fleet-card">
-                <div class="flex items-start justify-between gap-4">
-                    <div>
-                        <h2 class="text-base font-extrabold text-fleet-ink">Cost by Maintenance Type</h2>
-                        <p class="mt-1 text-sm text-fleet-muted">How maintenance spending is distributed across work types.</p>
-                    </div>
-                    <span class="rounded-full bg-fleet-warning-soft px-3 py-1 text-xs font-semibold text-fleet-warning-strong"><?= count($maintenanceByType); ?> type(s)</span>
-                </div>
-
-                <?php if ($maintenanceByType === []): ?>
-                    <div class="mt-8 rounded-2xl border border-dashed border-fleet-line px-5 py-10 text-center text-sm text-fleet-muted">
-                        No maintenance type data found for this period.
-                    </div>
-                <?php else: ?>
-                    <div class="mt-8 space-y-4">
-                        <?php foreach ($maintenanceByType as $index => $type): ?>
-                            <?php
-                            $barClass = match ($index % 4) {
-                                1 => 'bg-fleet-warning',
-                                2 => 'bg-fleet-success',
-                                3 => 'bg-fleet-primary',
-                                default => 'bg-fleet-sidebar',
-                            };
-                            ?>
-                            <div class="rounded-2xl border border-fleet-line bg-fleet-surface-muted p-4">
-                                <div class="flex items-center justify-between gap-4">
-                                    <div>
-                                        <p class="text-sm font-extrabold text-fleet-ink"><?= htmlspecialchars($type['type'], ENT_QUOTES, 'UTF-8'); ?></p>
-                                        <p class="mt-1 text-xs text-fleet-muted"><?= (int) $type['record_count']; ?> record(s)</p>
-                                    </div>
-                                    <div class="text-right">
-                                        <p class="text-sm font-extrabold text-fleet-ink"><?= htmlspecialchars($type['formatted_cost'], ENT_QUOTES, 'UTF-8'); ?></p>
-                                        <p class="mt-1 text-xs text-fleet-muted"><?= (int) $type['share']; ?>% of total</p>
-                                    </div>
-                                </div>
-                                <div class="mt-4 h-3 overflow-hidden rounded-full bg-white">
-                                    <div class="h-full rounded-full <?= $barClass; ?>" style="width: <?= max(6, (int) $type['share']); ?>%"></div>
                                 </div>
                             </div>
                         <?php endforeach; ?>

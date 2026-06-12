@@ -1,0 +1,12 @@
+{
+    "name": "fleet-system/fleet-system",
+    "authors": [
+        {
+            "name": "Godwin Malinde",
+            "email": "malindegodwin9@gmail.com"
+        }
+    ],
+    "require": {
+        "phpmailer/phpmailer": "^7.1"
+    }
+}
