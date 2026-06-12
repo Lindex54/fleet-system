@@ -105,8 +105,8 @@ include __DIR__ . '/../../includes/sidebar.php';
                 <div class="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
                     <div>
                         <p class="text-xs font-extrabold uppercase tracking-[0.18em] text-green-700">Driver Login Created</p>
-                        <h2 class="mt-1 text-lg font-extrabold text-fleet-ink">Give these credentials to the driver now</h2>
-                        <p class="mt-1 text-sm text-fleet-muted">The password is shown only this once. The driver will be required to set a new password on first login.</p>
+                        <h2 class="mt-1 text-lg font-extrabold text-fleet-ink">Give these details to the driver now</h2>
+                        <p class="mt-1 text-sm text-fleet-muted">The driver should use this username and Gmail address on the login page to request a password setup link.</p>
                     </div>
                     <div class="grid gap-3 text-sm sm:grid-cols-3 md:min-w-[520px]">
                         <div class="rounded-lg border border-green-200 bg-white px-4 py-3">
@@ -118,8 +118,8 @@ include __DIR__ . '/../../includes/sidebar.php';
                             <p class="mt-1 font-extrabold text-fleet-ink"><?= htmlspecialchars((string) ($driverCredentials['username'] ?? ''), ENT_QUOTES, 'UTF-8'); ?></p>
                         </div>
                         <div class="rounded-lg border border-green-200 bg-white px-4 py-3">
-                            <p class="text-xs font-bold uppercase tracking-wide text-fleet-muted">One-Time Password</p>
-                            <p class="mt-1 font-extrabold text-fleet-ink"><?= htmlspecialchars((string) ($driverCredentials['one_time_password'] ?? ''), ENT_QUOTES, 'UTF-8'); ?></p>
+                            <p class="text-xs font-bold uppercase tracking-wide text-fleet-muted">Gmail</p>
+                            <p class="mt-1 font-extrabold text-fleet-ink"><?= htmlspecialchars((string) ($driverCredentials['email'] ?? ''), ENT_QUOTES, 'UTF-8'); ?></p>
                         </div>
                     </div>
                 </div>
@@ -231,6 +231,9 @@ include __DIR__ . '/../../includes/sidebar.php';
                                 data-search="<?= htmlspecialchars(strtolower(implode(' ', array_filter([$driver['driver_code'], $driver['name'], $driver['email'], $driver['phone'], $driver['license'], $driver['assigned'], $driver['other_vehicles'], $driver['department'], $driver['gender'], $driver['national_id_number']]))), ENT_QUOTES, 'UTF-8'); ?>"
                                 data-driver-id="<?= htmlspecialchars((string) $driver['id'], ENT_QUOTES, 'UTF-8'); ?>"
                                 data-driver-code="<?= htmlspecialchars($driver['driver_code'], ENT_QUOTES, 'UTF-8'); ?>"
+                                data-first-name="<?= htmlspecialchars($driver['first_name'], ENT_QUOTES, 'UTF-8'); ?>"
+                                data-last-name="<?= htmlspecialchars($driver['last_name'], ENT_QUOTES, 'UTF-8'); ?>"
+                                data-other-names="<?= htmlspecialchars($driver['other_names'], ENT_QUOTES, 'UTF-8'); ?>"
                                 data-full-name="<?= htmlspecialchars($driver['name'], ENT_QUOTES, 'UTF-8'); ?>"
                                 data-employee-id="<?= htmlspecialchars($driver['employee_id'], ENT_QUOTES, 'UTF-8'); ?>"
                                 data-phone="<?= htmlspecialchars($driver['phone'] === '-' ? '' : $driver['phone'], ENT_QUOTES, 'UTF-8'); ?>"
@@ -351,8 +354,19 @@ include __DIR__ . '/../../includes/sidebar.php';
 
                 <div class="grid gap-5 md:grid-cols-2">
                     <label class="block">
-                        <span class="mb-2 block text-sm font-semibold text-fleet-ink">Full Name *</span>
-                        <input name="full_name" type="text" required data-driver-required-on-create autofocus class="vehicle-form-control" placeholder="John Doe" value="<?= htmlspecialchars($driverFormData['full_name'] ?? '', ENT_QUOTES, 'UTF-8'); ?>">
+                        <span class="mb-2 block text-sm font-semibold text-fleet-ink">First Name *</span>
+                        <input name="first_name" type="text" required data-driver-required-on-create autofocus class="vehicle-form-control" placeholder="Godwin" value="<?= htmlspecialchars($driverFormData['first_name'] ?? '', ENT_QUOTES, 'UTF-8'); ?>">
+                    </label>
+
+                    <label class="block">
+                        <span class="mb-2 block text-sm font-semibold text-fleet-ink">Last Name *</span>
+                        <input name="last_name" type="text" required data-driver-required-on-create class="vehicle-form-control" placeholder="Malinde" value="<?= htmlspecialchars($driverFormData['last_name'] ?? '', ENT_QUOTES, 'UTF-8'); ?>">
+                    </label>
+
+                    <label class="block md:col-span-2">
+                        <span class="mb-2 block text-sm font-semibold text-fleet-ink">Other Names</span>
+                        <input name="other_names" type="text" class="vehicle-form-control" placeholder="Optional middle names" value="<?= htmlspecialchars($driverFormData['other_names'] ?? '', ENT_QUOTES, 'UTF-8'); ?>">
+                        <span class="mt-2 block text-xs text-fleet-muted">Optional. The driver username is generated automatically from the first letter of the first name and the last name.</span>
                     </label>
 
                     <label class="block">

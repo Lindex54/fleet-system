@@ -15,6 +15,7 @@ const DRIVER_UPLOAD_MAX_BYTES = 5242880;
 const DRIVER_ALLOWED_UPLOAD_EXTENSIONS = ['jpg', 'jpeg', 'png', 'pdf'];
 const DRIVER_ALLOWED_UPLOAD_MIME_TYPES = ['image/jpeg', 'image/png', 'application/pdf'];
 const DRIVER_CODE_PREFIX = 'BUESMIS';
+const DRIVER_USERNAME_PREFIX = 'BUEMIS_';
 
 // Returns the absolute uploads directory used for driver files.
 function driverUploadDirectoryPath(): string
@@ -169,6 +170,108 @@ function driverBuildCodeNamePart(string $fullName): string
     return substr($letters !== '' ? $letters : 'DRVR', 0, 4);
 }
 
+function driverEnsureProfileColumns(PDO $pdo): void
+{
+    $columns = $pdo->query('SHOW COLUMNS FROM drivers')->fetchAll(PDO::FETCH_COLUMN);
+    if (!is_array($columns)) {
+        return;
+    }
+
+    if (!in_array('first_name', $columns, true)) {
+        $pdo->exec("ALTER TABLE drivers ADD COLUMN first_name VARCHAR(80) NULL AFTER department_id");
+    }
+
+    if (!in_array('last_name', $columns, true)) {
+        $pdo->exec("ALTER TABLE drivers ADD COLUMN last_name VARCHAR(80) NULL AFTER first_name");
+    }
+
+    if (!in_array('other_names', $columns, true)) {
+        $pdo->exec("ALTER TABLE drivers ADD COLUMN other_names VARCHAR(120) NULL AFTER last_name");
+    }
+}
+
+function driverComposeFullName(string $firstName, ?string $otherNames, string $lastName): string
+{
+    return trim(implode(' ', array_filter([
+        trim($firstName),
+        trim((string) $otherNames),
+        trim($lastName),
+    ], static fn (?string $value): bool => $value !== null && $value !== '')));
+}
+
+function driverSplitFullName(string $fullName): array
+{
+    $parts = preg_split('/\s+/', trim($fullName)) ?: [];
+    $parts = array_values(array_filter($parts, static fn (string $part): bool => $part !== ''));
+
+    if ($parts === []) {
+        return [
+            'first_name' => '',
+            'other_names' => '',
+            'last_name' => '',
+        ];
+    }
+
+    if (count($parts) === 1) {
+        return [
+            'first_name' => $parts[0],
+            'other_names' => '',
+            'last_name' => '',
+        ];
+    }
+
+    $firstName = array_shift($parts);
+    $lastName = array_pop($parts);
+
+    return [
+        'first_name' => $firstName,
+        'other_names' => implode(' ', $parts),
+        'last_name' => $lastName,
+    ];
+}
+
+function driverBuildUsernameBase(string $firstName, string $lastName): string
+{
+    $firstLetter = strtoupper(substr((string) preg_replace('/[^a-z]/i', '', $firstName), 0, 1));
+    $normalizedLastName = strtolower((string) preg_replace('/[^a-z]/i', '', $lastName));
+
+    if ($firstLetter === '') {
+        $firstLetter = 'D';
+    }
+
+    if ($normalizedLastName === '') {
+        $normalizedLastName = 'driver';
+    }
+
+    return DRIVER_USERNAME_PREFIX . $firstLetter . $normalizedLastName;
+}
+
+function driverGenerateUsername(PDO $pdo, string $firstName, string $lastName, ?int $ignoreUserId = null): string
+{
+    $baseUsername = driverBuildUsernameBase($firstName, $lastName);
+    $username = $baseUsername;
+    $suffix = 2;
+
+    $statement = $pdo->prepare(
+        'SELECT id
+         FROM users
+         WHERE username = :username
+         LIMIT 1'
+    );
+
+    while (true) {
+        $statement->execute(['username' => $username]);
+        $existingUserId = $statement->fetchColumn();
+
+        if ($existingUserId === false || (int) $existingUserId === $ignoreUserId) {
+            return $username;
+        }
+
+        $username = $baseUsername . $suffix;
+        $suffix++;
+    }
+}
+
 function driverGenerateCode(PDO $pdo, string $fullName): string
 {
     $prefix = DRIVER_CODE_PREFIX . driverBuildCodeNamePart($fullName);
@@ -195,16 +298,11 @@ function driverGenerateCode(PDO $pdo, string $fullName): string
     return $prefix . str_pad((string) $nextNumber, 3, '0', STR_PAD_LEFT);
 }
 
-function driverGenerateOneTimePassword(): string
-{
-    return 'Drv-' . substr(bin2hex(random_bytes(8)), 0, 12);
-}
-
 function driverCreateCredentials(PDO $pdo, array $validated, ?int $departmentId): array
 {
     $driverCode = driverGenerateCode($pdo, $validated['full_name']);
-    $oneTimePassword = driverGenerateOneTimePassword();
-    $email = strtolower($driverCode) . '@drivers.local';
+    $username = driverGenerateUsername($pdo, $validated['first_name'], $validated['last_name']);
+    $placeholderPassword = bin2hex(random_bytes(32));
 
     $statement = $pdo->prepare(
         'INSERT INTO users (
@@ -228,18 +326,19 @@ function driverCreateCredentials(PDO $pdo, array $validated, ?int $departmentId)
         )'
     );
     $statement->bindValue(':department_id', $departmentId, $departmentId === null ? PDO::PARAM_NULL : PDO::PARAM_INT);
-    $statement->bindValue(':username', $driverCode);
+    $statement->bindValue(':username', $username);
     $statement->bindValue(':name', $validated['full_name']);
-    $statement->bindValue(':email', $email);
-    $statement->bindValue(':password_hash', password_hash($oneTimePassword, PASSWORD_DEFAULT));
+    $statement->bindValue(':email', $validated['email']);
+    // A random placeholder password keeps the account inactive for password sign-in until email setup is complete.
+    $statement->bindValue(':password_hash', password_hash($placeholderPassword, PASSWORD_DEFAULT));
     $statement->bindValue(':status', $validated['status']);
     $statement->execute();
 
     return [
         'user_id' => (int) $pdo->lastInsertId(),
         'driver_code' => $driverCode,
-        'username' => $driverCode,
-        'one_time_password' => $oneTimePassword,
+        'username' => $username,
+        'email' => $validated['email'],
     ];
 }
 
@@ -332,12 +431,16 @@ function driverFetchPageData(): array
 
     try {
         $pdo = fleetDb();
+        driverEnsureProfileColumns($pdo);
         driverEnsureSecondaryVehicleTable($pdo);
         $vehicleOptions = driverFetchVehicleOptions($pdo);
         $statement = $pdo->query(
             'SELECT
                 d.id,
                 d.driver_code,
+                d.first_name,
+                d.last_name,
+                d.other_names,
                 d.full_name,
                 d.employee_id,
                 d.phone,
@@ -378,10 +481,18 @@ function driverFetchPageData(): array
         );
 
         foreach ($statement->fetchAll() as $row) {
+            $nameParts = driverSplitFullName((string) ($row['full_name'] ?? ''));
+            $firstName = trim((string) ($row['first_name'] ?? '')) !== '' ? (string) $row['first_name'] : $nameParts['first_name'];
+            $lastName = trim((string) ($row['last_name'] ?? '')) !== '' ? (string) $row['last_name'] : $nameParts['last_name'];
+            $otherNames = trim((string) ($row['other_names'] ?? '')) !== '' ? (string) $row['other_names'] : $nameParts['other_names'];
+
             // Shape database rows into the format the driver table and edit modal expect.
             $drivers[] = [
                 'id' => (int) $row['id'],
                 'driver_code' => $row['driver_code'] ?: '',
+                'first_name' => $firstName,
+                'last_name' => $lastName,
+                'other_names' => $otherNames,
                 'name' => $row['full_name'],
                 'employee_id' => $row['employee_id'] ?: '',
                 'email' => $row['email'] ?: '-',
@@ -445,7 +556,9 @@ function driverBuildFormDataFromPost(): array
     // Normalize submitted values before validation and database writes.
     return [
         'driver_id' => trim((string) ($_POST['driver_id'] ?? '')),
-        'full_name' => trim((string) ($_POST['full_name'] ?? '')),
+        'first_name' => trim((string) ($_POST['first_name'] ?? '')),
+        'last_name' => trim((string) ($_POST['last_name'] ?? '')),
+        'other_names' => trim((string) ($_POST['other_names'] ?? '')),
         'employee_id' => trim((string) ($_POST['employee_id'] ?? '')),
         'phone' => trim((string) ($_POST['phone'] ?? '')),
         'email' => trim((string) ($_POST['email'] ?? '')),
@@ -472,7 +585,8 @@ function driverBuildFormDataFromPost(): array
 function driverAssertRequiredCreateFields(array $formData): void
 {
     $requiredFields = [
-        'full_name' => 'Full name',
+        'first_name' => 'First name',
+        'last_name' => 'Last name',
         'phone' => 'Phone',
         'email' => 'Email',
         'gender' => 'Gender',
@@ -521,8 +635,8 @@ function driverValidateFormData(array $formData, string $action = 'create'): arr
     }
 
     // Shared validation keeps create and update behavior consistent.
-    if ($formData['full_name'] === '' || $formData['license_number'] === '') {
-        throw new RuntimeException('Full name and license number are required.');
+    if ($formData['first_name'] === '' || $formData['last_name'] === '' || $formData['license_number'] === '') {
+        throw new RuntimeException('First name, last name, and license number are required.');
     }
 
     if ($formData['email'] !== '' && filter_var($formData['email'], FILTER_VALIDATE_EMAIL) === false) {
@@ -616,10 +730,13 @@ function driverValidateFormData(array $formData, string $action = 'create'): arr
     }
 
     return [
-        'full_name' => $formData['full_name'],
+        'first_name' => $formData['first_name'],
+        'last_name' => $formData['last_name'],
+        'other_names' => $formData['other_names'] === '' ? null : $formData['other_names'],
+        'full_name' => driverComposeFullName($formData['first_name'], $formData['other_names'], $formData['last_name']),
         'employee_id' => $formData['employee_id'] === '' ? null : $formData['employee_id'],
         'phone' => $formData['phone'] === '' ? null : $formData['phone'],
-        'email' => $formData['email'] === '' ? null : $formData['email'],
+        'email' => $formData['email'] === '' ? null : strtolower($formData['email']),
         'gender' => $formData['gender'] === '' ? null : $formData['gender'],
         'national_id_number' => $formData['national_id_number'] === '' ? null : $formData['national_id_number'],
         'license_number' => $formData['license_number'],
@@ -867,6 +984,7 @@ function driverHandleCreateOrUpdate(string $action): void
     try {
         $validated = driverValidateFormData($formData, $action);
         $pdo = fleetDb();
+        driverEnsureProfileColumns($pdo);
         driverEnsureSecondaryVehicleTable($pdo);
         $pdo->beginTransaction();
         $departmentId = driverFindOrCreateDepartmentId($pdo, $validated['department']);
@@ -907,6 +1025,9 @@ function driverHandleCreateOrUpdate(string $action): void
             $statement = $pdo->prepare(
                 'UPDATE drivers SET
                     department_id = :department_id,
+                    first_name = :first_name,
+                    last_name = :last_name,
+                    other_names = :other_names,
                     full_name = :full_name,
                     employee_id = :employee_id,
                     phone = :phone,
@@ -955,6 +1076,9 @@ function driverHandleCreateOrUpdate(string $action): void
                     user_id,
                     driver_code,
                     department_id,
+                    first_name,
+                    last_name,
+                    other_names,
                     full_name,
                     employee_id,
                     phone,
@@ -974,6 +1098,9 @@ function driverHandleCreateOrUpdate(string $action): void
                     :user_id,
                     :driver_code,
                     :department_id,
+                    :first_name,
+                    :last_name,
+                    :other_names,
                     :full_name,
                     :employee_id,
                     :phone,
@@ -996,6 +1123,9 @@ function driverHandleCreateOrUpdate(string $action): void
         }
 
         $statement->bindValue(':department_id', $departmentId, $departmentId === null ? PDO::PARAM_NULL : PDO::PARAM_INT);
+        $statement->bindValue(':first_name', $validated['first_name']);
+        $statement->bindValue(':last_name', $validated['last_name']);
+        $statement->bindValue(':other_names', $validated['other_names'], $validated['other_names'] === null ? PDO::PARAM_NULL : PDO::PARAM_STR);
         $statement->bindValue(':full_name', $validated['full_name']);
         $statement->bindValue(':employee_id', $validated['employee_id'], $validated['employee_id'] === null ? PDO::PARAM_NULL : PDO::PARAM_STR);
         $statement->bindValue(':phone', $validated['phone'], $validated['phone'] === null ? PDO::PARAM_NULL : PDO::PARAM_STR);
@@ -1014,6 +1144,26 @@ function driverHandleCreateOrUpdate(string $action): void
         $statement->execute();
 
         $driverId = $action === 'update' ? (int) $formData['driver_id'] : (int) $pdo->lastInsertId();
+
+        if ($action === 'update' && !empty($existingRecord['user_id'])) {
+            $userUpdate = $pdo->prepare(
+                'UPDATE users
+                 SET department_id = :department_id,
+                     name = :name,
+                     email = :email,
+                     status = :status
+                 WHERE id = :user_id
+                   AND role = \'driver\''
+            );
+            $userUpdate->execute([
+                'department_id' => $departmentId,
+                'name' => $validated['full_name'],
+                'email' => $validated['email'],
+                'status' => $validated['status'],
+                'user_id' => (int) $existingRecord['user_id'],
+            ]);
+        }
+
         driverSyncVehicleAssignment($pdo, $driverId, $validated['assigned_vehicle_id']);
         driverSyncSecondaryVehicles($pdo, $driverId, $validated['other_vehicle_ids'], $validated['assigned_vehicle_id']);
         $pdo->commit();
@@ -1043,12 +1193,12 @@ function driverHandleCreateOrUpdate(string $action): void
                 'title' => $action === 'update' ? 'Driver updated successfully' : 'Driver login created',
                 'message' => $action === 'update'
                     ? 'The driver record has been updated successfully.'
-                    : 'Username: ' . ($credentials['username'] ?? '') . ' | One-time password: ' . ($credentials['one_time_password'] ?? ''),
+                    : 'Username: ' . ($credentials['username'] ?? '') . ' | Gmail: ' . ($credentials['email'] ?? ''),
             ],
             'credentials' => $action === 'create' ? [
                 'driver_code' => $credentials['driver_code'] ?? '',
                 'username' => $credentials['username'] ?? '',
-                'one_time_password' => $credentials['one_time_password'] ?? '',
+                'email' => $credentials['email'] ?? '',
             ] : null,
         ]);
         $responsePayload = [
@@ -1061,7 +1211,7 @@ function driverHandleCreateOrUpdate(string $action): void
             'credentials' => $action === 'create' ? [
                 'driver_code' => $credentials['driver_code'] ?? '',
                 'username' => $credentials['username'] ?? '',
-                'one_time_password' => $credentials['one_time_password'] ?? '',
+                'email' => $credentials['email'] ?? '',
             ] : null,
         ];
     } catch (RuntimeException $exception) {

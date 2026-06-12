@@ -1805,7 +1805,9 @@ function populateDriverEditForm(button) {
     driverIdField.value = row.dataset.driverId || '';
   }
 
-  setDriverFieldValue('input[name="full_name"]', row.dataset.fullName || '');
+  setDriverFieldValue('input[name="first_name"]', row.dataset.firstName || '');
+  setDriverFieldValue('input[name="last_name"]', row.dataset.lastName || '');
+  setDriverFieldValue('input[name="other_names"]', row.dataset.otherNames || '');
   setDriverFieldValue('input[name="employee_id"]', row.dataset.employeeId || '');
   setDriverFieldValue('input[name="phone"]', row.dataset.phone || '');
   setDriverFieldValue('input[name="email"]', row.dataset.email || '');
