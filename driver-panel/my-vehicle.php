@@ -106,10 +106,6 @@ include __DIR__ . '/includes/sidebar.php';
                     <h2 class="text-lg font-extrabold text-fleet-ink">Quick Access</h2>
                     <p class="mt-1 text-sm text-fleet-muted">Shortcuts tied to this vehicle and its daily operations</p>
                     <div class="mt-5 space-y-3">
-                        <a href="<?= htmlspecialchars(($basePath ?: '') . '/driver-panel/pre-trip-inspection', ENT_QUOTES, 'UTF-8'); ?>" class="driver-action-link flex items-center justify-between rounded-lg border border-fleet-line-soft bg-fleet-surface-muted px-4 py-4 text-sm font-semibold text-fleet-ink transition hover:border-fleet-primary hover:bg-blue-50/50">
-                            <span>Go to Pre-Trip Inspection</span>
-                            <span class="text-fleet-primary">&rarr;</span>
-                        </a>
                         <a href="<?= htmlspecialchars(($basePath ?: '') . '/driver-panel/trip-log', ENT_QUOTES, 'UTF-8'); ?>" class="driver-action-link flex items-center justify-between rounded-lg border border-fleet-line-soft bg-fleet-surface-muted px-4 py-4 text-sm font-semibold text-fleet-ink transition hover:border-fleet-primary hover:bg-blue-50/50">
                             <span>Open Trip Log</span>
                             <span class="text-fleet-primary">&rarr;</span>
@@ -165,15 +161,6 @@ include __DIR__ . '/includes/sidebar.php';
                         </span>
                     </div>
                     <p class="mt-4 text-sm leading-6 text-fleet-muted"><?= htmlspecialchars($tripStatus['detail'], ENT_QUOTES, 'UTF-8'); ?></p>
-
-                    <?php if ($latestPreInspection !== null): ?>
-                        <div class="driver-subcard mt-5 rounded-lg border border-fleet-line-soft bg-fleet-surface-muted p-4">
-                            <p class="text-xs font-extrabold uppercase tracking-wide text-fleet-sidebar">Latest Pre-Trip Inspection</p>
-                            <p class="mt-3 text-sm text-fleet-muted">Date: <span class="font-semibold text-fleet-ink"><?= htmlspecialchars($latestPreInspection['date'], ENT_QUOTES, 'UTF-8'); ?></span></p>
-                            <p class="mt-2 text-sm text-fleet-muted">Status: <span class="font-semibold text-fleet-ink"><?= htmlspecialchars(ucwords(str_replace('_', ' ', $latestPreInspection['overall_status'])), ENT_QUOTES, 'UTF-8'); ?></span></p>
-                            <p class="mt-2 text-sm leading-6 text-fleet-muted"><?= htmlspecialchars($latestPreInspection['defects'], ENT_QUOTES, 'UTF-8'); ?></p>
-                        </div>
-                    <?php endif; ?>
                 </section>
             </article>
         </section>

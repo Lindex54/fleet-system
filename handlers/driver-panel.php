@@ -748,20 +748,6 @@ function driverPanelBuildAlerts(?array $driver, ?array $vehicle, array $tripVehi
         }
     }
 
-    if ($latestPreInspection === null && $vehicle !== null) {
-        $alerts[] = [
-            'tone' => 'info',
-            'title' => 'Pre-trip inspection reminder',
-            'message' => 'No pre-trip inspection has been recorded yet for your assigned vehicle.',
-        ];
-    } elseif ($latestPreInspection !== null && in_array($latestPreInspection['overall_status'], ['faulty', 'needs_repair'], true)) {
-        $alerts[] = [
-            'tone' => 'danger',
-            'title' => 'Inspection issue reported',
-            'message' => $latestPreInspection['defects'],
-        ];
-    }
-
     if ($latestTrip === null) {
         $alerts[] = [
             'tone' => 'info',
@@ -815,25 +801,9 @@ function driverPanelBuildTripStatus(?array $vehicle, array $tripVehicleOptions, 
         ];
     }
 
-    if ($latestPreInspection !== null && in_array($latestPreInspection['overall_status'], ['faulty', 'needs_repair'], true)) {
-        return [
-            'label' => 'Inspection issue pending',
-            'detail' => 'Latest pre-trip inspection reported issues that need attention before travel.',
-            'classes' => 'border-red-200 bg-fleet-danger-soft text-fleet-danger',
-        ];
-    }
-
-    if ($latestPreInspection === null) {
-        return [
-            'label' => 'Inspection pending',
-            'detail' => 'Complete a pre-trip inspection before starting today\'s journey.',
-            'classes' => 'border-orange-200 bg-fleet-warning-soft text-fleet-warning-strong',
-        ];
-    }
-
     return [
         'label' => 'Ready for trip',
-        'detail' => 'Assigned vehicle is active and the latest recorded checks do not show urgent issues.',
+        'detail' => 'Assigned vehicle is active and ready for normal trip logging.',
         'classes' => 'border-green-200 bg-fleet-success-soft text-fleet-success',
     ];
 }
@@ -1518,12 +1488,10 @@ function driverPanelValidateTripStart(array $formData, array $selectedVehicle): 
         throw new RuntimeException('Please provide a valid trip date.');
     }
 
-    $odometerStart = $formData['odometer_start'] === ''
-        ? $selectedVehicle['current_mileage_raw']
-        : filter_var($formData['odometer_start'], FILTER_VALIDATE_INT, ['options' => ['min_range' => 0]]);
+    $odometerStart = filter_var($selectedVehicle['current_mileage_raw'] ?? null, FILTER_VALIDATE_INT, ['options' => ['min_range' => 0]]);
 
     if ($odometerStart === false) {
-        throw new RuntimeException('Please provide a valid odometer start reading.');
+        throw new RuntimeException('The selected vehicle does not have a valid current mileage reading.');
     }
 
     return [
@@ -2044,7 +2012,6 @@ function driverPanelBuildReminderNotifications(array $commonData): array
 {
     $reminders = [];
     $latestTrip = $commonData['latestTrip'];
-    $latestPreInspection = $commonData['latestPreInspection'];
     $assignedVehicle = $commonData['assignedVehicle'];
 
     if ($assignedVehicle === null && $commonData['tripVehicleOptions'] === []) {
@@ -2052,14 +2019,6 @@ function driverPanelBuildReminderNotifications(array $commonData): array
             'title' => 'Vehicle assignment reminder',
             'message' => 'You need an assigned vehicle before normal trip workflow can continue.',
             'tone' => 'warning',
-        ];
-    }
-
-    if ($latestPreInspection === null) {
-        $reminders[] = [
-            'title' => 'Inspection reminder',
-            'message' => 'Complete a pre-trip inspection before starting a journey.',
-            'tone' => 'info',
         ];
     }
 
@@ -2086,21 +2045,12 @@ function driverPanelBuildVehicleNotifications(array $commonData): array
 {
     $alerts = [];
     $assignedVehicle = $commonData['assignedVehicle'];
-    $latestPreInspection = $commonData['latestPreInspection'];
 
     if ($assignedVehicle !== null) {
         $alerts[] = [
             'title' => 'Vehicle condition',
             'message' => $assignedVehicle['registration_no'] . ' is currently marked ' . strtolower($assignedVehicle['status_label']) . '.',
             'tone' => in_array($assignedVehicle['status_label'], ['Maintenance', 'Grounded'], true) ? 'danger' : 'success',
-        ];
-    }
-
-    if ($latestPreInspection !== null && in_array($latestPreInspection['overall_status'], ['faulty', 'needs_repair'], true)) {
-        $alerts[] = [
-            'title' => 'Inspection issue alert',
-            'message' => $latestPreInspection['defects'],
-            'tone' => 'danger',
         ];
     }
 
@@ -2433,7 +2383,23 @@ function driverPanelHandleRequest(): void
     }
 
     if ($action === 'submit_pre_trip') {
-        driverPanelHandlePreTripSubmission();
+        driverPanelSetPreTripFlash([
+            'notification' => [
+                'type' => 'error',
+                'title' => 'Driver inspection submission disabled',
+                'message' => 'Pre-inspections are now managed from the admin side only.',
+            ],
+        ]);
+        fleetFinishResponse(
+            driverPanelTripLogUrl(),
+            [
+                'success' => false,
+                'message' => 'Pre-inspections are now managed from the admin side only.',
+                'reload' => true,
+                'action' => 'submit_pre_trip',
+            ],
+            403
+        );
     }
 
     if ($action === 'start_trip') {

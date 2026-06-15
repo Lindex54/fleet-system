@@ -116,7 +116,8 @@ include __DIR__ . '/includes/sidebar.php';
                                 </label>
                                 <label class="block">
                                     <span class="mb-2 block text-sm font-semibold text-fleet-ink">Odometer Start (km) *</span>
-                                    <input name="odometer_start" type="number" min="0" class="vehicle-form-control" value="<?= htmlspecialchars((string) ($tripStartFormData['odometer_start'] ?? ''), ENT_QUOTES, 'UTF-8'); ?>" required>
+                                    <input name="odometer_start" type="number" min="0" class="vehicle-form-control bg-slate-50 text-fleet-muted" value="<?= htmlspecialchars((string) ($tripStartFormData['odometer_start'] ?? ''), ENT_QUOTES, 'UTF-8'); ?>" readonly required aria-describedby="odometer-start-help">
+                                    <span id="odometer-start-help" class="mt-2 block text-xs text-fleet-muted">This mileage is filled from the selected vehicle and cannot be edited by the driver.</span>
                                 </label>
                                 <label class="block">
                                     <span class="mb-2 block text-sm font-semibold text-fleet-ink">Departure Location *</span>
