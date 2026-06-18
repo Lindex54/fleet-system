@@ -119,6 +119,54 @@ function inspectionFormatDate(?string $date): string
     return $timestamp ? date('d/m/Y', $timestamp) : $date;
 }
 
+// Builds the stable date prefix used for pre-inspection references.
+function inspectionBuildInvoiceNumberPrefix(string $inspectionDate): string
+{
+    return 'BUEMIS_' . str_replace('-', '', $inspectionDate);
+}
+
+// Builds a human-friendly preview of the auto-generated pre-inspection reference.
+function inspectionBuildInvoiceNumberPreview(string $inspectionDate): string
+{
+    return inspectionBuildInvoiceNumberPrefix($inspectionDate) . '_001';
+}
+
+// Generates the next unique pre-inspection reference for the selected date.
+function inspectionGenerateInvoiceNumber(PDO $pdo, string $inspectionDate, ?int $excludeReportId = null): string
+{
+    $prefix = inspectionBuildInvoiceNumberPrefix($inspectionDate);
+    $statement = $pdo->prepare(
+        "SELECT invoice_number
+        FROM inspections
+        WHERE inspection_type = 'pre'
+            AND invoice_number LIKE :prefix_like"
+            . ($excludeReportId !== null ? ' AND id <> :exclude_report_id' : '')
+    );
+    $statement->bindValue(':prefix_like', $prefix . '%');
+
+    if ($excludeReportId !== null) {
+        $statement->bindValue(':exclude_report_id', $excludeReportId, PDO::PARAM_INT);
+    }
+
+    $statement->execute();
+    $highestSequence = 0;
+
+    foreach ($statement->fetchAll(PDO::FETCH_COLUMN) as $invoiceNumber) {
+        $invoiceNumber = trim((string) $invoiceNumber);
+
+        if ($invoiceNumber === $prefix) {
+            $highestSequence = max($highestSequence, 0);
+            continue;
+        }
+
+        if (preg_match('/^' . preg_quote($prefix, '/') . '_(\d{3})$/', $invoiceNumber, $matches) === 1) {
+            $highestSequence = max($highestSequence, (int) $matches[1]);
+        }
+    }
+
+    return sprintf('%s_%03d', $prefix, $highestSequence + 1);
+}
+
 // Loads current vehicle options for the pre-inspection modal dropdown.
 function inspectionFetchVehicleOptions(PDO $pdo): array
 {
@@ -467,7 +515,6 @@ function inspectionBuildFormDataFromPost(): array
 
     return [
         'report_id' => trim((string) ($_POST['report_id'] ?? '')),
-        'invoice_number' => trim((string) ($_POST['invoice_number'] ?? '')),
         'inspection_date' => trim((string) ($_POST['inspection_date'] ?? '')),
         'inspector_name' => trim((string) ($_POST['inspector_name'] ?? '')),
         'inspector_title' => trim((string) ($_POST['inspector_title'] ?? '')),
@@ -608,8 +655,8 @@ function postInspectionNormalizeSystemChecks(array $formData): array
 // Validates and normalizes submitted pre-inspection form values.
 function inspectionValidateFormData(array $formData): array
 {
-    if ($formData['invoice_number'] === '' || $formData['inspection_date'] === '' || $formData['inspector_name'] === '' || $formData['vehicle'] === '') {
-        throw new RuntimeException('Invoice number, inspection date, inspector name, and vehicle are required.');
+    if ($formData['inspection_date'] === '' || $formData['inspector_name'] === '' || $formData['vehicle'] === '') {
+        throw new RuntimeException('Inspection date, inspector name, and vehicle are required.');
     }
 
     $vehicleId = filter_var($formData['vehicle'], FILTER_VALIDATE_INT, ['options' => ['min_range' => 1]]);
@@ -635,10 +682,11 @@ function inspectionValidateFormData(array $formData): array
         throw new RuntimeException('Please select a valid overall status.');
     }
 
+    $normalizedInspectionDate = $inspectionDate->format('Y-m-d');
+
     return [
         'vehicle_id' => (int) $vehicleId,
-        'invoice_number' => $formData['invoice_number'],
-        'inspection_date' => $inspectionDate->format('Y-m-d'),
+        'inspection_date' => $normalizedInspectionDate,
         'inspector_name' => $formData['inspector_name'],
         'inspector_title' => $formData['inspector_title'] === '' ? null : $formData['inspector_title'],
         'mileage' => $mileage === null ? null : (int) $mileage,
@@ -814,6 +862,7 @@ function inspectionHandleCreateOrUpdate(string $action): void
         $pdo = fleetDb();
         inspectionAssertForeignKeysExist($pdo, $validated['vehicle_id']);
         $pdo->beginTransaction();
+        $reportId = null;
 
         if ($action === 'update') {
             $reportId = filter_var($formData['report_id'], FILTER_VALIDATE_INT, ['options' => ['min_range' => 1]]);
@@ -821,9 +870,15 @@ function inspectionHandleCreateOrUpdate(string $action): void
                 throw new RuntimeException('The selected pre-inspection report could not be identified.');
             }
 
-            $exists = $pdo->prepare("SELECT COUNT(*) FROM inspections WHERE id = :id AND inspection_type = 'pre'");
-            $exists->execute(['id' => $reportId]);
-            if ((int) $exists->fetchColumn() === 0) {
+            $existingReportStatement = $pdo->prepare(
+                "SELECT invoice_number, inspection_date
+                FROM inspections
+                WHERE id = :id AND inspection_type = 'pre'"
+            );
+            $existingReportStatement->execute(['id' => $reportId]);
+            $existingReport = $existingReportStatement->fetch();
+
+            if (!$existingReport) {
                 throw new RuntimeException('The selected pre-inspection report no longer exists.');
             }
 
@@ -889,6 +944,20 @@ function inspectionHandleCreateOrUpdate(string $action): void
             );
         }
 
+        if (
+            $action === 'update'
+            && isset($existingReport['inspection_date'], $existingReport['invoice_number'])
+            && (string) $existingReport['inspection_date'] === $validated['inspection_date']
+            && trim((string) $existingReport['invoice_number']) !== ''
+        ) {
+            $validated['invoice_number'] = trim((string) $existingReport['invoice_number']);
+        } else {
+            $validated['invoice_number'] = inspectionGenerateInvoiceNumber(
+                $pdo,
+                $validated['inspection_date'],
+                $action === 'update' ? (int) $reportId : null
+            );
+        }
         $statement->bindValue(':vehicle_id', $validated['vehicle_id'], PDO::PARAM_INT);
         $statement->bindValue(':invoice_number', $validated['invoice_number']);
         $statement->bindValue(':inspection_date', $validated['inspection_date']);

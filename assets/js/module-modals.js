@@ -16,6 +16,7 @@ const preInspectionSubmitButton = document.querySelector('[data-pre-inspection-s
 const preInspectionForm = document.querySelector('[data-pre-inspection-form]');
 const preInspectionVehicleSelect = document.querySelector('[data-pre-inspection-vehicle-select]');
 const preInspectionMileageField = document.querySelector('[data-pre-inspection-mileage-field]');
+const preInspectionReferencePreview = document.querySelector('[data-pre-inspection-reference-preview]');
 const preInspectionItemsContainer = document.querySelector('[data-pre-inspection-items]');
 const preInspectionAddItemButton = document.querySelector('[data-add-pre-inspection-item]');
 const preInspectionItemTemplate = document.querySelector('#pre-inspection-item-template');
@@ -241,6 +242,23 @@ function syncPreInspectionMileageFromVehicle(force = false) {
   preInspectionMileageField.value = selectedOption.dataset.currentMileage || '';
 }
 
+function buildPreInspectionReference(inspectionDate) {
+  if (!inspectionDate) {
+    return 'BUEMIS_YYYYMMDD_001';
+  }
+
+  return `BUEMIS_${inspectionDate.replaceAll('-', '')}_001`;
+}
+
+function syncPreInspectionReferencePreview() {
+  if (!preInspectionReferencePreview) {
+    return;
+  }
+
+  const inspectionDateField = preInspectionForm?.querySelector('input[name="inspection_date"]');
+  preInspectionReferencePreview.value = buildPreInspectionReference(inspectionDateField?.value || '');
+}
+
 function setPreInspectionViewModalOpen(isOpen) {
   if (!preInspectionViewModal) {
     return;
@@ -344,6 +362,7 @@ function resetPreInspectionFormForCreate() {
   setPreInspectionFieldValue('textarea[name="closing_note"]', 'The purpose of this report is to therefore request you authorize repair and maintenance works on this vehicle for full restoration.');
   setPreInspectionFieldValue('input[name="cc"]', 'Senior Estates Officer');
   syncPreInspectionMileageFromVehicle(true);
+  syncPreInspectionReferencePreview();
   renderPreInspectionItems();
 }
 
@@ -360,8 +379,10 @@ function populatePreInspectionEditForm(button) {
     preInspectionReportIdField.value = row.dataset.reportId || '';
   }
 
-  setPreInspectionFieldValue('input[name="invoice_number"]', row.dataset.invoiceNumber || '');
   setPreInspectionFieldValue('input[name="inspection_date"]', row.dataset.inspectionDate || '');
+  if (preInspectionReferencePreview) {
+    preInspectionReferencePreview.value = row.dataset.invoiceNumber || buildPreInspectionReference(row.dataset.inspectionDate || '');
+  }
   setPreInspectionFieldValue('input[name="inspector_name"]', row.dataset.inspectorName || '');
   setPreInspectionFieldValue('input[name="inspector_title"]', row.dataset.inspectorTitle || '');
   setPreInspectionFieldValue('select[name="vehicle"]', row.dataset.vehicleId || '');
@@ -461,6 +482,10 @@ preInspectionVehicleSelect?.addEventListener('change', () => {
   syncPreInspectionMileageFromVehicle(true);
 });
 
+preInspectionForm?.querySelector('input[name="inspection_date"]')?.addEventListener('input', () => {
+  syncPreInspectionReferencePreview();
+});
+
 preInspectionAddItemButton?.addEventListener('click', () => {
   appendPreInspectionItemRow();
 });
@@ -498,7 +523,12 @@ preInspectionViewModal?.addEventListener('click', (event) => {
 if (preInspectionModal?.dataset.openOnLoad === 'true') {
   document.body.classList.add('overflow-hidden');
   syncPreInspectionMileageFromVehicle();
+  syncPreInspectionReferencePreview();
   updatePreInspectionItemLabels();
+}
+
+if (preInspectionModal?.dataset.openOnLoad !== 'true') {
+  syncPreInspectionReferencePreview();
 }
 
 confirmPreInspectionDeleteButton?.addEventListener('click', () => {

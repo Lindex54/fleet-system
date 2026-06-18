@@ -4,6 +4,7 @@ $activePage = 'pre-inspection';
 require_once __DIR__ . '/../../handlers/inspection.php';
 // Load live pre-inspection rows, dropdown options, and any flash UI state from the handler.
 extract(inspectionFetchPageData());
+$preInspectionReferencePreview = inspectionBuildInvoiceNumberPreview((string) ($preInspectionFormData['inspection_date'] ?? date('Y-m-d')));
 include __DIR__ . '/../../includes/header.php';
 include __DIR__ . '/../../includes/sidebar.php';
 ?>
@@ -210,12 +211,20 @@ include __DIR__ . '/../../includes/sidebar.php';
                 <div class="form-section-title"><span>1</span>Inspection Details</div>
                 <div class="grid gap-4 md:grid-cols-2">
                     <label class="block">
-                        <span class="mb-2 block text-sm font-semibold text-fleet-ink">Invoice Number *</span>
-                        <input name="invoice_number" type="text" required autofocus class="vehicle-form-control" placeholder="e.g. INV-2024-001" value="<?= htmlspecialchars($preInspectionFormData['invoice_number'] ?? '', ENT_QUOTES, 'UTF-8'); ?>">
+                        <span class="mb-2 block text-sm font-semibold text-fleet-ink">Pre-Invoice Number</span>
+                        <input
+                            type="text"
+                            readonly
+                            tabindex="-1"
+                            class="vehicle-form-control cursor-not-allowed bg-fleet-surface-muted font-semibold text-fleet-sidebar"
+                            value="<?= htmlspecialchars($preInspectionFormData['invoice_number'] ?? $preInspectionReferencePreview, ENT_QUOTES, 'UTF-8'); ?>"
+                            data-pre-inspection-reference-preview
+                        >
+                        <span class="mt-2 block text-xs text-fleet-muted">Generated automatically as <span class="font-semibold">BUEMIS_YYYYMMDD_001</span>, <span class="font-semibold">_002</span>, and so on for the same date.</span>
                     </label>
                     <label class="block">
                         <span class="mb-2 block text-sm font-semibold text-fleet-ink">Date of Inspection *</span>
-                        <input name="inspection_date" type="date" required class="vehicle-form-control" value="<?= htmlspecialchars($preInspectionFormData['inspection_date'] ?? date('Y-m-d'), ENT_QUOTES, 'UTF-8'); ?>">
+                        <input name="inspection_date" type="date" required autofocus class="vehicle-form-control" value="<?= htmlspecialchars($preInspectionFormData['inspection_date'] ?? date('Y-m-d'), ENT_QUOTES, 'UTF-8'); ?>">
                     </label>
                     <label class="block">
                         <span class="mb-2 block text-sm font-semibold text-fleet-ink">Inspector Name *</span>
