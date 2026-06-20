@@ -1,6 +1,7 @@
 <?php
 $activePage = 'driver-dashboard';
 require_once __DIR__ . '/../handlers/driver-panel.php';
+require_once __DIR__ . '/../includes/internal-messages.php';
 extract(driverPanelFetchDashboardData());
 include __DIR__ . '/../includes/header.php';
 include __DIR__ . '/includes/sidebar.php';
@@ -13,6 +14,7 @@ include __DIR__ . '/includes/sidebar.php';
         $driverTimeGreeting = $driverDashboardHour < 12
             ? 'Good Morning'
             : ($driverDashboardHour < 17 ? 'Good Afternoon' : 'Good Evening');
+        $driverUnreadMessages = fleetMessageFetchUnreadCountForCurrentSession();
         ?>
         <div class="dashboard-shell">
             <div class="dashboard-topbar">
@@ -24,6 +26,7 @@ include __DIR__ . '/includes/sidebar.php';
                         <p class="text-sm font-semibold text-fleet-primary">Driver Workspace</p>
                         <h1 class="text-2xl font-extrabold tracking-normal text-fleet-ink sm:text-3xl"><?= htmlspecialchars($driverTimeGreeting, ENT_QUOTES, 'UTF-8'); ?>, <?= htmlspecialchars($driverName, ENT_QUOTES, 'UTF-8'); ?></h1>
                         <p class="mt-1 text-sm text-fleet-muted">Driver workspace for daily fleet activities</p>
+                        <p class="mt-2 inline-flex rounded-full bg-fleet-primary-soft px-3 py-1 text-xs font-semibold text-fleet-primary"><?= $driverUnreadMessages; ?> unread internal message(s)</p>
                     </div>
                 </div>
                 <div class="dashboard-toolbar">

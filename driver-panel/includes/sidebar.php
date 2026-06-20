@@ -3,6 +3,8 @@
 $activePage = $activePage ?? '';
 require_once __DIR__ . '/sidebar-data.php';
 require_once dirname(__DIR__, 2) . '/includes/sidebar-icons.php';
+require_once dirname(__DIR__, 2) . '/includes/internal-messages.php';
+$mailboxUnreadBadge = fleetMessageFetchUnreadCountForCurrentSession();
 ?>
 <aside id="app-sidebar" class="fixed inset-y-0 left-0 z-30 flex w-64 -translate-x-full flex-col bg-fleet-sidebar text-fleet-sidebar-text shadow-xl transition-transform duration-200 lg:translate-x-0">
     <div class="flex h-20 items-center gap-3 px-5">
@@ -15,12 +17,17 @@ require_once dirname(__DIR__, 2) . '/includes/sidebar-icons.php';
         </div>
     </div>
 
-    <nav class="flex-1 space-y-1 px-2">
+    <nav class="sidebar-scroll-hidden min-h-0 flex-1 space-y-1 overflow-y-auto px-2 pb-4">
         <?php foreach ($driverNavItems as $item): ?>
             <?php $isActive = $activePage === $item['key']; ?>
             <a href="<?= htmlspecialchars($item['href'], ENT_QUOTES, 'UTF-8'); ?>" class="flex h-10 items-center gap-3 rounded-lg px-4 text-sm font-semibold transition <?= $isActive ? 'bg-fleet-sidebar-active text-fleet-warning ring-1 ring-white/70' : 'text-fleet-sidebar-text hover:bg-fleet-sidebar-soft hover:text-white'; ?>">
                 <?= sidebarIcon($item['icon']); ?>
-                <span><?= htmlspecialchars($item['label'], ENT_QUOTES, 'UTF-8'); ?></span>
+                <span class="flex min-w-0 flex-1 items-center justify-between gap-2">
+                    <span><?= htmlspecialchars($item['label'], ENT_QUOTES, 'UTF-8'); ?></span>
+                    <?php if ($item['key'] === 'driver-messages' && $mailboxUnreadBadge > 0): ?>
+                        <span class="inline-flex min-w-7 items-center justify-center rounded-full bg-fleet-danger px-2 py-0.5 text-xs font-extrabold text-white"><?= $mailboxUnreadBadge; ?></span>
+                    <?php endif; ?>
+                </span>
             </a>
         <?php endforeach; ?>
     </nav>

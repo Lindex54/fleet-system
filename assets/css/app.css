@@ -165,3 +165,5 @@ body.print-target-active .vehicle-usage-print-table td,
 body.print-target-active [data-vehicle-usage-driver-table] th,
 body.print-target-active [data-vehicle-usage-driver-table] td{font-size:1.05rem!important;line-height:1.5!important}
 }
+.sidebar-scroll-hidden{-ms-overflow-style:none;scrollbar-width:none}.sidebar-scroll-hidden::-webkit-scrollbar{display:none;width:0;height:0}
+.page-scroll-hidden{-ms-overflow-style:none;scrollbar-width:none}.page-scroll-hidden::-webkit-scrollbar{display:none;width:0;height:0}

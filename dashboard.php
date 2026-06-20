@@ -2,10 +2,14 @@
 // Main dashboard entry point backed by live database queries.
 $activePage = 'dashboard';
 require_once __DIR__ . '/handlers/dashboard.php';
+require_once __DIR__ . '/includes/internal-messages.php';
 extract(dashboardFetchPageData());
 include __DIR__ . '/includes/header.php';
 include __DIR__ . '/includes/sidebar.php';
 ?>
+<script>
+document.body.classList.add('page-scroll-hidden');
+</script>
 <main class="min-h-screen lg:pl-64">
     <div class="mx-auto max-w-[1536px] px-4 py-5 sm:px-6 lg:px-8">
         <?php
@@ -17,6 +21,7 @@ include __DIR__ . '/includes/sidebar.php';
         $timeOfDayGreeting = $dashboardHour < 12
             ? 'Good Morning'
             : ($dashboardHour < 17 ? 'Good Afternoon' : 'Good Evening');
+        $dashboardUnreadMessages = fleetMessageFetchUnreadCountForCurrentSession();
         ?>
         <div class="dashboard-shell">
             <div class="dashboard-topbar">
@@ -28,6 +33,7 @@ include __DIR__ . '/includes/sidebar.php';
                         <p class="text-sm font-semibold text-fleet-primary">BUESMIS Dashboard</p>
                         <h1 class="text-2xl font-extrabold tracking-normal text-fleet-ink sm:text-3xl"><?= htmlspecialchars($timeOfDayGreeting, ENT_QUOTES, 'UTF-8'); ?>, <?= htmlspecialchars($dashboardGreeting, ENT_QUOTES, 'UTF-8'); ?></h1>
                         <p class="mt-1 text-sm text-fleet-muted">Busitema University Estates Management Information System</p>
+                        <p class="mt-2 inline-flex rounded-full bg-fleet-primary-soft px-3 py-1 text-xs font-semibold text-fleet-primary"><?= $dashboardUnreadMessages; ?> unread internal message(s)</p>
                     </div>
                 </div>
                 <div class="dashboard-toolbar">

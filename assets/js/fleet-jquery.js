@@ -405,6 +405,11 @@ function initializeFleetFileEnhancements() {
 function initializeFleetAjaxForms() {
   $('form[data-fleet-ajax="true"]').each(function bindAjaxForm() {
     const $form = $(this);
+    let $clickedSubmitButton = null;
+
+    $form.on('click', 'button[type="submit"], input[type="submit"]', function rememberSubmitButton() {
+      $clickedSubmitButton = $(this);
+    });
 
     $form.on('submit', function handleAjaxSubmit(event) {
       if (!validateFleetForm($form)) {
@@ -414,7 +419,9 @@ function initializeFleetAjaxForms() {
 
       event.preventDefault();
 
-      const $submitButton = $form.find('button[type="submit"], input[type="submit"]').first();
+      const $submitButton = $clickedSubmitButton && $clickedSubmitButton.length
+        ? $clickedSubmitButton
+        : $form.find('button[type="submit"], input[type="submit"]').first();
       const useFormData = ($form.attr('enctype') || '').toLowerCase() === 'multipart/form-data' || $form.find('input[type="file"]').length > 0;
       const ajaxOptions = {
         url: $form.attr('action') || window.location.href,
@@ -426,10 +433,20 @@ function initializeFleetAjaxForms() {
 
       if (useFormData) {
         ajaxOptions.data = new FormData($form[0]);
+        if ($submitButton.length && $submitButton.attr('name')) {
+          ajaxOptions.data.set($submitButton.attr('name'), $submitButton.val());
+        }
         ajaxOptions.processData = false;
         ajaxOptions.contentType = false;
       } else {
-        ajaxOptions.data = $form.serialize();
+        const serializedData = $form.serializeArray();
+        if ($submitButton.length && $submitButton.attr('name')) {
+          serializedData.push({
+            name: $submitButton.attr('name'),
+            value: $submitButton.val(),
+          });
+        }
+        ajaxOptions.data = $.param(serializedData);
       }
 
       $.ajax(ajaxOptions)
@@ -471,6 +488,7 @@ function initializeFleetAjaxForms() {
         })
         .always(function alwaysResetButton() {
           resetButtonLoading($submitButton);
+          $clickedSubmitButton = null;
         });
     });
   });
