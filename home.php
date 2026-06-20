@@ -1,5 +1,8 @@
 <?php
 $activePage = 'home';
+require_once __DIR__ . '/handlers/vehicle-request.php';
+fleetAuthStartSession();
+extract(vehicleRequestFetchPublicPageData());
 include __DIR__ . '/includes/header.php';
 
 $homeUrl = ($basePath ?: '') . '/home';
@@ -7,9 +10,12 @@ $loginUrl = ($basePath ?: '') . '/login';
 $dashboardUrl = ($basePath ?: '') . '/dashboard';
 $heroImageUrl = ($basePath ?: '') . '/assets/images/hero/heroimage.png';
 $brandingLogoImage = ($basePath ?: '') . '/assets/images/branding/logo1.png';
+$homeUserRole = trim((string) ($_SESSION['user_role'] ?? ''));
+$homeUserIsLoggedIn = $homeUserRole !== '';
+$homeCanViewRequestForm = $homeUserRole !== 'admin';
 ?>
 <main class="landing-page min-h-screen overflow-hidden bg-fleet-canvas">
-    <header class="absolute inset-x-0 top-0 z-50 border-b border-fleet-line bg-white/95 backdrop-blur">
+    <header data-home-header class="absolute inset-x-0 top-0 z-50 border-b border-fleet-line bg-white/95 backdrop-blur transition duration-200">
         <div class="mx-auto flex h-20 max-w-7xl items-center justify-between px-5 sm:px-6 lg:px-8">
             <a href="<?= htmlspecialchars($homeUrl, ENT_QUOTES, 'UTF-8'); ?>" class="flex items-center gap-4">
                 <span class="flex h-12 w-12 items-center justify-center overflow-hidden rounded-[1rem] bg-white p-1 shadow-sm">
@@ -24,7 +30,9 @@ $brandingLogoImage = ($basePath ?: '') . '/assets/images/branding/logo1.png';
             <nav class="hidden items-center gap-8 text-[15px] font-semibold text-fleet-ink lg:flex">
                 <a href="#overview" class="hover:text-fleet-primary">Overview</a>
                 <a href="#services" class="hover:text-fleet-primary">Services</a>
-                <a href="#vehicles" class="hover:text-fleet-primary">Vehicles</a>
+                <?php if ($homeUserIsLoggedIn): ?>
+                    <a href="#vehicles" class="hover:text-fleet-primary">Vehicles</a>
+                <?php endif; ?>
                 <a href="#request" class="hover:text-fleet-primary">Request</a>
                 <a href="#support" class="hover:text-fleet-primary">Support</a>
             </nav>
@@ -75,9 +83,11 @@ $brandingLogoImage = ($basePath ?: '') . '/assets/images/branding/logo1.png';
                             <a href="#request" class="inline-flex items-center justify-center rounded-xl bg-fleet-primary px-7 py-3.5 text-base font-extrabold text-white shadow-lg hover:bg-fleet-primary-strong">
                                 Make a Request
                             </a>
-                            <a href="#vehicles" class="inline-flex items-center justify-center rounded-xl border border-white/20 bg-white/5 px-7 py-3.5 text-base font-extrabold text-white backdrop-blur hover:bg-white/10">
-                                View Vehicles
-                            </a>
+                            <?php if ($homeUserIsLoggedIn): ?>
+                                <a href="#vehicles" class="inline-flex items-center justify-center rounded-xl border border-white/20 bg-white/5 px-7 py-3.5 text-base font-extrabold text-white backdrop-blur hover:bg-white/10">
+                                    View Vehicles
+                                </a>
+                            <?php endif; ?>
                         </div>
                     </div>
 
@@ -221,177 +231,212 @@ $brandingLogoImage = ($basePath ?: '') . '/assets/images/branding/logo1.png';
         </div>
     </section>
 
-    <section id="vehicles" class="landing-showcase-section">
-        <div class="mx-auto max-w-[1380px] px-5 py-20 sm:px-6 lg:px-8">
-            <div class="text-center">
-                <p class="text-sm font-black uppercase tracking-[0.18em] text-fleet-primary">BUESMIS Fleet</p>
-                <h2 class="mt-3 text-3xl font-black text-fleet-sidebar sm:text-4xl lg:text-5xl">Available Vehicles</h2>
-                <p class="mx-auto mt-4 max-w-2xl text-base leading-7 text-fleet-muted sm:text-lg">
-                    Explore the university transport fleet through a more realistic operational showcase before making a formal request.
-                </p>
-            </div>
+    <?php if ($homeUserIsLoggedIn): ?>
+        <section id="vehicles" class="landing-showcase-section">
+            <div class="mx-auto max-w-[1380px] px-5 py-20 sm:px-6 lg:px-8">
+                <div class="text-center">
+                    <p class="text-sm font-black uppercase tracking-[0.18em] text-fleet-primary">BUESMIS Fleet</p>
+                    <h2 class="mt-3 text-3xl font-black text-fleet-sidebar sm:text-4xl lg:text-5xl">Available Vehicles</h2>
+                    <p class="mx-auto mt-4 max-w-2xl text-base leading-7 text-fleet-muted sm:text-lg">
+                        Explore the university transport fleet through a more realistic operational showcase before making a formal request.
+                    </p>
+                </div>
 
-            <div class="landing-showcase-shell mt-12" data-fleet-showcase>
-                <div class="landing-showcase-layout">
-                    <div class="landing-showcase-stage">
-                        <img
-                            src="assets/images/fleet-showcase/prado-garage.png"
-                            alt="Toyota Prado in BUESMIS showcase garage"
-                            class="landing-showcase-image is-visible"
-                            data-vehicle-image
-                        >
+                <div class="landing-showcase-shell mt-12" data-fleet-showcase>
+                    <div class="landing-showcase-layout">
+                        <div class="landing-showcase-stage">
+                            <img
+                                src="assets/images/fleet-showcase/prado-garage.png"
+                                alt="Toyota Prado in BUESMIS showcase garage"
+                                class="landing-showcase-image is-visible"
+                                data-vehicle-image
+                            >
 
-                        <div class="landing-showcase-overlay" aria-hidden="true"></div>
+                            <div class="landing-showcase-overlay" aria-hidden="true"></div>
 
-                        <aside class="landing-showcase-panel">
-                            <div>
-                                <p class="text-xs font-black uppercase tracking-[0.18em] text-fleet-primary">Operational Profile</p>
-                                <h3 class="mt-3 text-2xl font-black text-white sm:text-[2rem]" data-vehicle-model>Toyota Prado</h3>
-                                <p class="mt-3 text-sm leading-7 text-slate-300" data-vehicle-description>
-                                    Reliable field-ready transport for official university movement, inspections, and administrative duty.
-                                </p>
+                            <aside class="landing-showcase-panel">
+                                <div>
+                                    <p class="text-xs font-black uppercase tracking-[0.18em] text-fleet-primary">Operational Profile</p>
+                                    <h3 class="mt-3 text-2xl font-black text-white sm:text-[2rem]" data-vehicle-model>Toyota Prado</h3>
+                                    <p class="mt-3 text-sm leading-7 text-slate-300" data-vehicle-description>
+                                        Reliable field-ready transport for official university movement, inspections, and administrative duty.
+                                    </p>
+                                </div>
+
+                                <div class="mt-5">
+                                    <span class="landing-status-pill" data-vehicle-status>Available</span>
+                                </div>
+
+                                <dl class="mt-6 space-y-3 text-sm">
+                                    <div class="landing-spec-row">
+                                        <dt>Registration</dt>
+                                        <dd data-vehicle-registration>UBQ 123C</dd>
+                                    </div>
+                                    <div class="landing-spec-row">
+                                        <dt>Vehicle Type</dt>
+                                        <dd data-vehicle-type>Administrative SUV</dd>
+                                    </div>
+                                    <div class="landing-spec-row">
+                                        <dt>Capacity</dt>
+                                        <dd data-vehicle-capacity>7 Seater</dd>
+                                    </div>
+                                    <div class="landing-spec-row">
+                                        <dt>Usage</dt>
+                                        <dd data-vehicle-usage>Executive field coordination</dd>
+                                    </div>
+                                </dl>
+
+                                <a href="#request" class="mt-7 inline-flex items-center justify-center rounded-xl bg-fleet-primary px-5 py-3 text-sm font-black text-white shadow-lg hover:bg-fleet-primary-strong">
+                                    Make a Request
+                                </a>
+                            </aside>
+
+                            <button
+                                type="button"
+                                class="landing-showcase-arrow landing-showcase-arrow-left"
+                                aria-label="Previous vehicle"
+                                data-vehicle-prev
+                                onclick="previousVehicle()"
+                            >
+                                <span aria-hidden="true">&#8249;</span>
+                            </button>
+
+                            <button
+                                type="button"
+                                class="landing-showcase-arrow landing-showcase-arrow-right"
+                                aria-label="Next vehicle"
+                                data-vehicle-next
+                                onclick="nextVehicle()"
+                            >
+                                <span aria-hidden="true">&#8250;</span>
+                            </button>
+
+                            <div class="landing-showcase-footer">
+                                <div class="landing-showcase-meta">
+                                    <p class="text-xs font-black uppercase tracking-[0.18em] text-fleet-primary">Current Vehicle</p>
+                                    <p class="mt-2 text-lg font-black text-white" data-vehicle-subtitle>Toyota Prado</p>
+                                    <p class="mt-1 text-sm text-slate-300" data-vehicle-caption>Administrative SUV</p>
+                                </div>
+
+                                <div class="landing-showcase-dots" data-vehicle-dots aria-label="Vehicle slider indicators"></div>
                             </div>
-
-                            <div class="mt-5">
-                                <span class="landing-status-pill" data-vehicle-status>Available</span>
-                            </div>
-
-                            <dl class="mt-6 space-y-3 text-sm">
-                                <div class="landing-spec-row">
-                                    <dt>Registration</dt>
-                                    <dd data-vehicle-registration>UBQ 123C</dd>
-                                </div>
-                                <div class="landing-spec-row">
-                                    <dt>Vehicle Type</dt>
-                                    <dd data-vehicle-type>Administrative SUV</dd>
-                                </div>
-                                <div class="landing-spec-row">
-                                    <dt>Capacity</dt>
-                                    <dd data-vehicle-capacity>7 Seater</dd>
-                                </div>
-                                <div class="landing-spec-row">
-                                    <dt>Usage</dt>
-                                    <dd data-vehicle-usage>Executive field coordination</dd>
-                                </div>
-                            </dl>
-
-                            <a href="#request" class="mt-7 inline-flex items-center justify-center rounded-xl bg-fleet-primary px-5 py-3 text-sm font-black text-white shadow-lg hover:bg-fleet-primary-strong">
-                                Make a Request
-                            </a>
-                        </aside>
-
-                        <button
-                            type="button"
-                            class="landing-showcase-arrow landing-showcase-arrow-left"
-                            aria-label="Previous vehicle"
-                            data-vehicle-prev
-                            onclick="previousVehicle()"
-                        >
-                            <span aria-hidden="true">&#8249;</span>
-                        </button>
-
-                        <button
-                            type="button"
-                            class="landing-showcase-arrow landing-showcase-arrow-right"
-                            aria-label="Next vehicle"
-                            data-vehicle-next
-                            onclick="nextVehicle()"
-                        >
-                            <span aria-hidden="true">&#8250;</span>
-                        </button>
-
-                        <div class="landing-showcase-footer">
-                            <div class="landing-showcase-meta">
-                                <p class="text-xs font-black uppercase tracking-[0.18em] text-fleet-primary">Current Vehicle</p>
-                                <p class="mt-2 text-lg font-black text-white" data-vehicle-subtitle>Toyota Prado</p>
-                                <p class="mt-1 text-sm text-slate-300" data-vehicle-caption>Administrative SUV</p>
-                            </div>
-
-                            <div class="landing-showcase-dots" data-vehicle-dots aria-label="Vehicle slider indicators"></div>
                         </div>
                     </div>
                 </div>
             </div>
-        </div>
-    </section>
+        </section>
+    <?php endif; ?>
 
-    <section id="request" class="bg-white">
-        <div class="mx-auto grid max-w-7xl gap-12 px-5 py-20 sm:px-6 lg:grid-cols-2 lg:px-8">
-            <div>
-                <p class="text-sm font-black uppercase tracking-wide text-fleet-primary">Vehicle request</p>
-                <h2 class="mt-3 text-3xl font-black leading-tight sm:text-4xl">Request transport for official university work</h2>
-                <p class="mt-5 text-lg leading-8 text-fleet-muted">
-                    Departments, staff, and authorized units can submit vehicle requests for approved academic,
-                    administrative, field, estates, and operational activities.
-                </p>
+    <?php if ($homeCanViewRequestForm): ?>
+        <section id="request" class="bg-white">
+            <div class="mx-auto grid max-w-7xl gap-12 px-5 py-20 sm:px-6 lg:grid-cols-2 lg:px-8">
+                <div>
+                    <p class="text-sm font-black uppercase tracking-wide text-fleet-primary">Vehicle request</p>
+                    <h2 class="mt-3 text-3xl font-black leading-tight sm:text-4xl">Request transport for official university work</h2>
+                    <p class="mt-5 text-lg leading-8 text-fleet-muted">
+                        Departments, staff, and authorized units can submit vehicle requests for approved academic,
+                        administrative, field, estates, and operational activities.
+                    </p>
 
-                <div class="mt-8 rounded-[1.5rem] border border-fleet-line-soft bg-fleet-surface-muted p-7">
-                    <h3 class="text-xl font-black text-fleet-sidebar">Why BUESMIS matters</h3>
-                    <ul class="mt-5 space-y-4 text-fleet-muted">
-                        <li class="flex gap-3"><span class="font-black text-fleet-success">+</span> Improves visibility over vehicle movement and usage</li>
-                        <li class="flex gap-3"><span class="font-black text-fleet-success">+</span> Strengthens accountability through proper records</li>
-                        <li class="flex gap-3"><span class="font-black text-fleet-success">+</span> Supports preventive maintenance and service follow-up</li>
-                        <li class="flex gap-3"><span class="font-black text-fleet-success">+</span> Helps plan transport for university operations efficiently</li>
-                    </ul>
+                    <div class="mt-8 rounded-[1.5rem] border border-fleet-line-soft bg-fleet-surface-muted p-7">
+                        <h3 class="text-xl font-black text-fleet-sidebar">Why BUESMIS matters</h3>
+                        <ul class="mt-5 space-y-4 text-fleet-muted">
+                            <li class="flex gap-3"><span class="font-black text-fleet-success">+</span> Improves visibility over vehicle movement and usage</li>
+                            <li class="flex gap-3"><span class="font-black text-fleet-success">+</span> Strengthens accountability through proper records</li>
+                            <li class="flex gap-3"><span class="font-black text-fleet-success">+</span> Supports preventive maintenance and service follow-up</li>
+                            <li class="flex gap-3"><span class="font-black text-fleet-success">+</span> Helps plan transport for university operations efficiently</li>
+                        </ul>
+                    </div>
                 </div>
+
+                <form action="<?= htmlspecialchars($vehicleRequestFormAction, ENT_QUOTES, 'UTF-8'); ?>" method="post" data-fleet-ajax="true" data-fleet-reset-on-success="true" class="rounded-[2rem] border border-fleet-line-soft bg-fleet-surface-muted p-7 shadow-sm sm:p-9">
+                    <input type="hidden" name="vehicle_request_action" value="create">
+                    <div data-fleet-feedback-host></div>
+
+                    <?php if (!empty($vehicleRequestNotification)): ?>
+                        <?php $isVehicleRequestSuccess = ($vehicleRequestNotification['type'] ?? '') === 'success'; ?>
+                        <div class="mb-5 rounded-2xl border px-4 py-4 text-sm leading-6 <?= $isVehicleRequestSuccess ? 'border-green-200 bg-green-50 text-green-900' : 'border-red-200 bg-red-50 text-red-900'; ?>">
+                            <p class="font-extrabold uppercase tracking-[0.18em]"><?= htmlspecialchars($vehicleRequestNotification['title'] ?? 'Vehicle request update', ENT_QUOTES, 'UTF-8'); ?></p>
+                            <p class="mt-2"><?= htmlspecialchars($vehicleRequestNotification['message'] ?? '', ENT_QUOTES, 'UTF-8'); ?></p>
+                        </div>
+                    <?php endif; ?>
+
+                    <div class="grid gap-5 sm:grid-cols-2">
+                        <label class="block">
+                            <span class="font-bold text-fleet-ink">Full Name</span>
+                            <input name="full_name" required class="landing-form-control mt-2" placeholder="Enter full name" value="<?= htmlspecialchars($vehicleRequestFormData['full_name'] ?? '', ENT_QUOTES, 'UTF-8'); ?>">
+                        </label>
+
+                        <label class="block">
+                            <span class="font-bold text-fleet-ink">Department</span>
+                            <input name="department" required class="landing-form-control mt-2" placeholder="Department / Unit" value="<?= htmlspecialchars($vehicleRequestFormData['department'] ?? '', ENT_QUOTES, 'UTF-8'); ?>">
+                        </label>
+
+                        <label class="block">
+                            <span class="font-bold text-fleet-ink">Email Address</span>
+                            <input name="email_address" type="email" required class="landing-form-control mt-2" placeholder="name@busitema.ac.ug" value="<?= htmlspecialchars($vehicleRequestFormData['email_address'] ?? '', ENT_QUOTES, 'UTF-8'); ?>">
+                        </label>
+
+                        <label class="block">
+                            <span class="font-bold text-fleet-ink">Phone Number</span>
+                            <input name="phone_number" required class="landing-form-control mt-2" placeholder="+256..." value="<?= htmlspecialchars($vehicleRequestFormData['phone_number'] ?? '', ENT_QUOTES, 'UTF-8'); ?>">
+                        </label>
+
+                        <label class="block">
+                            <span class="font-bold text-fleet-ink">Job Title / Role</span>
+                            <input name="job_title" required class="landing-form-control mt-2" placeholder="e.g. Lecturer, Administrator" value="<?= htmlspecialchars($vehicleRequestFormData['job_title'] ?? '', ENT_QUOTES, 'UTF-8'); ?>">
+                        </label>
+
+                        <label class="block">
+                            <span class="font-bold text-fleet-ink">Trip Destination</span>
+                            <input name="trip_destination" required class="landing-form-control mt-2" placeholder="Destination" value="<?= htmlspecialchars($vehicleRequestFormData['trip_destination'] ?? '', ENT_QUOTES, 'UTF-8'); ?>">
+                        </label>
+
+                        <label class="block">
+                            <span class="font-bold text-fleet-ink">Request Date</span>
+                            <input name="request_date" type="date" required class="landing-form-control mt-2" value="<?= htmlspecialchars($vehicleRequestFormData['request_date'] ?? date('Y-m-d'), ENT_QUOTES, 'UTF-8'); ?>">
+                        </label>
+
+                        <label class="block">
+                            <span class="font-bold text-fleet-ink">Preferred Vehicle Type</span>
+                            <select name="preferred_vehicle_type" class="landing-form-control mt-2">
+                                <option value="">Select vehicle type</option>
+                                <option value="Staff Van" <?= (($vehicleRequestFormData['preferred_vehicle_type'] ?? '') === 'Staff Van') ? 'selected' : ''; ?>>Staff Van</option>
+                                <option value="Administrative SUV" <?= (($vehicleRequestFormData['preferred_vehicle_type'] ?? '') === 'Administrative SUV') ? 'selected' : ''; ?>>Administrative SUV</option>
+                                <option value="Departmental Car" <?= (($vehicleRequestFormData['preferred_vehicle_type'] ?? '') === 'Departmental Car') ? 'selected' : ''; ?>>Departmental Car</option>
+                                <option value="Works Truck" <?= (($vehicleRequestFormData['preferred_vehicle_type'] ?? '') === 'Works Truck') ? 'selected' : ''; ?>>Works Truck</option>
+                            </select>
+                        </label>
+
+                        <label class="block">
+                            <span class="font-bold text-fleet-ink">Purpose of Trip</span>
+                            <input name="purpose_of_trip" required class="landing-form-control mt-2" placeholder="Official purpose" value="<?= htmlspecialchars($vehicleRequestFormData['purpose_of_trip'] ?? '', ENT_QUOTES, 'UTF-8'); ?>">
+                        </label>
+
+                        <label class="block sm:col-span-2">
+                            <span class="font-bold text-fleet-ink">Reason for Request</span>
+                            <textarea name="reason" required class="landing-form-control mt-2 min-h-32 resize-y py-3" placeholder="Explain why this transport is needed for the activity."><?= htmlspecialchars($vehicleRequestFormData['reason'] ?? '', ENT_QUOTES, 'UTF-8'); ?></textarea>
+                        </label>
+                    </div>
+
+                    <button type="submit" data-loading-text="Submitting Request..." class="mt-7 w-full rounded-xl bg-fleet-primary px-7 py-4 font-black text-white shadow-sm hover:bg-fleet-primary-strong">
+                        Submit Vehicle Request
+                    </button>
+
+                    <p class="mt-4 text-center text-sm text-fleet-muted">
+                        Requests submitted here are sent to the transport office for admin review and follow-up.
+                    </p>
+
+                    <div class="mt-5 text-center text-sm text-fleet-muted">
+                        Staff can continue to the
+                        <a href="<?= htmlspecialchars($loginUrl, ENT_QUOTES, 'UTF-8'); ?>" class="font-bold text-fleet-primary hover:text-fleet-primary-strong">login page</a>
+                        or
+                        <a href="<?= htmlspecialchars($dashboardUrl, ENT_QUOTES, 'UTF-8'); ?>" class="font-bold text-fleet-primary hover:text-fleet-primary-strong">dashboard</a>.
+                    </div>
+                </form>
             </div>
-
-            <form class="rounded-[2rem] border border-fleet-line-soft bg-fleet-surface-muted p-7 shadow-sm sm:p-9">
-                <div class="grid gap-5 sm:grid-cols-2">
-                    <label class="block">
-                        <span class="font-bold text-fleet-ink">Requester Name</span>
-                        <input class="landing-form-control mt-2" placeholder="Enter full name">
-                    </label>
-
-                    <label class="block">
-                        <span class="font-bold text-fleet-ink">Department</span>
-                        <input class="landing-form-control mt-2" placeholder="Department / Unit">
-                    </label>
-
-                    <label class="block">
-                        <span class="font-bold text-fleet-ink">Trip Destination</span>
-                        <input class="landing-form-control mt-2" placeholder="Destination">
-                    </label>
-
-                    <label class="block">
-                        <span class="font-bold text-fleet-ink">Request Date</span>
-                        <input type="date" class="landing-form-control mt-2">
-                    </label>
-
-                    <label class="block">
-                        <span class="font-bold text-fleet-ink">Preferred Vehicle Type</span>
-                        <select class="landing-form-control mt-2">
-                            <option>Select vehicle type</option>
-                            <option>Staff Van</option>
-                            <option>Administrative SUV</option>
-                            <option>Departmental Car</option>
-                            <option>Works Truck</option>
-                        </select>
-                    </label>
-
-                    <label class="block">
-                        <span class="font-bold text-fleet-ink">Purpose of Trip</span>
-                        <input class="landing-form-control mt-2" placeholder="Official purpose">
-                    </label>
-                </div>
-
-                <button type="button" class="mt-7 w-full rounded-xl bg-fleet-primary px-7 py-4 font-black text-white shadow-sm hover:bg-fleet-primary-strong">
-                    Submit Vehicle Request
-                </button>
-
-                <p class="mt-4 text-center text-sm text-fleet-muted">
-                    This is a public request mockup. Actual approval is handled by the transport office.
-                </p>
-
-                <div class="mt-5 text-center text-sm text-fleet-muted">
-                    Staff can continue to the
-                    <a href="<?= htmlspecialchars($loginUrl, ENT_QUOTES, 'UTF-8'); ?>" class="font-bold text-fleet-primary hover:text-fleet-primary-strong">login page</a>
-                    or
-                    <a href="<?= htmlspecialchars($dashboardUrl, ENT_QUOTES, 'UTF-8'); ?>" class="font-bold text-fleet-primary hover:text-fleet-primary-strong">dashboard</a>.
-                </div>
-            </form>
-        </div>
-    </section>
+        </section>
+    <?php endif; ?>
 
     <footer id="support" class="bg-fleet-sidebar text-white">
         <div class="mx-auto grid max-w-7xl gap-10 px-5 py-14 sm:px-6 md:grid-cols-3 lg:px-8">
@@ -408,8 +453,12 @@ $brandingLogoImage = ($basePath ?: '') . '/assets/images/branding/logo1.png';
                 <ul class="mt-4 space-y-3 text-blue-100">
                     <li><a href="#overview" class="hover:text-white">System Overview</a></li>
                     <li><a href="#services" class="hover:text-white">Fleet Services</a></li>
-                    <li><a href="#vehicles" class="hover:text-white">Available Vehicles</a></li>
-                    <li><a href="#request" class="hover:text-white">Request a Vehicle</a></li>
+                    <?php if ($homeUserIsLoggedIn): ?>
+                        <li><a href="#vehicles" class="hover:text-white">Available Vehicles</a></li>
+                    <?php endif; ?>
+                    <?php if ($homeCanViewRequestForm): ?>
+                        <li><a href="#request" class="hover:text-white">Request a Vehicle</a></li>
+                    <?php endif; ?>
                 </ul>
             </div>
 
@@ -431,4 +480,27 @@ $brandingLogoImage = ($basePath ?: '') . '/assets/images/branding/logo1.png';
         </div>
     </footer>
 </main>
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    const homeHeader = document.querySelector('[data-home-header]');
+
+    if (!homeHeader) {
+        return;
+    }
+
+    const syncHomeHeaderStickyState = function () {
+        const shouldStick = window.scrollY > homeHeader.offsetHeight;
+
+        homeHeader.classList.toggle('absolute', !shouldStick);
+        homeHeader.classList.toggle('fixed', shouldStick);
+        homeHeader.classList.toggle('shadow-lg', shouldStick);
+        homeHeader.classList.toggle('bg-white', shouldStick);
+        homeHeader.classList.toggle('bg-white/95', !shouldStick);
+    };
+
+    window.addEventListener('scroll', syncHomeHeaderStickyState, { passive: true });
+    window.addEventListener('resize', syncHomeHeaderStickyState);
+    syncHomeHeaderStickyState();
+});
+</script>
 <?php include __DIR__ . '/includes/footer.php'; ?>

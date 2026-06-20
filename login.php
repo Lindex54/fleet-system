@@ -26,6 +26,7 @@ if ($documentRoot && $projectRoot && substr($projectRoot, 0, strlen($documentRoo
 
 $loginVehicleImage = ($basePath ?: '') . '/assets/images/hero/login-fleet-vehicle-removebg-preview.png';
 $brandingLogoImage = ($basePath ?: '') . '/assets/images/branding/logo1.png';
+$homeUrl = ($basePath ?: '') . '/home';
 
 function loginIsAdminUsername(string $username): bool
 {
@@ -193,7 +194,7 @@ include __DIR__ . '/includes/header.php';
             <div class="login-panel-blob login-panel-blob-purple"></div>
             <div class="login-panel-blob login-panel-blob-blue"></div>
 
-            <div class="login-panel-brand">
+            <a href="<?= htmlspecialchars($homeUrl, ENT_QUOTES, 'UTF-8'); ?>" class="login-panel-brand" aria-label="Go to home page">
                 <div class="login-panel-badge">
                     <img src="<?= htmlspecialchars($brandingLogoImage, ENT_QUOTES, 'UTF-8'); ?>" alt="BUESMIS logo">
                 </div>
@@ -201,7 +202,7 @@ include __DIR__ . '/includes/header.php';
                     <span class="login-panel-brand-label">Buesmis Fleet</span>
                     <span class="login-panel-brand-name">Fleet Management</span>
                 </div>
-            </div>
+            </a>
 
             <div class="login-panel-hero">
                 <span class="login-panel-tag">Vehicle . Driver . Trip</span>

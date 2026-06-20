@@ -5,6 +5,7 @@ require_once __DIR__ . '/vendor/autoload.php';
 require_once __DIR__ . '/includes/driver-login-verification.php';
 
 $themeAssets = driverLoginVerificationThemeAssets();
+$homeUrl = $themeAssets['base_path'] . '/home';
 $status = 'error';
 $message = 'Invalid verification token.';
 $verification = null;
@@ -75,7 +76,7 @@ try {
             <div class="login-panel-blob login-panel-blob-purple"></div>
             <div class="login-panel-blob login-panel-blob-blue"></div>
 
-            <div class="login-panel-brand">
+            <a href="<?= htmlspecialchars($homeUrl, ENT_QUOTES, 'UTF-8'); ?>" class="login-panel-brand" aria-label="Go to home page">
                 <div class="login-panel-badge">
                     <img src="<?= htmlspecialchars($themeAssets['branding_logo'], ENT_QUOTES, 'UTF-8'); ?>" alt="BUESMIS logo">
                 </div>
@@ -83,7 +84,7 @@ try {
                     <span class="login-panel-brand-label">Buesmis Fleet</span>
                     <span class="login-panel-brand-name">Fleet Management</span>
                 </div>
-            </div>
+            </a>
 
             <div class="login-panel-hero">
                 <span class="login-panel-tag">Driver . Email . Password</span>
