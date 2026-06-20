@@ -131,6 +131,26 @@ function inspectionBuildInvoiceNumberPreview(string $inspectionDate): string
     return inspectionBuildInvoiceNumberPrefix($inspectionDate) . '_001';
 }
 
+// Resolves the actual next pre-inspection reference for the selected date when possible.
+function inspectionResolveInvoiceNumberPreview(?PDO $pdo, string $inspectionDate): string
+{
+    $normalizedDate = trim($inspectionDate);
+
+    if ($normalizedDate === '') {
+        $normalizedDate = date('Y-m-d');
+    }
+
+    if ($pdo === null) {
+        return inspectionBuildInvoiceNumberPreview($normalizedDate);
+    }
+
+    try {
+        return inspectionGenerateInvoiceNumber($pdo, $normalizedDate);
+    } catch (Throwable $exception) {
+        return inspectionBuildInvoiceNumberPreview($normalizedDate);
+    }
+}
+
 // Generates the next unique pre-inspection reference for the selected date.
 function inspectionGenerateInvoiceNumber(PDO $pdo, string $inspectionDate, ?int $excludeReportId = null): string
 {
@@ -250,10 +270,12 @@ function inspectionFetchPageData(): array
 
     $reports = [];
     $vehicleOptions = [];
+    $invoicePreview = inspectionBuildInvoiceNumberPreview((string) ($formData['inspection_date'] ?? date('Y-m-d')));
 
     try {
         $pdo = fleetDb();
         $vehicleOptions = inspectionFetchVehicleOptions($pdo);
+        $invoicePreview = inspectionResolveInvoiceNumberPreview($pdo, (string) ($formData['inspection_date'] ?? date('Y-m-d')));
         $statement = $pdo->query(
             "SELECT
                 i.id,
@@ -343,6 +365,7 @@ function inspectionFetchPageData(): array
         'preInspectionFormAction' => inspectionHandlerUrl(),
         'preInspectionVehicleOptions' => $vehicleOptions,
         'preInspectionItemRows' => inspectionBuildItemRowsFromFormData($formData),
+        'preInspectionInvoicePreview' => $invoicePreview,
     ];
 }
 
@@ -511,7 +534,7 @@ function inspectionBuildFormDataFromPost(): array
 {
     $points = $_POST['inspection_point'] ?? [];
     $findings = $_POST['inspection_findings'] ?? [];
-    $actions = $_POST['inspection_action'] ?? [];
+    $actions = $_POST['inspection_action_point'] ?? [];
 
     return [
         'report_id' => trim((string) ($_POST['report_id'] ?? '')),

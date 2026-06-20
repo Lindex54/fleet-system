@@ -297,13 +297,49 @@ function buildPreInspectionReference(inspectionDate) {
   return `BUEMIS_${inspectionDate.replaceAll('-', '')}_001`;
 }
 
+function buildNextPreInspectionReference(inspectionDate, excludeReportId = '') {
+  if (!inspectionDate) {
+    return 'BUEMIS_YYYYMMDD_001';
+  }
+
+  const prefix = `BUEMIS_${inspectionDate.replaceAll('-', '')}`;
+  let highestSequence = 0;
+
+  document.querySelectorAll('.pre-inspection-row').forEach((row) => {
+    if ((row.dataset.inspectionDate || '') !== inspectionDate) {
+      return;
+    }
+
+    if (excludeReportId !== '' && (row.dataset.reportId || '') === excludeReportId) {
+      return;
+    }
+
+    const invoiceNumber = (row.dataset.invoiceNumber || '').trim();
+    const match = invoiceNumber.match(new RegExp(`^${prefix}_(\\d{3})$`));
+
+    if (match) {
+      highestSequence = Math.max(highestSequence, Number(match[1]));
+    }
+  });
+
+  return `${prefix}_${String(highestSequence + 1).padStart(3, '0')}`;
+}
+
 function syncPreInspectionReferencePreview() {
   if (!preInspectionReferencePreview) {
     return;
   }
 
   const inspectionDateField = preInspectionForm?.querySelector('input[name="inspection_date"]');
-  preInspectionReferencePreview.value = buildPreInspectionReference(inspectionDateField?.value || '');
+  const actionField = preInspectionForm?.querySelector('[data-pre-inspection-action-field]');
+  const reportIdField = preInspectionForm?.querySelector('[data-pre-inspection-report-id-field]');
+  const isUpdateMode = (actionField?.value || 'create') === 'update';
+
+  if (isUpdateMode) {
+    return;
+  }
+
+  preInspectionReferencePreview.value = buildNextPreInspectionReference(inspectionDateField?.value || '', reportIdField?.value || '');
 }
 
 function setPreInspectionViewModalOpen(isOpen) {
@@ -417,7 +453,7 @@ function appendPreInspectionItemRow(item = {}) {
 
   const pointField = row.querySelector('input[name="inspection_point[]"]');
   const findingsField = row.querySelector('textarea[name="inspection_findings[]"]');
-  const actionField = row.querySelector('textarea[name="inspection_action[]"]');
+  const actionField = row.querySelector('textarea[name="inspection_action_point[]"]');
 
   if (pointField) {
     pointField.value = item.inspection_point || '';

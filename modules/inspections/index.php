@@ -4,7 +4,7 @@ $activePage = 'pre-inspection';
 require_once __DIR__ . '/../../handlers/inspection.php';
 // Load live pre-inspection rows, dropdown options, and any flash UI state from the handler.
 extract(inspectionFetchPageData());
-$preInspectionReferencePreview = inspectionBuildInvoiceNumberPreview((string) ($preInspectionFormData['inspection_date'] ?? date('Y-m-d')));
+$preInspectionReferencePreview = $preInspectionInvoicePreview ?? inspectionBuildInvoiceNumberPreview((string) ($preInspectionFormData['inspection_date'] ?? date('Y-m-d')));
 include __DIR__ . '/../../includes/header.php';
 include __DIR__ . '/../../includes/sidebar.php';
 ?>
@@ -319,7 +319,7 @@ include __DIR__ . '/../../includes/sidebar.php';
                                 </label>
                                 <label class="block md:col-span-2">
                                     <span class="mb-2 block text-sm font-semibold text-fleet-ink">Remarks / Action Point</span>
-                                    <textarea name="inspection_action[]" class="vehicle-form-control min-h-20 resize-y py-3" placeholder="Recommended action..."><?= htmlspecialchars($itemRow['inspection_action'], ENT_QUOTES, 'UTF-8'); ?></textarea>
+                                    <textarea name="inspection_action_point[]" class="vehicle-form-control min-h-20 resize-y py-3" placeholder="Recommended action..."><?= htmlspecialchars($itemRow['inspection_action'], ENT_QUOTES, 'UTF-8'); ?></textarea>
                                 </label>
                             </div>
                         </div>
@@ -346,7 +346,7 @@ include __DIR__ . '/../../includes/sidebar.php';
                             </label>
                             <label class="block md:col-span-2">
                                 <span class="mb-2 block text-sm font-semibold text-fleet-ink">Remarks / Action Point</span>
-                                <textarea name="inspection_action[]" class="vehicle-form-control min-h-20 resize-y py-3" placeholder="Recommended action..."></textarea>
+                                <textarea name="inspection_action_point[]" class="vehicle-form-control min-h-20 resize-y py-3" placeholder="Recommended action..."></textarea>
                             </label>
                         </div>
                     </div>
