@@ -13,6 +13,10 @@ include __DIR__ . '/includes/sidebar.php';
         $activeVehicles = (int) ($metrics[1]['value'] ?? 0);
         $activePercent = (int) round(($activeVehicles / $totalVehicles) * 100);
         $dashboardGreeting = $_SESSION['user_name'] ?? 'Administrator';
+        $dashboardHour = (int) (new DateTimeImmutable('now', new DateTimeZone('Africa/Kampala')))->format('G');
+        $timeOfDayGreeting = $dashboardHour < 12
+            ? 'Good Morning'
+            : ($dashboardHour < 17 ? 'Good Afternoon' : 'Good Evening');
         ?>
         <div class="dashboard-shell">
             <div class="dashboard-topbar">
@@ -22,7 +26,7 @@ include __DIR__ . '/includes/sidebar.php';
                     </button>
                     <div>
                         <p class="text-sm font-semibold text-fleet-primary">BUESMIS Dashboard</p>
-                        <h1 class="text-2xl font-extrabold tracking-normal text-fleet-ink sm:text-3xl">Good day, <?= htmlspecialchars($dashboardGreeting, ENT_QUOTES, 'UTF-8'); ?></h1>
+                        <h1 class="text-2xl font-extrabold tracking-normal text-fleet-ink sm:text-3xl"><?= htmlspecialchars($timeOfDayGreeting, ENT_QUOTES, 'UTF-8'); ?>, <?= htmlspecialchars($dashboardGreeting, ENT_QUOTES, 'UTF-8'); ?></h1>
                         <p class="mt-1 text-sm text-fleet-muted">Busitema University Estates Management Information System</p>
                     </div>
                 </div>

@@ -7,7 +7,13 @@ include __DIR__ . '/includes/sidebar.php';
 ?>
 <main class="min-h-screen lg:pl-64">
     <div class="mx-auto max-w-[1536px] px-4 py-5 sm:px-6 lg:px-8">
-        <?php $driverName = $driverProfile['name'] ?? 'Driver'; ?>
+        <?php
+        $driverName = $driverProfile['name'] ?? 'Driver';
+        $driverDashboardHour = (int) (new DateTimeImmutable('now', new DateTimeZone('Africa/Kampala')))->format('G');
+        $driverTimeGreeting = $driverDashboardHour < 12
+            ? 'Good Morning'
+            : ($driverDashboardHour < 17 ? 'Good Afternoon' : 'Good Evening');
+        ?>
         <div class="dashboard-shell">
             <div class="dashboard-topbar">
                 <div class="flex items-center gap-3">
@@ -16,7 +22,7 @@ include __DIR__ . '/includes/sidebar.php';
                     </button>
                     <div>
                         <p class="text-sm font-semibold text-fleet-primary">Driver Workspace</p>
-                        <h1 class="text-2xl font-extrabold tracking-normal text-fleet-ink sm:text-3xl">Good day, <?= htmlspecialchars($driverName, ENT_QUOTES, 'UTF-8'); ?></h1>
+                        <h1 class="text-2xl font-extrabold tracking-normal text-fleet-ink sm:text-3xl"><?= htmlspecialchars($driverTimeGreeting, ENT_QUOTES, 'UTF-8'); ?>, <?= htmlspecialchars($driverName, ENT_QUOTES, 'UTF-8'); ?></h1>
                         <p class="mt-1 text-sm text-fleet-muted">Driver workspace for daily fleet activities</p>
                     </div>
                 </div>
