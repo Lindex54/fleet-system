@@ -159,6 +159,55 @@ function buildModulePrintBannerMarkup() {
   return `<div class="app-print-banner"><img src="${MODULE_PRINT_BANNER_URL}" alt="Busitema University print banner"></div>`;
 }
 
+function triggerPrintWhenReady(printWindow) {
+  if (!printWindow) {
+    return;
+  }
+
+  const printDocument = printWindow.document;
+  const images = Array.from(printDocument.images || []);
+
+  const finalizePrint = () => {
+    printWindow.focus();
+    printWindow.print();
+    printWindow.close();
+  };
+
+  if (images.length === 0) {
+    printWindow.setTimeout(finalizePrint, 150);
+    return;
+  }
+
+  let remaining = images.length;
+  let finished = false;
+
+  const markReady = () => {
+    remaining -= 1;
+
+    if (!finished && remaining <= 0) {
+      finished = true;
+      printWindow.setTimeout(finalizePrint, 150);
+    }
+  };
+
+  images.forEach((image) => {
+    if (image.complete) {
+      markReady();
+      return;
+    }
+
+    image.addEventListener('load', markReady, { once: true });
+    image.addEventListener('error', markReady, { once: true });
+  });
+
+  printWindow.setTimeout(() => {
+    if (!finished) {
+      finished = true;
+      finalizePrint();
+    }
+  }, 2000);
+}
+
 function printDetailSheet(sheet, title) {
   if (!sheet) {
     return;
@@ -176,9 +225,7 @@ function printDetailSheet(sheet, title) {
   printWindow.document.open();
   printWindow.document.write(`<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><title>${title}</title>${styles}<style>body{background:#fff;padding:24px;}.app-print-banner{margin-bottom:24px;}.app-print-banner img{display:block;width:100%;max-width:1200px;margin:0 auto;}button{display:none !important;}</style></head><body>${buildModulePrintBannerMarkup()}${sheet.outerHTML}</body></html>`);
   printWindow.document.close();
-  printWindow.focus();
-  printWindow.print();
-  printWindow.close();
+  triggerPrintWhenReady(printWindow);
 }
 
 // Opens or closes the pre-inspection modal and keeps focus/scroll state in sync.
@@ -270,6 +317,42 @@ function setPreInspectionViewModalOpen(isOpen) {
   document.body.classList.toggle('overflow-hidden', isOpen);
 }
 
+function renderPreInspectionViewItems(items = []) {
+  const tableBody = preInspectionViewModal?.querySelector('[data-pre-inspection-view-items]');
+  const itemCountField = preInspectionViewModal?.querySelector('[data-pre-inspection-view-item-count]');
+
+  if (!tableBody) {
+    return;
+  }
+
+  if (!Array.isArray(items) || items.length === 0) {
+    tableBody.innerHTML = '<tr><td colspan="4" class="px-4 py-4 text-center text-fleet-muted">No inspection items recorded.</td></tr>';
+
+    if (itemCountField) {
+      itemCountField.textContent = '0';
+    }
+
+    return;
+  }
+
+  tableBody.innerHTML = items.map((item, index) => {
+    const inspectionPoint = escapeHtml(item.inspection_point || '-');
+    const findings = escapeHtml(item.inspection_findings || '-');
+    const actionPoint = escapeHtml(item.inspection_action || '-');
+
+    return `<tr class="align-top border-b border-fleet-line-soft">
+      <td class="px-4 py-3 text-fleet-muted">${index + 1}</td>
+      <td class="px-4 py-3 font-semibold text-fleet-ink">${inspectionPoint}</td>
+      <td class="px-4 py-3 text-fleet-ink">${findings}</td>
+      <td class="px-4 py-3 text-fleet-ink">${actionPoint}</td>
+    </tr>`;
+  }).join('');
+
+  if (itemCountField) {
+    itemCountField.textContent = String(items.length);
+  }
+}
+
 function populatePreInspectionViewModal(button) {
   const row = button.closest('.pre-inspection-row');
   if (!row) {
@@ -286,7 +369,24 @@ function populatePreInspectionViewModal(button) {
   setModalText(preInspectionViewModal, '[data-pre-inspection-view-inspector-title]', row.dataset.inspectorTitle || '-');
   setModalText(preInspectionViewModal, '[data-pre-inspection-view-mileage]', row.dataset.mileage || '-');
   setModalText(preInspectionViewModal, '[data-pre-inspection-view-overall]', row.dataset.overall || '-');
-  setModalText(preInspectionViewModal, '[data-pre-inspection-view-defects]', row.dataset.defects || 'No defects summary recorded.');
+  setModalText(preInspectionViewModal, '[data-pre-inspection-view-vehicle-description]', row.dataset.vehicleDescription || '-');
+  setModalText(preInspectionViewModal, '[data-pre-inspection-view-cc]', row.dataset.cc || '-');
+  setModalText(preInspectionViewModal, '[data-pre-inspection-view-memo-to]', row.dataset.memoTo || '-');
+  setModalText(preInspectionViewModal, '[data-pre-inspection-view-memo-thru-one]', row.dataset.memoThruOne || '-');
+  setModalText(preInspectionViewModal, '[data-pre-inspection-view-memo-thru-two]', row.dataset.memoThruTwo || '-');
+  setModalText(preInspectionViewModal, '[data-pre-inspection-view-memo-from]', row.dataset.memoFrom || '-');
+  setModalText(preInspectionViewModal, '[data-pre-inspection-view-defects]', row.dataset.defectsSummary || row.dataset.defects || 'No defects summary recorded.');
+  setModalText(preInspectionViewModal, '[data-pre-inspection-view-closing-note]', row.dataset.closingNote || '-');
+
+  let items = [];
+
+  try {
+    items = JSON.parse(row.dataset.items || '[]');
+  } catch (error) {
+    items = [];
+  }
+
+  renderPreInspectionViewItems(Array.isArray(items) ? items : []);
 }
 
 // Re-numbers the repeated inspection item cards so the labels stay clear after edits.
@@ -1552,6 +1652,12 @@ function syncDriverOtherVehiclesCheckboxesToSelect() {
 // Shows one optional upload link in the driver details modal.
 function setDriverViewUploadLink(selector, url, label) {
   const link = driverViewModal?.querySelector(selector);
+  const emptySelectorMap = {
+    '[data-driver-view-driver-photo-link]': '[data-driver-view-driver-photo-empty]',
+    '[data-driver-view-national-id-photo-link]': '[data-driver-view-national-id-photo-empty]',
+    '[data-driver-view-license-scan-link]': '[data-driver-view-license-scan-empty]',
+  };
+  const emptyState = driverViewModal?.querySelector(emptySelectorMap[selector] || '');
 
   if (!link) {
     return false;
@@ -1561,6 +1667,7 @@ function setDriverViewUploadLink(selector, url, label) {
   link.classList.toggle('hidden', !hasUpload);
   link.href = hasUpload ? url : '#';
   link.textContent = label || 'View file';
+  emptyState?.classList.toggle('hidden', hasUpload);
 
   return hasUpload;
 }
@@ -1606,13 +1713,13 @@ function populateDriverViewModal(button) {
   const licenseExpiry = row.dataset.licenseExpiry || '-';
   const licenseDaysLeft = getDriverLicenseDaysLeft(row.dataset.licenseExpiry || '');
   const licenseIssuingAuthority = row.dataset.licenseIssuingAuthority || 'Not available';
-  const initial = (fullName.trim().charAt(0) || 'D').toUpperCase();
   const photoUrl = row.dataset.driverPhotoUrl || '';
   const photoIsImage = row.dataset.driverPhotoIsImage === 'true';
   const photoElement = driverViewModal?.querySelector('[data-driver-view-photo]');
   const photoFallback = driverViewModal?.querySelector('[data-driver-view-photo-fallback]');
+  const photoShell = driverViewModal?.querySelector('[data-driver-view-photo-shell]');
 
-  setDriverViewText('[data-driver-view-name]', fullName);
+  setDriverViewText('[data-driver-view-name]', 'Driver details');
   setDriverViewText('[data-driver-view-subtitle]', `${licenseNumber} - ${assignedVehicle}`);
   setDriverViewText('[data-driver-view-full-name]', fullName);
   setDriverViewText('[data-driver-view-department]', department);
@@ -1631,7 +1738,6 @@ function populateDriverViewModal(button) {
   setDriverViewText('[data-driver-view-license-expiry]', licenseExpiry);
   setDriverViewText('[data-driver-view-license-days-left]', licenseDaysLeft);
   setDriverViewText('[data-driver-view-license-issuing-authority]', licenseIssuingAuthority);
-  setDriverViewText('[data-driver-view-initial]', initial);
   setDriverViewText('[data-driver-view-status]', statusLabel);
 
   const statusBadge = driverViewModal?.querySelector('[data-driver-view-status]');
@@ -1652,8 +1758,9 @@ function populateDriverViewModal(button) {
     photoElement.src = showImage ? photoUrl : '';
     photoElement.classList.toggle('hidden', !showImage);
     photoElement.classList.toggle('block', showImage);
-    photoFallback.classList.toggle('hidden', showImage);
-    photoFallback.classList.toggle('flex', !showImage);
+    photoFallback.classList.add('hidden');
+    photoFallback.classList.remove('flex');
+    photoShell?.classList.toggle('hidden', !showImage);
   }
 
   const hasDriverPhoto = setDriverViewUploadLink('[data-driver-view-driver-photo-link]', row.dataset.driverPhotoUrl || '', row.dataset.driverPhotoName || 'Driver Photo');
@@ -1694,28 +1801,29 @@ function printDriverDetailSheet() {
           .app-print-banner { margin-bottom: 24px; }
           .app-print-banner img { display: block; width: 100%; max-width: 1200px; margin: 0 auto; }
           [data-driver-detail-sheet] { max-width: 780px; margin: 0 auto; }
+          [data-driver-detail-sheet] .print\\:hidden { display: none !important; }
+          [data-driver-detail-sheet] [data-print-hide-driver-header],
+          [data-driver-detail-sheet] [data-print-hide-uploads] { display: none !important; }
           [data-driver-detail-sheet] [data-driver-view-photo],
           [data-driver-detail-sheet] [data-driver-view-photo-fallback] {
-            width: 120px !important;
-            height: 120px !important;
-            border-radius: 9999px !important;
+            width: 96px !important;
+            height: 112px !important;
+            border-radius: 0.375rem !important;
             overflow: hidden !important;
-            margin: 0 auto !important;
+          }
+          [data-driver-detail-sheet] [data-driver-view-photo-shell] {
+            width: 96px !important;
+            height: 112px !important;
+            border-radius: 0.375rem !important;
+            border-width: 2px !important;
+            background: #f8fafc !important;
           }
           [data-driver-detail-sheet] [data-driver-view-photo] {
             object-fit: cover !important;
-            border: 4px solid #ffffff !important;
             box-shadow: 0 8px 24px rgba(15, 23, 42, 0.12) !important;
           }
           [data-driver-detail-sheet] [data-driver-view-photo-fallback] {
-            display: flex !important;
-            align-items: center !important;
-            justify-content: center !important;
-            border: 4px solid #ffffff !important;
-          }
-          [data-driver-detail-sheet] section:first-of-type {
-            max-width: 280px;
-            margin: 0 auto;
+            display: none !important;
           }
           button { display: none !important; }
         </style>
@@ -1727,9 +1835,7 @@ function printDriverDetailSheet() {
     </html>
   `);
   printWindow.document.close();
-  printWindow.focus();
-  printWindow.print();
-  printWindow.close();
+  triggerPrintWhenReady(printWindow);
 }
 
 // Shows or hides the current uploaded file block for one driver upload field.

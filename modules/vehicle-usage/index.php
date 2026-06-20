@@ -150,23 +150,25 @@ $driverBreakdownShowLessUrl = $vehicleUsagePageUrl . (count($driverBreakdownShow
                 <p class="mt-2 text-sm text-fleet-muted">Print scope: <?= htmlspecialchars($vehicleUsagePeriodLabel, ENT_QUOTES, 'UTF-8'); ?></p>
             </div>
 
-            <div class="mt-6 grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-                <article class="rounded-2xl border border-fleet-line bg-fleet-surface p-5">
-                    <p class="text-sm font-medium text-fleet-muted">Trips in View</p>
-                    <p class="mt-2 text-3xl font-extrabold text-fleet-ink"><?= htmlspecialchars((string) $vehicleUsageSummary['trip_count'], ENT_QUOTES, 'UTF-8'); ?></p>
-                </article>
-                <article class="rounded-2xl border border-fleet-line bg-fleet-surface p-5">
-                    <p class="text-sm font-medium text-fleet-muted">Drivers in View</p>
-                    <p class="mt-2 text-3xl font-extrabold text-fleet-ink"><?= htmlspecialchars((string) $vehicleUsageSummary['driver_count'], ENT_QUOTES, 'UTF-8'); ?></p>
-                </article>
-                <article class="rounded-2xl border border-fleet-line bg-fleet-surface p-5">
-                    <p class="text-sm font-medium text-fleet-muted">Distance Covered</p>
-                    <p class="mt-2 text-3xl font-extrabold text-fleet-ink"><?= htmlspecialchars($vehicleUsageSummary['total_distance'], ENT_QUOTES, 'UTF-8'); ?></p>
-                </article>
-                <article class="rounded-2xl border border-fleet-line bg-fleet-surface p-5">
-                    <p class="text-sm font-medium text-fleet-muted">Fuel Cost</p>
-                    <p class="mt-2 text-3xl font-extrabold text-fleet-ink"><?= htmlspecialchars($vehicleUsageSummary['total_cost'], ENT_QUOTES, 'UTF-8'); ?></p>
-                </article>
+            <div class="mt-6 overflow-x-auto rounded-2xl border border-fleet-line bg-white">
+                <table class="vehicle-usage-print-table w-full min-w-[720px] border-collapse text-left text-sm">
+                    <thead class="bg-fleet-surface-muted text-fleet-muted">
+                        <tr>
+                            <th class="border border-fleet-line px-4 py-3 font-semibold">Trips in View</th>
+                            <th class="border border-fleet-line px-4 py-3 font-semibold">Drivers in View</th>
+                            <th class="border border-fleet-line px-4 py-3 font-semibold">Distance Covered</th>
+                            <th class="border border-fleet-line px-4 py-3 font-semibold">Fuel Cost</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td class="border border-fleet-line px-4 py-4 text-2xl font-extrabold text-fleet-ink"><?= htmlspecialchars((string) $vehicleUsageSummary['trip_count'], ENT_QUOTES, 'UTF-8'); ?></td>
+                            <td class="border border-fleet-line px-4 py-4 text-2xl font-extrabold text-fleet-ink"><?= htmlspecialchars((string) $vehicleUsageSummary['driver_count'], ENT_QUOTES, 'UTF-8'); ?></td>
+                            <td class="border border-fleet-line px-4 py-4 text-2xl font-extrabold text-fleet-ink"><?= htmlspecialchars($vehicleUsageSummary['total_distance'], ENT_QUOTES, 'UTF-8'); ?></td>
+                            <td class="border border-fleet-line px-4 py-4 text-2xl font-extrabold text-fleet-ink"><?= htmlspecialchars($vehicleUsageSummary['total_cost'], ENT_QUOTES, 'UTF-8'); ?></td>
+                        </tr>
+                    </tbody>
+                </table>
             </div>
 
             <div class="mt-6 grid gap-6 xl:grid-cols-[1.15fr_0.85fr]">
@@ -183,97 +185,93 @@ $driverBreakdownShowLessUrl = $vehicleUsagePageUrl . (count($driverBreakdownShow
                         <?php endif; ?>
                     </div>
 
-                    <?php if ($vehicleUsageSelectedVehicle === null): ?>
-                        <div class="mt-4 rounded-xl border border-dashed border-fleet-line px-4 py-8 text-center text-sm text-fleet-muted">
-                            No single vehicle is selected. The report currently covers all vehicles that match the chosen filters.
-                        </div>
-                    <?php else: ?>
-                        <div class="mt-5 grid gap-4 md:grid-cols-2">
-                            <div class="rounded-xl bg-fleet-sidebar px-5 py-5 text-white">
-                                <p class="text-xs font-extrabold uppercase tracking-[0.18em] text-fleet-sidebar-muted">Registration Number</p>
-                                <p class="mt-2 text-3xl font-extrabold"><?= htmlspecialchars($vehicleUsageSelectedVehicle['registration_no'], ENT_QUOTES, 'UTF-8'); ?></p>
-                                <p class="mt-2 text-sm text-fleet-sidebar-text"><?= htmlspecialchars($vehicleUsageSelectedVehicle['make_model'], ENT_QUOTES, 'UTF-8'); ?></p>
-                            </div>
-                            <div class="rounded-xl border border-fleet-line bg-white p-4">
-                                <dl class="space-y-3 text-sm">
-                                    <div class="flex items-center justify-between gap-4">
-                                        <dt class="text-fleet-muted">Vehicle Type</dt>
-                                        <dd class="font-semibold text-fleet-ink"><?= htmlspecialchars($vehicleUsageSelectedVehicle['vehicle_type'], ENT_QUOTES, 'UTF-8'); ?></dd>
-                                    </div>
-                                    <div class="flex items-center justify-between gap-4">
-                                        <dt class="text-fleet-muted">Fuel Type</dt>
-                                        <dd class="font-semibold text-fleet-ink"><?= htmlspecialchars($vehicleUsageSelectedVehicle['fuel_type'], ENT_QUOTES, 'UTF-8'); ?></dd>
-                                    </div>
-                                    <div class="flex items-center justify-between gap-4">
-                                        <dt class="text-fleet-muted">Current Mileage</dt>
-                                        <dd class="font-semibold text-fleet-ink"><?= htmlspecialchars($vehicleUsageSelectedVehicle['current_mileage'], ENT_QUOTES, 'UTF-8'); ?></dd>
-                                    </div>
-                                    <div class="flex items-center justify-between gap-4">
-                                        <dt class="text-fleet-muted">Department</dt>
-                                        <dd class="font-semibold text-fleet-ink"><?= htmlspecialchars($vehicleUsageSelectedVehicle['department_name'], ENT_QUOTES, 'UTF-8'); ?></dd>
-                                    </div>
-                                </dl>
-                            </div>
-                        </div>
-                    <?php endif; ?>
+                    <div class="mt-4 overflow-x-auto rounded-xl border border-fleet-line bg-white">
+                        <table class="vehicle-usage-print-table w-full min-w-[560px] border-collapse text-left text-sm">
+                            <thead class="bg-fleet-surface-muted text-fleet-muted">
+                                <tr>
+                                    <th class="border border-fleet-line px-4 py-3 font-semibold">Registration Number</th>
+                                    <th class="border border-fleet-line px-4 py-3 font-semibold">Make / Model</th>
+                                    <th class="border border-fleet-line px-4 py-3 font-semibold">Vehicle Type</th>
+                                    <th class="border border-fleet-line px-4 py-3 font-semibold">Fuel Type</th>
+                                    <th class="border border-fleet-line px-4 py-3 font-semibold">Current Mileage</th>
+                                    <th class="border border-fleet-line px-4 py-3 font-semibold">Department</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <?php if ($vehicleUsageSelectedVehicle === null): ?>
+                                    <tr>
+                                        <td colspan="6" class="border border-fleet-line px-4 py-6 text-center text-sm text-fleet-muted">
+                                            No single vehicle is selected. The report currently covers all vehicles that match the chosen filters.
+                                        </td>
+                                    </tr>
+                                <?php else: ?>
+                                    <tr>
+                                        <td class="border border-fleet-line px-4 py-4 font-extrabold text-fleet-ink"><?= htmlspecialchars($vehicleUsageSelectedVehicle['registration_no'], ENT_QUOTES, 'UTF-8'); ?></td>
+                                        <td class="border border-fleet-line px-4 py-4 text-fleet-ink"><?= htmlspecialchars($vehicleUsageSelectedVehicle['make_model'], ENT_QUOTES, 'UTF-8'); ?></td>
+                                        <td class="border border-fleet-line px-4 py-4 text-fleet-ink"><?= htmlspecialchars($vehicleUsageSelectedVehicle['vehicle_type'], ENT_QUOTES, 'UTF-8'); ?></td>
+                                        <td class="border border-fleet-line px-4 py-4 text-fleet-ink"><?= htmlspecialchars($vehicleUsageSelectedVehicle['fuel_type'], ENT_QUOTES, 'UTF-8'); ?></td>
+                                        <td class="border border-fleet-line px-4 py-4 text-fleet-ink"><?= htmlspecialchars($vehicleUsageSelectedVehicle['current_mileage'], ENT_QUOTES, 'UTF-8'); ?></td>
+                                        <td class="border border-fleet-line px-4 py-4 text-fleet-ink"><?= htmlspecialchars($vehicleUsageSelectedVehicle['department_name'], ENT_QUOTES, 'UTF-8'); ?></td>
+                                    </tr>
+                                <?php endif; ?>
+                            </tbody>
+                        </table>
+                    </div>
                 </section>
 
                 <section id="driver-breakdown" class="rounded-2xl border border-fleet-line bg-fleet-surface p-5">
                     <h3 class="text-lg font-extrabold text-fleet-ink">Driver Breakdown</h3>
                     <p class="mt-1 text-sm text-fleet-muted">Who used the filtered vehicle scope, how often, and how far.</p>
 
-                    <?php if ($vehicleUsageDriverBreakdown === []): ?>
-                        <div class="mt-4 rounded-xl border border-dashed border-fleet-line px-4 py-8 text-center text-sm text-fleet-muted">
-                            No driver usage records match the current filters.
+                    <div class="mt-4 overflow-x-auto rounded-xl border border-fleet-line bg-white">
+                        <table class="vehicle-usage-print-table w-full min-w-[520px] border-collapse text-left text-sm">
+                            <thead class="bg-fleet-surface-muted text-fleet-muted">
+                                <tr>
+                                    <th class="border border-fleet-line px-4 py-3 font-semibold">Driver</th>
+                                    <th class="border border-fleet-line px-4 py-3 font-semibold">Trips</th>
+                                    <th class="border border-fleet-line px-4 py-3 font-semibold">Distance</th>
+                                    <th class="border border-fleet-line px-4 py-3 font-semibold">Latest Trip</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <?php if ($vehicleUsageDriverBreakdown === []): ?>
+                                    <tr>
+                                        <td colspan="4" class="border border-fleet-line px-4 py-6 text-center text-sm text-fleet-muted">
+                                            No driver usage records match the current filters.
+                                        </td>
+                                    </tr>
+                                <?php else: ?>
+                                    <?php foreach ($driverBreakdownRowsToRender as $driverRow): ?>
+                                        <tr>
+                                            <td class="border border-fleet-line px-4 py-4 font-semibold text-fleet-ink"><?= htmlspecialchars($driverRow['driver'], ENT_QUOTES, 'UTF-8'); ?></td>
+                                            <td class="border border-fleet-line px-4 py-4 text-fleet-ink"><?= htmlspecialchars((string) $driverRow['trips'], ENT_QUOTES, 'UTF-8'); ?> trip(s)</td>
+                                            <td class="border border-fleet-line px-4 py-4 text-fleet-ink"><?= htmlspecialchars($driverRow['distance'], ENT_QUOTES, 'UTF-8'); ?></td>
+                                            <td class="border border-fleet-line px-4 py-4 text-fleet-ink"><?= htmlspecialchars($driverRow['latest_date'], ENT_QUOTES, 'UTF-8'); ?></td>
+                                        </tr>
+                                    <?php endforeach; ?>
+                                <?php endif; ?>
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <?php if ($driverBreakdownHasMore && !$driverBreakdownShowAll): ?>
+                        <div class="mt-4 print:hidden">
+                            <a href="<?= htmlspecialchars($driverBreakdownShowAllUrl, ENT_QUOTES, 'UTF-8'); ?>" class="inline-flex h-10 items-center rounded-lg border border-fleet-line bg-fleet-surface px-4 text-sm font-semibold text-fleet-ink shadow-sm hover:bg-fleet-surface-muted">
+                                View all <?= htmlspecialchars((string) $driverBreakdownTotalEntries, ENT_QUOTES, 'UTF-8'); ?> entries
+                            </a>
                         </div>
-                    <?php else: ?>
-                        <details class="mt-4 rounded-2xl border border-fleet-line bg-white p-4">
-                            <summary class="flex cursor-pointer list-none items-center justify-between gap-4 text-sm font-semibold text-fleet-ink">
-                                <span>View driver breakdown</span>
-                                <span class="rounded-full bg-fleet-surface-muted px-3 py-1 text-xs font-semibold text-fleet-sidebar">
-                                    <?= htmlspecialchars((string) ($driverBreakdownShowAll ? $driverBreakdownTotalEntries : count($driverBreakdownRowsToRender)), ENT_QUOTES, 'UTF-8'); ?>
-                                    of
-                                    <?= htmlspecialchars((string) $driverBreakdownTotalEntries, ENT_QUOTES, 'UTF-8'); ?>
-                                </span>
-                            </summary>
-
-                            <div class="mt-4 space-y-3">
-                                <?php foreach ($driverBreakdownRowsToRender as $driverRow): ?>
-                                    <div class="rounded-xl border border-fleet-line bg-fleet-surface px-4 py-4">
-                                        <div class="flex items-start justify-between gap-4">
-                                            <div>
-                                                <p class="font-extrabold text-fleet-ink"><?= htmlspecialchars($driverRow['driver'], ENT_QUOTES, 'UTF-8'); ?></p>
-                                                <p class="mt-1 text-sm text-fleet-muted">Latest trip: <?= htmlspecialchars($driverRow['latest_date'], ENT_QUOTES, 'UTF-8'); ?></p>
-                                            </div>
-                                            <div class="text-right text-sm">
-                                                <p class="font-semibold text-fleet-ink"><?= htmlspecialchars((string) $driverRow['trips'], ENT_QUOTES, 'UTF-8'); ?> trip(s)</p>
-                                                <p class="mt-1 text-fleet-muted"><?= htmlspecialchars($driverRow['distance'], ENT_QUOTES, 'UTF-8'); ?></p>
-                                            </div>
-                                        </div>
-                                    </div>
-                                <?php endforeach; ?>
-                            </div>
-
-                            <?php if ($driverBreakdownHasMore && !$driverBreakdownShowAll): ?>
-                                <div class="mt-4">
-                                    <a href="<?= htmlspecialchars($driverBreakdownShowAllUrl, ENT_QUOTES, 'UTF-8'); ?>" class="inline-flex h-10 items-center rounded-lg border border-fleet-line bg-fleet-surface px-4 text-sm font-semibold text-fleet-ink shadow-sm hover:bg-fleet-surface-muted">
-                                        View all <?= htmlspecialchars((string) $driverBreakdownTotalEntries, ENT_QUOTES, 'UTF-8'); ?> entries
-                                    </a>
-                                </div>
-                            <?php elseif ($driverBreakdownHasMore && $driverBreakdownShowAll): ?>
-                                <div class="mt-4">
-                                    <a href="<?= htmlspecialchars($driverBreakdownShowLessUrl, ENT_QUOTES, 'UTF-8'); ?>" class="inline-flex h-10 items-center rounded-lg border border-fleet-line bg-fleet-surface px-4 text-sm font-semibold text-fleet-ink shadow-sm hover:bg-fleet-surface-muted">
-                                        Show first 5 entries
-                                    </a>
-                                </div>
-                            <?php endif; ?>
-                        </details>
+                    <?php elseif ($driverBreakdownHasMore && $driverBreakdownShowAll): ?>
+                        <div class="mt-4 print:hidden">
+                            <a href="<?= htmlspecialchars($driverBreakdownShowLessUrl, ENT_QUOTES, 'UTF-8'); ?>" class="inline-flex h-10 items-center rounded-lg border border-fleet-line bg-fleet-surface px-4 text-sm font-semibold text-fleet-ink shadow-sm hover:bg-fleet-surface-muted">
+                                Show first 5 entries
+                            </a>
+                        </div>
                     <?php endif; ?>
                 </section>
             </div>
 
             <section class="mt-6 rounded-2xl border border-fleet-line bg-fleet-surface p-5">
-                <div class="flex items-center justify-between gap-4">
+                <div class="flex items-center justify-between gap-4 print:hidden">
                     <div>
                         <h3 class="text-lg font-extrabold text-fleet-ink">Detailed Usage Log</h3>
                         <p class="mt-1 text-sm text-fleet-muted">Full printable history for the current filter selection, grouped by driver for signing.</p>

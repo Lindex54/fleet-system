@@ -86,6 +86,8 @@
 .vehicle-usage-print-meta-row dt{font-weight:700}
 .vehicle-usage-print-meta-row dd{font-weight:500}
 .vehicle-usage-print-subject{margin-top:1.8rem;color:#111827;font-family:"Source Sans Pro",Helvetica Neue,Helvetica,Arial,sans-serif;font-size:1.3rem;font-weight:800;line-height:1.4;text-transform:uppercase}
+.vehicle-usage-print-table th{font-size:.9rem;line-height:1.45}
+.vehicle-usage-print-table td{font-size:1rem;line-height:1.5}
 /* Shared jQuery feedback styles for inline validation, AJAX messages, upload previews, and empty-table states. */
 .fleet-field-error{margin-top:.45rem;color:var(--app-danger);font-size:.75rem;font-weight:600;line-height:1.5}
 .fleet-invalid-field{border-color:var(--app-danger)!important;box-shadow:0 0 0 3px rgba(220,38,38,.12)!important}
@@ -158,4 +160,8 @@ body.print-target-active .vehicle-usage-signoff{display:none!important}
 body.print-target-active .vehicle-usage-signoff.vehicle-usage-signoff--print{display:grid!important}
 body.print-target-active .vehicle-usage-print-memo{display:block!important;margin-bottom:2rem}
 body.print-target-active .vehicle-usage-print-banner{display:block!important;width:100%;margin:0 0 1.5rem}
+body.print-target-active .vehicle-usage-print-table th{font-size:1rem!important}
+body.print-target-active .vehicle-usage-print-table td,
+body.print-target-active [data-vehicle-usage-driver-table] th,
+body.print-target-active [data-vehicle-usage-driver-table] td{font-size:1.05rem!important;line-height:1.5!important}
 }

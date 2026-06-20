@@ -135,6 +135,7 @@ include __DIR__ . '/../../includes/sidebar.php';
                                 data-mileage="<?= htmlspecialchars($report['mileage_raw'], ENT_QUOTES, 'UTF-8'); ?>"
                                 data-overall-status="<?= htmlspecialchars($report['overall_raw'], ENT_QUOTES, 'UTF-8'); ?>"
                                 data-defects="<?= htmlspecialchars($report['defects_raw'], ENT_QUOTES, 'UTF-8'); ?>"
+                                data-defects-summary="<?= htmlspecialchars($report['defects'], ENT_QUOTES, 'UTF-8'); ?>"
                                 data-memo-to="<?= htmlspecialchars($report['memo_to_raw'], ENT_QUOTES, 'UTF-8'); ?>"
                                 data-memo-thru-one="<?= htmlspecialchars($report['memo_thru_one_raw'], ENT_QUOTES, 'UTF-8'); ?>"
                                 data-memo-thru-two="<?= htmlspecialchars($report['memo_thru_two_raw'], ENT_QUOTES, 'UTF-8'); ?>"
