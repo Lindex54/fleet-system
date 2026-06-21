@@ -6,7 +6,6 @@ include __DIR__ . '/../../includes/header.php';
 include __DIR__ . '/../../includes/sidebar.php';
 
 $vehicleUsagePrintBannerUrl = ($basePath ?: '') . '/assets/images/branding/print_banner.png';
-
 $driverBreakdownShowAll = (($_GET['driver_breakdown'] ?? '') === 'all');
 $driverBreakdownTotalEntries = count($vehicleUsageDriverBreakdown);
 $driverBreakdownPreviewRows = array_slice($vehicleUsageDriverBreakdown, 0, 5);
@@ -114,6 +113,7 @@ $driverBreakdownShowLessUrl = $vehicleUsagePageUrl . (count($driverBreakdownShow
         <section data-print-root data-print-root-custom-header class="rounded-2xl border border-fleet-line bg-white p-6 shadow-fleet-card print:shadow-none">
             <div class="vehicle-usage-print-memo">
                 <img src="<?= htmlspecialchars($vehicleUsagePrintBannerUrl, ENT_QUOTES, 'UTF-8'); ?>" alt="Busitema University print banner" class="vehicle-usage-print-banner">
+                <div class="vehicle-usage-print-brand">Busitema University Estates MIS</div>
                 <div class="vehicle-usage-print-unit">ESTATES UNIT</div>
                 <dl class="vehicle-usage-print-meta">
                     <div class="vehicle-usage-print-meta-row">

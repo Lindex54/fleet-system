@@ -40,7 +40,8 @@ const driverFilterApplyButton = document.querySelector('#driver-filter-apply');
 const driverFilterResetButton = document.querySelector('#driver-filter-reset');
 const driverFilterSummary = document.querySelector('[data-driver-filter-summary]');
 const printSelectedDriversButtons = document.querySelectorAll('[data-print-selected-drivers]');
-const PRINT_BANNER_URL = `${window.location.origin}/fleet-system/assets/images/branding/banner.png`;
+const APP_BASE_PATH = document.body?.dataset.basePath || '/fleet-system';
+const PRINT_BANNER_URL = `${window.location.origin}${APP_BASE_PATH}/assets/images/branding/banner.png`;
 const maintenanceSearch = document.querySelector('#maintenance-search');
 const maintenanceStatus = document.querySelector('#maintenance-status');
 const maintenanceRows = document.querySelectorAll('[data-maintenance-table] .maintenance-row');
@@ -402,6 +403,27 @@ estateCategoryFilter?.addEventListener('change', filterEstateProjects);
 const printPageButtons = document.querySelectorAll('[data-print-page]');
 let activePrintRoot = null;
 
+function ensurePrintFooter(printRoot) {
+  if (!printRoot || printRoot.querySelector('[data-print-footer]')) {
+    return;
+  }
+
+  const footer = document.createElement('div');
+  footer.className = 'print-page-footer';
+  footer.setAttribute('data-print-footer', '');
+  footer.innerHTML = `
+    <span class="print-page-footer-text">Busitema University Estates MIS</span>
+  `;
+
+  printRoot.appendChild(footer);
+}
+
+function initializePrintFooters() {
+  document.querySelectorAll('[data-print-root]').forEach((printRoot) => {
+    ensurePrintFooter(printRoot);
+  });
+}
+
 function clearPrintTarget() {
   if (activePrintRoot) {
     activePrintRoot.classList.remove('print-target-active');
@@ -420,6 +442,8 @@ function resolvePrintRoot(button) {
   return button.closest('main')?.querySelector('[data-print-root]') || null;
 }
 
+initializePrintFooters();
+
 printPageButtons.forEach((button) => {
   button.addEventListener('click', () => {
     const printRoot = resolvePrintRoot(button);
@@ -427,6 +451,7 @@ printPageButtons.forEach((button) => {
     clearPrintTarget();
 
     if (printRoot) {
+      ensurePrintFooter(printRoot);
       activePrintRoot = printRoot;
       activePrintRoot.classList.add('print-target-active');
       document.body.classList.add('print-target-active');

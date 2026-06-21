@@ -31,4 +31,8 @@ $brandingLogoPath = ($basePath ?: '') . '/assets/images/branding/logo1.png?v=' .
     <link rel="icon" type="image/png" href="<?= htmlspecialchars($brandingLogoPath, ENT_QUOTES, 'UTF-8'); ?>">
     <link rel="stylesheet" href="<?= htmlspecialchars($assetPath, ENT_QUOTES, 'UTF-8'); ?>">
 </head>
-<body class="bg-fleet-canvas text-fleet-ink antialiased">
+<body
+    class="bg-fleet-canvas text-fleet-ink antialiased"
+    data-base-path="<?= htmlspecialchars($basePath, ENT_QUOTES, 'UTF-8'); ?>"
+    data-branding-logo-path="<?= htmlspecialchars($brandingLogoPath, ENT_QUOTES, 'UTF-8'); ?>"
+>
