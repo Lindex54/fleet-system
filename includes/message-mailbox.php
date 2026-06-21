@@ -141,14 +141,14 @@ $mailboxBackFromThreadQuery = $mailboxBackToFolderQuery;
 <?php endif; ?>
 
 <section class="overflow-hidden rounded-[32px] border border-fleet-line bg-[#eef4ff] shadow-[0_26px_80px_rgba(15,23,42,0.08)]">
-    <div class="grid xl:grid-cols-[240px_minmax(0,1fr)]">
-        <aside class="border-b border-fleet-line bg-[#eaf2ff] p-4 xl:min-h-[820px] xl:border-b-0 xl:border-r">
-            <a href="<?= htmlspecialchars($mailboxPageUrl . $mailboxPageQuery(['view' => 'compose', 'compose' => 1, 'thread' => null, 'reply' => null, 'forward' => null, 'draft' => null]), ENT_QUOTES, 'UTF-8'); ?>" class="inline-flex h-14 w-full items-center gap-4 rounded-[20px] bg-[#b9dcff] px-6 text-base font-semibold text-fleet-sidebar shadow-[0_10px_25px_rgba(59,130,246,0.18)] transition hover:bg-[#a7d2ff] xl:w-[180px]">
+    <div class="items-stretch" style="display:flex; flex-wrap:wrap;">
+        <aside class="border-b border-fleet-line bg-[#eaf2ff] p-4" style="flex:0 0 240px; width:240px; min-height:820px; border-right:1px solid rgba(203,213,225,1);">
+            <a href="<?= htmlspecialchars($mailboxPageUrl . $mailboxPageQuery(['view' => 'compose', 'compose' => 1, 'thread' => null, 'reply' => null, 'forward' => null, 'draft' => null]), ENT_QUOTES, 'UTF-8'); ?>" class="inline-flex h-14 w-full items-center gap-4 rounded-[20px] bg-[#b9dcff] px-6 text-base font-semibold text-fleet-sidebar shadow-[0_10px_25px_rgba(59,130,246,0.18)] transition hover:bg-[#a7d2ff] lg:w-[180px]">
                 <span class="text-xl leading-none">+</span>
                 <span>Compose</span>
             </a>
 
-            <nav class="mt-5 space-y-1.5">
+            <nav class="mt-5 space-y-1.5" style="max-width:220px;">
                 <?php foreach ($mailboxFolders as $folderKey): ?>
                     <?php $isActiveFolder = $mailboxFolder === $folderKey; ?>
                     <a href="<?= htmlspecialchars($mailboxPageUrl . $mailboxPageQuery(['view' => 'folder', 'folder' => $folderKey, 'thread' => null, 'reply' => null, 'forward' => null, 'draft' => null, 'compose' => null]), ENT_QUOTES, 'UTF-8'); ?>" class="flex items-center justify-between rounded-r-full rounded-l-2xl px-5 py-3 text-sm font-semibold transition <?= $isActiveFolder ? 'bg-[#cfe0ff] text-fleet-sidebar' : 'text-fleet-ink hover:bg-white/70'; ?>">
@@ -172,8 +172,8 @@ $mailboxBackFromThreadQuery = $mailboxBackToFolderQuery;
             </nav>
         </aside>
 
-        <section class="bg-white xl:min-h-[820px]">
-            <div class="block xl:hidden border-b border-fleet-line px-4 py-4">
+        <section class="bg-white" style="flex:1 1 0; min-width:320px; min-height:820px;">
+            <div class="hidden border-b border-fleet-line px-4 py-4">
                 <div class="flex items-center justify-between gap-3">
                     <div>
                         <p class="text-xs font-extrabold uppercase tracking-[0.2em] text-fleet-muted"><?= htmlspecialchars($mailboxSelectedFolderLabel, ENT_QUOTES, 'UTF-8'); ?></p>
@@ -187,7 +187,7 @@ $mailboxBackFromThreadQuery = $mailboxBackToFolderQuery;
                 </div>
             </div>
 
-            <div class="hidden xl:block">
+            <div class="block">
                 <?php if ($mailboxView === 'compose'): ?>
                     <div class="px-6 py-6">
                         <div class="mx-6 mt-6 overflow-hidden rounded-[28px] border border-fleet-line bg-white shadow-[0_20px_48px_rgba(15,23,42,0.08)]">
@@ -304,37 +304,41 @@ $mailboxBackFromThreadQuery = $mailboxBackToFolderQuery;
                     </div>
                 <?php elseif ($mailboxView === 'thread' && $mailboxIsThreadMode): ?>
                     <div class="flex min-h-[820px] flex-col">
-                        <div class="flex items-center justify-between gap-4 border-b border-fleet-line bg-white px-6 py-5">
-                            <div class="flex items-center gap-4">
-                                <a href="<?= htmlspecialchars($mailboxPageUrl . $mailboxBackFromThreadQuery, ENT_QUOTES, 'UTF-8'); ?>" class="inline-flex h-11 items-center rounded-2xl border border-fleet-line bg-white px-4 text-sm font-semibold text-fleet-ink hover:bg-fleet-surface-muted">Back</a>
-                                <div class="min-w-0">
-                                    <p class="text-xs font-extrabold uppercase tracking-[0.2em] text-fleet-muted"><?= htmlspecialchars($mailboxSelectedFolderLabel, ENT_QUOTES, 'UTF-8'); ?></p>
-                                    <h2 class="mt-1 truncate text-2xl font-extrabold text-fleet-ink"><?= htmlspecialchars($mailboxActiveThread['subject'] ?? 'Conversation', ENT_QUOTES, 'UTF-8'); ?></h2>
+                        <div class="border-b border-fleet-line bg-white px-8 py-7">
+                            <div class="flex flex-wrap items-start justify-between gap-4">
+                                <div class="flex items-center gap-4">
+                                    <a href="<?= htmlspecialchars($mailboxPageUrl . $mailboxBackFromThreadQuery, ENT_QUOTES, 'UTF-8'); ?>" class="inline-flex h-11 items-center rounded-2xl border border-fleet-line bg-white px-4 text-sm font-semibold text-fleet-ink hover:bg-fleet-surface-muted">Back</a>
+                                    <div class="min-w-0">
+                                        <p class="text-xs font-extrabold uppercase tracking-[0.2em] text-fleet-muted"><?= htmlspecialchars($mailboxSelectedFolderLabel, ENT_QUOTES, 'UTF-8'); ?></p>
+                                        <h2 class="mt-1 truncate text-2xl font-extrabold text-fleet-ink"><?= htmlspecialchars($mailboxActiveThread['subject'] ?? 'Conversation', ENT_QUOTES, 'UTF-8'); ?></h2>
+                                        <p class="mt-1 text-sm text-fleet-muted">Reply, forward, read status, and trash actions stay here on the message pane.</p>
+                                    </div>
                                 </div>
                             </div>
-                                <div class="flex flex-wrap gap-2">
-                                    <a href="<?= htmlspecialchars($mailboxPageUrl . $mailboxPageQuery(['view' => 'compose', 'thread' => $mailboxThreadId, 'reply' => (string) ($mailboxActiveThread['latest_message_id'] ?? $mailboxThreadId), 'forward' => null, 'draft' => null, 'compose' => null]), ENT_QUOTES, 'UTF-8'); ?>" class="inline-flex h-10 items-center rounded-2xl border border-fleet-line bg-white px-4 text-sm font-semibold text-fleet-ink hover:bg-fleet-surface-muted">Reply</a>
-                                    <a href="<?= htmlspecialchars($mailboxPageUrl . $mailboxPageQuery(['view' => 'compose', 'thread' => $mailboxThreadId, 'forward' => (string) ($mailboxActiveThread['latest_message_id'] ?? $mailboxThreadId), 'reply' => null, 'draft' => null, 'compose' => null]), ENT_QUOTES, 'UTF-8'); ?>" class="inline-flex h-10 items-center rounded-2xl border border-fleet-line bg-white px-4 text-sm font-semibold text-fleet-ink hover:bg-fleet-surface-muted">Forward</a>
-                                    <?php if ($mailboxFolder === 'drafts' && !empty($mailboxActiveThread['latest_message_id'])): ?>
-                                        <a href="<?= htmlspecialchars($mailboxPageUrl . $mailboxPageQuery(['view' => 'compose', 'draft' => (string) $mailboxActiveThread['latest_message_id'], 'compose' => 1, 'reply' => null, 'forward' => null]), ENT_QUOTES, 'UTF-8'); ?>" class="inline-flex h-10 items-center rounded-2xl border border-fleet-line bg-white px-4 text-sm font-semibold text-fleet-ink hover:bg-fleet-surface-muted">Edit draft</a>
-                                    <?php endif; ?>
-                                    <form action="<?= htmlspecialchars($mailboxActionUrl, ENT_QUOTES, 'UTF-8'); ?>" method="post" data-fleet-ajax="true">
-                                        <input type="hidden" name="thread_id" value="<?= (int) $mailboxThreadId; ?>">
-                                        <input type="hidden" name="folder" value="<?= htmlspecialchars($mailboxFolder, ENT_QUOTES, 'UTF-8'); ?>">
-                                        <input type="hidden" name="search" value="<?= htmlspecialchars($mailboxSearch, ENT_QUOTES, 'UTF-8'); ?>">
-                                        <button type="submit" name="message_action" value="<?= $mailboxFolder === 'trash' ? 'restore_thread' : 'delete_thread'; ?>" class="inline-flex h-10 items-center rounded-2xl border border-fleet-line bg-white px-4 text-sm font-semibold text-fleet-ink hover:bg-fleet-surface-muted" data-loading-text="Working..."><?= $mailboxFolder === 'trash' ? 'Restore' : 'Trash'; ?></button>
-                                    </form>
-                                    <form action="<?= htmlspecialchars($mailboxActionUrl, ENT_QUOTES, 'UTF-8'); ?>" method="post" data-fleet-ajax="true">
-                                        <input type="hidden" name="thread_id" value="<?= (int) $mailboxThreadId; ?>">
-                                        <input type="hidden" name="folder" value="<?= htmlspecialchars($mailboxFolder, ENT_QUOTES, 'UTF-8'); ?>">
-                                        <input type="hidden" name="search" value="<?= htmlspecialchars($mailboxSearch, ENT_QUOTES, 'UTF-8'); ?>">
-                                        <button type="submit" name="message_action" value="<?= (($mailboxActiveThread['unread_count'] ?? 0) > 0) ? 'mark_thread_read' : 'mark_thread_unread'; ?>" class="inline-flex h-10 items-center rounded-2xl border border-fleet-line bg-white px-4 text-sm font-semibold text-fleet-ink hover:bg-fleet-surface-muted" data-loading-text="Working..."><?= (($mailboxActiveThread['unread_count'] ?? 0) > 0) ? 'Mark read' : 'Mark unread'; ?></button>
-                                    </form>
+
+                            <div class="mt-5 flex flex-wrap gap-3 rounded-2xl bg-[#f8fbff] p-4">
+                                <a href="<?= htmlspecialchars($mailboxPageUrl . $mailboxPageQuery(['view' => 'compose', 'thread' => $mailboxThreadId, 'reply' => (string) ($mailboxActiveThread['latest_message_id'] ?? $mailboxThreadId), 'forward' => null, 'draft' => null, 'compose' => null]), ENT_QUOTES, 'UTF-8'); ?>" class="inline-flex h-11 items-center rounded-2xl bg-fleet-sidebar px-5 text-sm font-semibold text-white shadow-sm hover:bg-fleet-sidebar-active">Reply</a>
+                                <a href="<?= htmlspecialchars($mailboxPageUrl . $mailboxPageQuery(['view' => 'compose', 'thread' => $mailboxThreadId, 'forward' => (string) ($mailboxActiveThread['latest_message_id'] ?? $mailboxThreadId), 'reply' => null, 'draft' => null, 'compose' => null]), ENT_QUOTES, 'UTF-8'); ?>" class="inline-flex h-11 items-center rounded-2xl border border-fleet-line bg-white px-5 text-sm font-semibold text-fleet-ink hover:bg-fleet-surface-muted">Forward</a>
+                                <?php if ($mailboxFolder === 'drafts' && !empty($mailboxActiveThread['latest_message_id'])): ?>
+                                    <a href="<?= htmlspecialchars($mailboxPageUrl . $mailboxPageQuery(['view' => 'compose', 'draft' => (string) $mailboxActiveThread['latest_message_id'], 'compose' => 1, 'reply' => null, 'forward' => null]), ENT_QUOTES, 'UTF-8'); ?>" class="inline-flex h-11 items-center rounded-2xl border border-fleet-line bg-white px-5 text-sm font-semibold text-fleet-ink hover:bg-fleet-surface-muted">Edit draft</a>
+                                <?php endif; ?>
+                                <form action="<?= htmlspecialchars($mailboxActionUrl, ENT_QUOTES, 'UTF-8'); ?>" method="post" data-fleet-ajax="true">
+                                    <input type="hidden" name="thread_id" value="<?= (int) $mailboxThreadId; ?>">
+                                    <input type="hidden" name="folder" value="<?= htmlspecialchars($mailboxFolder, ENT_QUOTES, 'UTF-8'); ?>">
+                                    <input type="hidden" name="search" value="<?= htmlspecialchars($mailboxSearch, ENT_QUOTES, 'UTF-8'); ?>">
+                                    <button type="submit" name="message_action" value="<?= (($mailboxActiveThread['unread_count'] ?? 0) > 0) ? 'mark_thread_read' : 'mark_thread_unread'; ?>" class="inline-flex h-11 items-center rounded-2xl border border-fleet-line bg-white px-5 text-sm font-semibold text-fleet-ink hover:bg-fleet-surface-muted" data-loading-text="Working..."><?= (($mailboxActiveThread['unread_count'] ?? 0) > 0) ? 'Mark read' : 'Mark unread'; ?></button>
+                                </form>
+                                <form action="<?= htmlspecialchars($mailboxActionUrl, ENT_QUOTES, 'UTF-8'); ?>" method="post" data-fleet-ajax="true">
+                                    <input type="hidden" name="thread_id" value="<?= (int) $mailboxThreadId; ?>">
+                                    <input type="hidden" name="folder" value="<?= htmlspecialchars($mailboxFolder, ENT_QUOTES, 'UTF-8'); ?>">
+                                    <input type="hidden" name="search" value="<?= htmlspecialchars($mailboxSearch, ENT_QUOTES, 'UTF-8'); ?>">
+                                    <button type="submit" name="message_action" value="<?= $mailboxFolder === 'trash' ? 'restore_thread' : 'delete_thread'; ?>" class="inline-flex h-11 items-center rounded-2xl border border-fleet-line bg-white px-5 text-sm font-semibold text-fleet-ink hover:bg-fleet-surface-muted" data-loading-text="Working..."><?= $mailboxFolder === 'trash' ? 'Restore' : 'Trash'; ?></button>
+                                </form>
                             </div>
                         </div>
 
-                        <div class="flex-1 overflow-y-auto px-6 py-6">
-                            <div class="space-y-5">
+                        <div class="flex-1 overflow-y-auto px-8 py-8">
+                            <div class="space-y-6">
                                 <?php foreach ($mailboxActiveThreadMessages as $threadMessage): ?>
                                     <?php
                                     $recipientLabels = array_map(
@@ -343,7 +347,7 @@ $mailboxBackFromThreadQuery = $mailboxBackToFolderQuery;
                                     );
                                     ?>
                                     <article class="overflow-hidden rounded-[26px] border border-fleet-line bg-white shadow-[0_14px_36px_rgba(15,23,42,0.06)]">
-                                        <div class="border-b border-fleet-line bg-[#f8fbff] px-6 py-4">
+                                        <div class="border-b border-fleet-line bg-[#f8fbff] px-7 py-5">
                                             <div class="flex flex-wrap items-start justify-between gap-4">
                                                 <div class="min-w-0">
                                                     <div class="flex flex-wrap items-center gap-3">
@@ -362,11 +366,11 @@ $mailboxBackFromThreadQuery = $mailboxBackToFolderQuery;
                                             </div>
                                         </div>
 
-                                        <div class="px-6 py-6">
+                                        <div class="px-7 py-7">
                                             <div class="whitespace-pre-line text-sm leading-7 text-fleet-ink"><?= htmlspecialchars($threadMessage['body'], ENT_QUOTES, 'UTF-8'); ?></div>
 
                                             <?php if ($threadMessage['attachments'] !== []): ?>
-                                                <div class="mt-6 rounded-2xl border border-fleet-line-soft bg-[#f8fbff] p-4">
+                                                <div class="mt-6 rounded-2xl border border-fleet-line-soft bg-[#f8fbff] p-5">
                                                     <p class="text-xs font-extrabold uppercase tracking-[0.2em] text-fleet-muted">Attachments</p>
                                                     <div class="mt-3 flex flex-wrap gap-3">
                                                         <?php foreach ($threadMessage['attachments'] as $attachment): ?>
@@ -385,7 +389,7 @@ $mailboxBackFromThreadQuery = $mailboxBackToFolderQuery;
                         </div>
 
                         <?php if ($mailboxFolder !== 'trash'): ?>
-                            <div class="border-t border-fleet-line bg-white px-6 py-5">
+                            <div class="border-t border-fleet-line bg-white px-8 py-6">
                                 <div class="flex flex-wrap items-center justify-between gap-4">
                                     <div>
                                         <p class="text-xs font-extrabold uppercase tracking-[0.2em] text-fleet-muted">Quick reply</p>
@@ -396,7 +400,7 @@ $mailboxBackFromThreadQuery = $mailboxBackToFolderQuery;
                                     </a>
                                 </div>
 
-                                <form action="<?= htmlspecialchars($mailboxActionUrl, ENT_QUOTES, 'UTF-8'); ?>" method="post" enctype="multipart/form-data" class="mt-4 space-y-4" data-fleet-ajax="true">
+                                <form action="<?= htmlspecialchars($mailboxActionUrl, ENT_QUOTES, 'UTF-8'); ?>" method="post" enctype="multipart/form-data" class="mt-5 space-y-4" data-fleet-ajax="true">
                                     <input type="hidden" name="folder" value="<?= htmlspecialchars($mailboxFolder, ENT_QUOTES, 'UTF-8'); ?>">
                                     <input type="hidden" name="search" value="<?= htmlspecialchars($mailboxSearch, ENT_QUOTES, 'UTF-8'); ?>">
                                     <input type="hidden" name="thread_id" value="<?= (int) $mailboxThreadId; ?>">
@@ -416,7 +420,7 @@ $mailboxBackFromThreadQuery = $mailboxBackToFolderQuery;
                         <?php endif; ?>
                     </div>
                 <?php else: ?>
-                    <div class="px-4 py-4 xl:px-6 xl:py-6">
+                    <div class="px-4 py-4 lg:px-6 lg:py-6">
                         <div class="overflow-hidden rounded-[28px] border border-fleet-line bg-white shadow-[0_20px_48px_rgba(15,23,42,0.08)]">
                             <div class="border-b border-fleet-line bg-[#f8fbff] px-6 py-5">
                                 <div class="flex items-center justify-between gap-4">
@@ -476,7 +480,7 @@ $mailboxBackFromThreadQuery = $mailboxBackToFolderQuery;
                 <?php endif; ?>
             </div>
 
-            <div class="xl:hidden">
+            <div class="hidden">
                 <?php if ($mailboxIsComposeMode): ?>
                     <div class="px-4 py-4">
                         <div class="overflow-hidden rounded-[28px] border border-fleet-line bg-white shadow-sm">

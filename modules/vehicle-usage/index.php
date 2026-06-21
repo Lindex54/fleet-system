@@ -144,12 +144,6 @@ $driverBreakdownShowLessUrl = $vehicleUsagePageUrl . (count($driverBreakdownShow
                 <p class="vehicle-usage-print-subject">SUBJECT: <?= htmlspecialchars($vehicleUsageMemoSubject, ENT_QUOTES, 'UTF-8'); ?></p>
             </div>
 
-            <div class="border-b border-fleet-line-soft pb-5">
-                <p class="text-xs font-extrabold uppercase tracking-[0.18em] text-fleet-primary">Busitema University Fleet</p>
-                <h2 class="mt-2 text-2xl font-extrabold text-fleet-ink"><?= htmlspecialchars($vehicleUsagePrintTitle, ENT_QUOTES, 'UTF-8'); ?></h2>
-                <p class="mt-2 text-sm text-fleet-muted">Print scope: <?= htmlspecialchars($vehicleUsagePeriodLabel, ENT_QUOTES, 'UTF-8'); ?></p>
-            </div>
-
             <div class="mt-6 overflow-x-auto rounded-2xl border border-fleet-line bg-white">
                 <table class="vehicle-usage-print-table w-full min-w-[720px] border-collapse text-left text-sm">
                     <thead class="bg-fleet-surface-muted text-fleet-muted">
