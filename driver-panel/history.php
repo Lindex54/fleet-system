@@ -19,21 +19,21 @@ include __DIR__ . '/includes/sidebar.php';
         </div>
 
         <section class="driver-stat-grid grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-            <article class="driver-stat-card rounded-lg border border-fleet-line bg-fleet-surface p-5 shadow-fleet-card">
-                <p class="text-sm font-medium text-fleet-muted">Driver</p>
-                <p class="mt-2 text-2xl font-extrabold text-fleet-ink"><?= htmlspecialchars($driverProfile['name'] ?? 'Unavailable', ENT_QUOTES, 'UTF-8'); ?></p>
+            <article class="driver-stat-card rounded-lg border border-fleet-line bg-white p-5 shadow-fleet-card">
+                <p class="summary-card-label text-slate-800">Driver</p>
+                <p class="summary-card-value summary-card-value-text mt-2 text-slate-900"><?= htmlspecialchars($driverProfile['name'] ?? 'Unavailable', ENT_QUOTES, 'UTF-8'); ?></p>
             </article>
-            <article class="driver-stat-card rounded-lg border border-fleet-line bg-fleet-surface p-5 shadow-fleet-card">
-                <p class="text-sm font-medium text-fleet-muted">Trip Records</p>
-                <p class="mt-2 text-2xl font-extrabold text-fleet-ink"><?= count($tripHistory); ?></p>
+            <article class="driver-stat-card rounded-lg border border-blue-200 bg-blue-50 p-5 shadow-fleet-card">
+                <p class="summary-card-label text-blue-900">Trip Records</p>
+                <p class="summary-card-value mt-2 text-slate-900"><?= count($tripHistory); ?></p>
             </article>
-            <article class="driver-stat-card rounded-lg border border-fleet-line bg-fleet-surface p-5 shadow-fleet-card">
-                <p class="text-sm font-medium text-fleet-muted">Inspection Reports</p>
-                <p class="mt-2 text-2xl font-extrabold text-fleet-ink"><?= count($reportHistory); ?></p>
+            <article class="driver-stat-card rounded-lg border border-amber-200 bg-amber-50 p-5 shadow-fleet-card">
+                <p class="summary-card-label text-amber-900">Inspection Reports</p>
+                <p class="summary-card-value mt-2 text-slate-900"><?= count($reportHistory); ?></p>
             </article>
-            <article class="driver-stat-card rounded-lg border border-fleet-line bg-fleet-surface p-5 shadow-fleet-card">
-                <p class="text-sm font-medium text-fleet-muted">Assigned Vehicle</p>
-                <p class="mt-2 text-2xl font-extrabold text-fleet-ink"><?= htmlspecialchars($assignedVehicle['registration_no'] ?? 'Not assigned', ENT_QUOTES, 'UTF-8'); ?></p>
+            <article class="driver-stat-card rounded-lg border border-green-200 bg-green-50 p-5 shadow-fleet-card">
+                <p class="summary-card-label text-green-900">Assigned Vehicle</p>
+                <p class="summary-card-value summary-card-value-text mt-2 text-slate-900"><?= htmlspecialchars($assignedVehicle['registration_no'] ?? 'Not assigned', ENT_QUOTES, 'UTF-8'); ?></p>
             </article>
         </section>
 

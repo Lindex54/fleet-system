@@ -3,6 +3,10 @@
 declare(strict_types=1);
 
 require_once __DIR__ . '/../config/database.php';
+require_once __DIR__ . '/../vendor/autoload.php';
+
+use PHPMailer\PHPMailer\Exception;
+use PHPMailer\PHPMailer\PHPMailer;
 
 const FLEET_MESSAGE_ALLOWED_EXTENSIONS = [
     'pdf' => 'application/pdf',
@@ -54,6 +58,25 @@ function fleetMessagePageUrlForRole(string $role): string
     return $role === 'driver'
         ? (fleetMessageBasePath() ?: '') . '/driver-panel/messages'
         : (fleetMessageBasePath() ?: '') . '/modules/communications/';
+}
+
+function fleetMessageAbsoluteUrl(string $path): string
+{
+    $scheme = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') ? 'https' : 'http';
+    $host = $_SERVER['HTTP_HOST'] ?? 'localhost';
+
+    return $scheme . '://' . $host . $path;
+}
+
+function fleetMessageMailConfig(): array
+{
+    $config = require __DIR__ . '/../config/mail.php';
+
+    if (!is_array($config)) {
+        throw new RuntimeException('Mail configuration is invalid.');
+    }
+
+    return $config;
 }
 
 function fleetMessageFlashKeyForRole(string $role): string
@@ -320,6 +343,108 @@ function fleetMessageAllowedRecipientIdMap(array $recipientGroups): array
     return $map;
 }
 
+function fleetMessageResolveDriverEmailRecipients(array $allowedRecipientMap, array $recipientIds): array
+{
+    $resolved = [];
+
+    foreach ($recipientIds as $recipientId) {
+        if (!isset($allowedRecipientMap[$recipientId])) {
+            continue;
+        }
+
+        $recipient = $allowedRecipientMap[$recipientId];
+        $email = strtolower(trim((string) ($recipient['email'] ?? '')));
+
+        if (($recipient['role'] ?? '') !== 'driver' || $email === '' || filter_var($email, FILTER_VALIDATE_EMAIL) === false) {
+            continue;
+        }
+
+        $resolved[] = [
+            'id' => (int) $recipient['id'],
+            'name' => (string) $recipient['name'],
+            'email' => $email,
+            'role' => (string) $recipient['role'],
+        ];
+    }
+
+    return $resolved;
+}
+
+function fleetMessageSendDriverEmailNotifications(array $context, array $messageData, array $driverRecipients): array
+{
+    if ($driverRecipients === []) {
+        return [
+            'attempted' => 0,
+            'sent' => 0,
+            'failed' => 0,
+            'errors' => [],
+        ];
+    }
+
+    $mailConfig = fleetMessageMailConfig();
+    $messageUrl = fleetMessageAbsoluteUrl(fleetMessagePageUrlForRole('driver') . fleetMessageBuildThreadRedirectQuery('inbox', (int) $messageData['thread_id']));
+    $errors = [];
+    $sentCount = 0;
+
+    foreach ($driverRecipients as $recipient) {
+        $mail = new PHPMailer(true);
+
+        try {
+            $mail->SMTPDebug = (int) ($mailConfig['debug'] ?? 0);
+            $mail->Debugoutput = static function (string $message, int $level): void {
+                error_log(sprintf('PHPMailer debug [%d]: %s', $level, trim($message)));
+            };
+            $mail->isSMTP();
+            $mail->Host = (string) ($mailConfig['host'] ?? '');
+            $mail->SMTPAuth = true;
+            $mail->Username = (string) ($mailConfig['username'] ?? '');
+            $mail->Password = (string) ($mailConfig['password'] ?? '');
+
+            $encryption = strtolower((string) ($mailConfig['encryption'] ?? 'tls'));
+            if ($encryption === 'tls') {
+                $mail->SMTPSecure = PHPMailer::ENCRYPTION_STARTTLS;
+            } elseif ($encryption === 'ssl') {
+                $mail->SMTPSecure = PHPMailer::ENCRYPTION_SMTPS;
+            }
+
+            $mail->Port = (int) ($mailConfig['port'] ?? 587);
+            $mail->setFrom(
+                (string) ($mailConfig['from_address'] ?? $mail->Username),
+                (string) ($mailConfig['from_name'] ?? 'Fleet Management System')
+            );
+            $mail->addAddress((string) $recipient['email'], (string) $recipient['name']);
+            $mail->isHTML(false);
+            $mail->Subject = 'New Internal Message: ' . (string) $messageData['subject'];
+            $mail->Body = "Hello {$recipient['name']},\n\n"
+                . "{$messageData['sender_name']} sent you a new internal message in the Fleet Management System.\n\n"
+                . "Subject: {$messageData['subject']}\n\n"
+                . "Message preview:\n{$messageData['body_preview']}\n\n"
+                . "Open your driver inbox here:\n{$messageUrl}\n\n"
+                . "You have also received this message inside the system inbox.\n\n"
+                . "Regards,\nFleet Management System";
+
+            foreach (($messageData['attachments'] ?? []) as $attachment) {
+                $absolutePath = dirname(__DIR__) . '/' . ltrim((string) ($attachment['file_path'] ?? ''), '/');
+                if (is_file($absolutePath)) {
+                    $mail->addAttachment($absolutePath, (string) ($attachment['original_name'] ?? basename($absolutePath)));
+                }
+            }
+
+            $mail->send();
+            $sentCount++;
+        } catch (Exception $exception) {
+            $errors[] = sprintf('Email to %s failed: %s', (string) $recipient['email'], $mail->ErrorInfo ?: $exception->getMessage());
+        }
+    }
+
+    return [
+        'attempted' => count($driverRecipients),
+        'sent' => $sentCount,
+        'failed' => count($errors),
+        'errors' => $errors,
+    ];
+}
+
 function fleetMessageNormalizeRecipientIds(array $input): array
 {
     $recipientIds = [];
@@ -466,6 +591,27 @@ function fleetMessageFetchDraftAttachments(PDO $pdo, int $messageId): array
             'original_name' => (string) $row['original_name'],
             'file_type' => (string) $row['file_type'],
             'size_label' => number_format(((int) $row['size_bytes']) / 1024, 1) . ' KB',
+        ];
+    }, $statement->fetchAll());
+}
+
+function fleetMessageFetchStoredAttachments(PDO $pdo, int $messageId): array
+{
+    $statement = $pdo->prepare(
+        "SELECT id, original_name, file_path, file_type, size_bytes
+         FROM message_attachments
+         WHERE message_id = :message_id
+         ORDER BY id ASC"
+    );
+    $statement->execute(['message_id' => $messageId]);
+
+    return array_map(static function (array $row): array {
+        return [
+            'id' => (int) $row['id'],
+            'original_name' => (string) $row['original_name'],
+            'file_path' => (string) $row['file_path'],
+            'file_type' => (string) $row['file_type'],
+            'size_bytes' => (int) $row['size_bytes'],
         ];
     }, $statement->fetchAll());
 }
@@ -887,12 +1033,42 @@ function fleetMessageSaveCompose(PDO $pdo, array $context, array $formData, bool
         fleetMessageRemoveDraftAttachments($pdo, $context, $savedMessageId, $formData['remove_attachment_ids']);
         fleetMessageStoreUploadedAttachments($pdo, $savedMessageId, $validatedFiles);
         fleetMessageUpdateThread($pdo, $threadId, $subject);
+        $storedAttachments = fleetMessageFetchStoredAttachments($pdo, $savedMessageId);
 
         $pdo->commit();
+
+        $emailDelivery = [
+            'attempted' => 0,
+            'sent' => 0,
+            'failed' => 0,
+            'errors' => [],
+        ];
+
+        if (!$isDraft && $context['role'] === 'admin') {
+            try {
+                $driverRecipients = fleetMessageResolveDriverEmailRecipients($allowedRecipientMap, $formData['recipient_ids']);
+                $emailDelivery = fleetMessageSendDriverEmailNotifications($context, [
+                    'thread_id' => $threadId,
+                    'subject' => $subject,
+                    'sender_name' => (string) ($context['name'] ?? 'Administrator'),
+                    'body_preview' => mb_substr(trim(preg_replace('/\s+/', ' ', $formData['body'])), 0, 500),
+                    'attachments' => $storedAttachments,
+                ], $driverRecipients);
+            } catch (Throwable $emailException) {
+                $emailDelivery = [
+                    'attempted' => 0,
+                    'sent' => 0,
+                    'failed' => 1,
+                    'errors' => ['Driver email notification failed: ' . $emailException->getMessage()],
+                ];
+                error_log('Driver email notification failed after internal message send: ' . $emailException->getMessage());
+            }
+        }
 
         return [
             'message_id' => $savedMessageId,
             'thread_id' => $threadId,
+            'email_delivery' => $emailDelivery,
         ];
     } catch (Throwable $exception) {
         if ($pdo->inTransaction()) {

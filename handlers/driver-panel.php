@@ -61,6 +61,11 @@ function driverPanelTripLogUrl(): string
     return '/fleet-system/driver-panel/trip-log';
 }
 
+function driverPanelLogbookUrl(): string
+{
+    return '/fleet-system/driver-panel/logbook';
+}
+
 function driverPanelRequireAuthenticatedDriver(bool $allowPasswordChange = false): void
 {
     driverPanelStartSession();
@@ -292,6 +297,15 @@ function driverPanelFormatDate(?string $date): string
     $timestamp = strtotime($date);
 
     return $timestamp ? date('d M Y', $timestamp) : $date;
+}
+
+function driverPanelFormatMoney(?float $amount): string
+{
+    if ($amount === null) {
+        return '-';
+    }
+
+    return 'UGX ' . number_format($amount, 0);
 }
 
 function driverPanelBuildLicenseExpiryStatus(?string $expiryDate): array
@@ -1635,8 +1649,8 @@ function driverPanelValidateTripEnd(array $formData, array $openTrip): array
         throw new RuntimeException('Please provide a valid odometer end reading.');
     }
 
-    if ($openTrip['odometer_start'] !== null && $odometerEnd < (int) $openTrip['odometer_start']) {
-        throw new RuntimeException('Odometer end cannot be less than odometer start.');
+    if ($openTrip['odometer_start'] !== null && $odometerEnd <= (int) $openTrip['odometer_start']) {
+        throw new RuntimeException('Odometer end must be greater than the last recorded odometer start.');
     }
 
     $fuelLitres = $formData['fuel_litres'] === '' ? null : filter_var($formData['fuel_litres'], FILTER_VALIDATE_FLOAT);
@@ -1828,6 +1842,299 @@ function driverPanelFetchTripLogPageData(): array
         'tripEndFormData' => $endFormData,
         'tripFormAction' => driverPanelHandlerUrl(),
     ];
+}
+
+function driverPanelBuildLogbookFilters(): array
+{
+    return [
+        'vehicle_id' => trim((string) ($_GET['vehicle_id'] ?? '')),
+        'period' => strtolower(trim((string) ($_GET['period'] ?? 'all'))),
+        'week' => trim((string) ($_GET['week'] ?? '')),
+        'month' => trim((string) ($_GET['month'] ?? '')),
+        'date_from' => trim((string) ($_GET['date_from'] ?? '')),
+        'date_to' => trim((string) ($_GET['date_to'] ?? '')),
+    ];
+}
+
+function driverPanelResolveLogbookPeriodRange(array $filters): array
+{
+    $period = in_array($filters['period'] ?? 'all', ['all', 'week', 'month', 'custom'], true)
+        ? (string) $filters['period']
+        : 'all';
+
+    if ($period === 'week' && ($filters['week'] ?? '') !== '') {
+        $weekStart = DateTimeImmutable::createFromFormat('o-\WW-N', $filters['week'] . '-1');
+        $weekEnd = DateTimeImmutable::createFromFormat('o-\WW-N', $filters['week'] . '-7');
+
+        if ($weekStart && $weekEnd) {
+            return [
+                'period' => 'week',
+                'date_from' => $weekStart->format('Y-m-d'),
+                'date_to' => $weekEnd->format('Y-m-d'),
+                'label' => 'Week of ' . driverPanelFormatDate($weekStart->format('Y-m-d')) . ' to ' . driverPanelFormatDate($weekEnd->format('Y-m-d')),
+            ];
+        }
+    }
+
+    if ($period === 'month' && preg_match('/^\d{4}-\d{2}$/', (string) ($filters['month'] ?? '')) === 1) {
+        $monthStart = DateTimeImmutable::createFromFormat('Y-m-d', $filters['month'] . '-01');
+        if ($monthStart) {
+            $monthEnd = $monthStart->modify('last day of this month');
+
+            return [
+                'period' => 'month',
+                'date_from' => $monthStart->format('Y-m-d'),
+                'date_to' => $monthEnd->format('Y-m-d'),
+                'label' => $monthStart->format('F Y'),
+            ];
+        }
+    }
+
+    if ($period === 'custom' && ($filters['date_from'] ?? '') !== '' && ($filters['date_to'] ?? '') !== '') {
+        $dateFrom = DateTimeImmutable::createFromFormat('Y-m-d', $filters['date_from']);
+        $fromErrors = DateTimeImmutable::getLastErrors();
+        $dateTo = DateTimeImmutable::createFromFormat('Y-m-d', $filters['date_to']);
+        $toErrors = DateTimeImmutable::getLastErrors();
+        $fromErrors = is_array($fromErrors) ? $fromErrors : ['warning_count' => 0, 'error_count' => 0];
+        $toErrors = is_array($toErrors) ? $toErrors : ['warning_count' => 0, 'error_count' => 0];
+
+        if (
+            $dateFrom
+            && $dateTo
+            && ($fromErrors['warning_count'] ?? 0) === 0
+            && ($fromErrors['error_count'] ?? 0) === 0
+            && ($toErrors['warning_count'] ?? 0) === 0
+            && ($toErrors['error_count'] ?? 0) === 0
+            && $dateFrom <= $dateTo
+        ) {
+            return [
+                'period' => 'custom',
+                'date_from' => $dateFrom->format('Y-m-d'),
+                'date_to' => $dateTo->format('Y-m-d'),
+                'label' => driverPanelFormatDate($dateFrom->format('Y-m-d')) . ' to ' . driverPanelFormatDate($dateTo->format('Y-m-d')),
+            ];
+        }
+    }
+
+    return [
+        'period' => 'all',
+        'date_from' => null,
+        'date_to' => null,
+        'label' => 'All recorded dates',
+    ];
+}
+
+function driverPanelFetchLogbookVehicleOptions(PDO $pdo, int $driverId): array
+{
+    $statement = $pdo->prepare(
+        "SELECT DISTINCT
+            v.id,
+            v.registration_no,
+            CONCAT_WS(' ', v.make, v.model) AS make_model
+        FROM vehicle_logs vl
+        INNER JOIN vehicles v ON v.id = vl.vehicle_id
+        WHERE vl.driver_id = :driver_id
+        ORDER BY v.registration_no ASC"
+    );
+    $statement->execute(['driver_id' => $driverId]);
+
+    return $statement->fetchAll();
+}
+
+function driverPanelFindLogbookVehicleOption(array $vehicleOptions, ?int $vehicleId): ?array
+{
+    if ($vehicleId === null) {
+        return null;
+    }
+
+    foreach ($vehicleOptions as $vehicleOption) {
+        if ((int) $vehicleOption['id'] === $vehicleId) {
+            return $vehicleOption;
+        }
+    }
+
+    return null;
+}
+
+function driverPanelFetchLogbookRows(PDO $pdo, int $driverId, ?int $vehicleId, array $periodRange): array
+{
+    $where = ['vl.driver_id = :driver_id'];
+    $params = ['driver_id' => $driverId];
+
+    if ($vehicleId !== null) {
+        $where[] = 'vl.vehicle_id = :vehicle_id';
+        $params['vehicle_id'] = $vehicleId;
+    }
+
+    if (($periodRange['date_from'] ?? null) !== null && ($periodRange['date_to'] ?? null) !== null) {
+        $where[] = 'vl.trip_date BETWEEN :date_from AND :date_to';
+        $params['date_from'] = $periodRange['date_from'];
+        $params['date_to'] = $periodRange['date_to'];
+    }
+
+    $statement = $pdo->prepare(
+        "SELECT
+            vl.id,
+            vl.trip_date,
+            vl.departure_location,
+            vl.destination,
+            vl.purpose,
+            vl.odometer_start,
+            vl.odometer_end,
+            vl.distance_km,
+            vl.fuel_litres,
+            vl.fuel_cost,
+            vl.remarks,
+            v.id AS vehicle_id,
+            v.registration_no,
+            CONCAT_WS(' ', v.make, v.model) AS make_model
+        FROM vehicle_logs vl
+        INNER JOIN vehicles v ON v.id = vl.vehicle_id
+        WHERE " . implode(' AND ', $where) . "
+        ORDER BY vl.trip_date DESC, vl.id DESC"
+    );
+    $statement->execute($params);
+
+    $rows = [];
+
+    foreach ($statement->fetchAll() as $row) {
+        $distanceRaw = $row['distance_km'] !== null ? (int) $row['distance_km'] : 0;
+        $fuelRaw = $row['fuel_litres'] !== null ? (float) $row['fuel_litres'] : 0.0;
+        $costRaw = $row['fuel_cost'] !== null ? (float) $row['fuel_cost'] : 0.0;
+
+        $rows[] = [
+            'id' => (int) $row['id'],
+            'date' => driverPanelFormatDate($row['trip_date']),
+            'date_raw' => (string) $row['trip_date'],
+            'vehicle' => (string) $row['registration_no'],
+            'vehicle_label' => trim((string) $row['registration_no'] . ' - ' . (string) $row['make_model']),
+            'from' => (string) $row['departure_location'],
+            'to' => (string) $row['destination'],
+            'purpose' => (string) $row['purpose'],
+            'odometer_start' => $row['odometer_start'] !== null ? number_format((int) $row['odometer_start']) : '-',
+            'odometer_end' => $row['odometer_end'] !== null ? number_format((int) $row['odometer_end']) : '-',
+            'distance' => number_format($distanceRaw) . ' km',
+            'distance_raw' => $distanceRaw,
+            'fuel_litres' => $row['fuel_litres'] !== null ? rtrim(rtrim(number_format($fuelRaw, 2, '.', ''), '0'), '.') . ' L' : '-',
+            'fuel_litres_raw' => $fuelRaw,
+            'fuel_cost' => driverPanelFormatMoney($row['fuel_cost'] !== null ? $costRaw : null),
+            'fuel_cost_raw' => $costRaw,
+            'remarks' => trim((string) ($row['remarks'] ?? '')) !== '' ? (string) $row['remarks'] : '-',
+        ];
+    }
+
+    return $rows;
+}
+
+function driverPanelBuildLogbookSummary(array $rows): array
+{
+    $totalDistance = 0;
+    $totalFuel = 0.0;
+    $totalCost = 0.0;
+
+    foreach ($rows as $row) {
+        $totalDistance += (int) ($row['distance_raw'] ?? 0);
+        $totalFuel += (float) ($row['fuel_litres_raw'] ?? 0);
+        $totalCost += (float) ($row['fuel_cost_raw'] ?? 0);
+    }
+
+    return [
+        'trip_count' => count($rows),
+        'total_distance' => number_format($totalDistance) . ' km',
+        'total_fuel' => rtrim(rtrim(number_format($totalFuel, 2, '.', ''), '0'), '.') . ' L',
+        'total_cost' => driverPanelFormatMoney($totalCost),
+    ];
+}
+
+function driverPanelBuildLogbookPrintTitle(array $driverProfile, ?array $selectedVehicle, string $periodLabel): string
+{
+    $parts = ['Driver Vehicle Log Book', $driverProfile['name'] ?? 'Driver'];
+
+    if ($selectedVehicle !== null) {
+        $parts[] = $selectedVehicle['registration_no'];
+    }
+
+    $parts[] = $periodLabel;
+
+    return implode(' - ', $parts);
+}
+
+function driverPanelFetchLogbookPageData(): array
+{
+    $commonData = driverPanelFetchCommonData();
+    $driverProfile = $commonData['driverProfile'];
+    $filters = driverPanelBuildLogbookFilters();
+
+    $empty = $commonData + [
+        'driverLogbookPageUrl' => driverPanelLogbookUrl(),
+        'driverLogbookFilters' => $filters,
+        'driverLogbookPeriodLabel' => 'All recorded dates',
+        'driverLogbookVehicleOptions' => [],
+        'driverLogbookSelectedVehicle' => null,
+        'driverLogbookRows' => [],
+        'driverLogbookHasRows' => false,
+        'driverLogbookSummary' => [
+            'trip_count' => 0,
+            'total_distance' => '0 km',
+            'total_fuel' => '0 L',
+            'total_cost' => driverPanelFormatMoney(0.0),
+        ],
+        'driverLogbookMemoTo' => 'University Secretary',
+        'driverLogbookMemoThruOne' => 'University Bursar',
+        'driverLogbookMemoThruTwo' => 'Programme Controller',
+        'driverLogbookMemoFrom' => 'Ag. AEO. (Mech.) Simali Habert',
+        'driverLogbookMemoDate' => date('F j, Y'),
+        'driverLogbookMemoFor' => $driverProfile['name'] ?? 'Driver',
+        'driverLogbookMemoSubject' => 'DRIVER VEHICLE LOG BOOK FOR ' . strtoupper((string) ($driverProfile['name'] ?? 'DRIVER')) . '.',
+        'driverLogbookPrintTitle' => 'Driver Vehicle Log Book',
+        'driverLogbookNotification' => null,
+    ];
+
+    if ($driverProfile === null) {
+        return $empty;
+    }
+
+    try {
+        $pdo = fleetDb();
+        $periodRange = driverPanelResolveLogbookPeriodRange($filters);
+        $vehicleOptions = driverPanelFetchLogbookVehicleOptions($pdo, (int) $driverProfile['id']);
+        $selectedVehicleId = filter_var($filters['vehicle_id'], FILTER_VALIDATE_INT, ['options' => ['min_range' => 1]]);
+        $selectedVehicle = driverPanelFindLogbookVehicleOption($vehicleOptions, $selectedVehicleId === false ? null : (int) $selectedVehicleId);
+        $rows = driverPanelFetchLogbookRows($pdo, (int) $driverProfile['id'], $selectedVehicleId === false ? null : (int) $selectedVehicleId, $periodRange);
+        $summary = driverPanelBuildLogbookSummary($rows);
+        $memoFor = $selectedVehicle !== null ? (string) $selectedVehicle['registration_no'] : ($driverProfile['name'] ?? 'Driver');
+        $memoSubject = $selectedVehicle !== null
+            ? 'DRIVER VEHICLE LOG BOOK FOR MOTOR VEHICLE REG: NO. ' . strtoupper((string) $selectedVehicle['registration_no']) . '.'
+            : 'DRIVER VEHICLE LOG BOOK FOR ' . strtoupper((string) ($driverProfile['name'] ?? 'DRIVER')) . '.';
+
+        return $commonData + [
+            'driverLogbookPageUrl' => driverPanelLogbookUrl(),
+            'driverLogbookFilters' => $filters,
+            'driverLogbookPeriodLabel' => $periodRange['label'],
+            'driverLogbookVehicleOptions' => $vehicleOptions,
+            'driverLogbookSelectedVehicle' => $selectedVehicle,
+            'driverLogbookRows' => $rows,
+            'driverLogbookHasRows' => $rows !== [],
+            'driverLogbookSummary' => $summary,
+            'driverLogbookMemoTo' => 'University Secretary',
+            'driverLogbookMemoThruOne' => 'University Bursar',
+            'driverLogbookMemoThruTwo' => 'Programme Controller',
+            'driverLogbookMemoFrom' => 'Ag. AEO. (Mech.) Simali Habert',
+            'driverLogbookMemoDate' => date('F j, Y'),
+            'driverLogbookMemoFor' => $memoFor,
+            'driverLogbookMemoSubject' => $memoSubject,
+            'driverLogbookPrintTitle' => driverPanelBuildLogbookPrintTitle($driverProfile, $selectedVehicle, $periodRange['label']),
+            'driverLogbookNotification' => null,
+        ];
+    } catch (Throwable $exception) {
+        return $empty + [
+            'driverLogbookNotification' => [
+                'type' => 'error',
+                'title' => 'Unable to load your log book',
+                'message' => 'Your vehicle log book could not be loaded right now.',
+            ],
+        ];
+    }
 }
 
 function driverPanelFetchTripHistory(PDO $pdo, int $driverId): array

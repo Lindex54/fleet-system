@@ -138,7 +138,11 @@ main>div>div.mb-7 h1,main>div>div.mb-6 h1{font-size:22px;line-height:30px;font-w
 .dashboard-shell input[type="search"],.dashboard-shell input[type="text"],.dashboard-shell textarea,.dashboard-shell .vehicle-form-control{font-size:16px!important;font-weight:400!important;line-height:1.5!important}
 .dashboard-shell .text-sm.text-fleet-muted,.dashboard-shell .text-sm.text-fleet-ink{font-size:16px!important;font-weight:400!important;line-height:1.6!important}
 .dashboard-shell .text-xs.text-fleet-muted{font-size:12px!important;font-weight:400!important;line-height:1.5!important}
+.summary-card-label{font-size:18px!important;font-weight:800!important;line-height:1.45!important;letter-spacing:.02em!important}
+.summary-card-value{font-size:32px!important;font-weight:900!important;line-height:1.1!important}
+.summary-card-value.summary-card-value-text{font-size:26px!important}
 @media (min-width:48rem){.dashboard-shell h1.text-2xl.font-extrabold.text-fleet-ink.sm\:text-3xl{font-size:32px!important;line-height:40px!important}.dashboard-shell .text-3xl.font-extrabold.text-fleet-ink{font-size:24px!important;line-height:32px!important}.dashboard-shell .text-2xl.font-extrabold.text-fleet-ink,.dashboard-shell .text-xl.font-extrabold.text-fleet-ink,.dashboard-shell .text-sm.font-bold.text-fleet-ink,.dashboard-shell .text-sm.font-semibold.text-fleet-ink{font-size:20px!important;line-height:28px!important}}
+@media (min-width:48rem){.summary-card-label{font-size:19px!important}.summary-card-value{font-size:36px!important}.summary-card-value.summary-card-value-text{font-size:28px!important}}
 button,
 input[type=button],
 input[type=submit],

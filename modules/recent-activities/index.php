@@ -19,20 +19,20 @@ include __DIR__ . '/../../includes/sidebar.php';
 
         <section class="mb-8 grid gap-5 md:grid-cols-2 xl:grid-cols-4">
             <article class="rounded-lg border border-fleet-line bg-fleet-surface p-6 shadow-fleet-card">
-                <p class="text-sm font-semibold text-fleet-muted">Total Activities</p>
-                <p class="mt-3 text-3xl font-extrabold text-fleet-ink"><?= (int) $recentActivitiesSummary['total']; ?></p>
+                <p class="summary-card-label text-slate-800">Total Activities</p>
+                <p class="summary-card-value mt-3 text-slate-900"><?= (int) $recentActivitiesSummary['total']; ?></p>
             </article>
             <article class="rounded-lg border border-blue-200 bg-blue-50 p-6 shadow-fleet-card">
-                <p class="text-sm font-semibold text-blue-700">Today</p>
-                <p class="mt-3 text-3xl font-extrabold text-blue-800"><?= (int) $recentActivitiesSummary['today']; ?></p>
+                <p class="summary-card-label text-blue-900">Today</p>
+                <p class="summary-card-value mt-3 text-slate-900"><?= (int) $recentActivitiesSummary['today']; ?></p>
             </article>
             <article class="rounded-lg border border-amber-200 bg-amber-50 p-6 shadow-fleet-card">
-                <p class="text-sm font-semibold text-amber-700">Modules Active</p>
-                <p class="mt-3 text-3xl font-extrabold text-amber-800"><?= (int) $recentActivitiesSummary['modules']; ?></p>
+                <p class="summary-card-label text-amber-900">Modules Active</p>
+                <p class="summary-card-value mt-3 text-slate-900"><?= (int) $recentActivitiesSummary['modules']; ?></p>
             </article>
             <article class="rounded-lg border border-green-200 bg-green-50 p-6 shadow-fleet-card">
-                <p class="text-sm font-semibold text-green-700">Users Acting</p>
-                <p class="mt-3 text-3xl font-extrabold text-green-800"><?= (int) $recentActivitiesSummary['actors']; ?></p>
+                <p class="summary-card-label text-green-900">Users Acting</p>
+                <p class="summary-card-value mt-3 text-slate-900"><?= (int) $recentActivitiesSummary['actors']; ?></p>
             </article>
         </section>
 

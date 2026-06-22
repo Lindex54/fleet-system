@@ -48,20 +48,30 @@ function fleetMessageHandleCompose(array $context, bool $isDraft): void
         $validatedFiles = fleetMessageValidateAttachments($files);
         $result = fleetMessageSaveCompose($pdo, $context, $formData, $isDraft, $validatedFiles);
         $redirectUrl = fleetMessageRedirectUrl($context, $isDraft ? 'drafts' : 'sent', (int) $result['thread_id'], $search);
+        $emailDelivery = $result['email_delivery'] ?? ['sent' => 0, 'failed' => 0];
+        $successMessage = $isDraft
+            ? 'Your draft has been saved.'
+            : 'Your internal message has been delivered to the selected recipients.';
+
+        if (!$isDraft && (int) ($emailDelivery['sent'] ?? 0) > 0) {
+            $successMessage .= ' Email copies were also sent to ' . (int) $emailDelivery['sent'] . ' driver' . ((int) $emailDelivery['sent'] === 1 ? '' : 's') . '.';
+        }
+
+        if (!$isDraft && (int) ($emailDelivery['failed'] ?? 0) > 0) {
+            $successMessage .= ' Some driver email notifications could not be sent, but the system inbox notification was saved.';
+        }
 
         fleetMessageSetFlash($context['role'], [
             'notification' => [
                 'type' => 'success',
                 'title' => $isDraft ? 'Draft saved' : 'Message sent',
-                'message' => $isDraft
-                    ? 'Your draft has been saved.'
-                    : 'Your internal message has been delivered to the selected recipients.',
+                'message' => $successMessage,
             ],
         ]);
 
         fleetFinishResponse($redirectUrl, [
             'success' => true,
-            'message' => $isDraft ? 'Your draft has been saved.' : 'Your internal message has been delivered.',
+            'message' => $successMessage,
             'reload' => true,
         ]);
     } catch (Throwable $exception) {
