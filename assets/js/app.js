@@ -418,8 +418,70 @@ function ensurePrintFooter(printRoot) {
   printRoot.appendChild(footer);
 }
 
+function ensurePrintHeader(printRoot) {
+  if (!printRoot || printRoot.hasAttribute('data-print-root-custom-header') || printRoot.querySelector('[data-print-header]')) {
+    return;
+  }
+
+  const header = document.createElement('div');
+  header.className = 'print-page-header';
+  header.setAttribute('data-print-header', '');
+  header.innerHTML = `
+    <div class="app-print-banner"><img src="${PRINT_BANNER_URL}" alt="Busitema University print banner"></div>
+    <div class="print-page-header-brand">Busitema University Estates MIS</div>
+    <div class="print-page-header-unit">ESTATES UNIT</div>
+  `;
+
+  printRoot.insertBefore(header, printRoot.firstChild);
+}
+
+function ensurePrintCleanup(printRoot) {
+  if (!printRoot) {
+    return;
+  }
+
+  printRoot.querySelectorAll('input[type="search"]').forEach((input) => {
+    const container = input.closest('.border-b') || input.closest('label') || input.parentElement;
+    container?.setAttribute('data-print-hide', '');
+  });
+
+  printRoot.querySelectorAll('select').forEach((select) => {
+    if ((select.id || '').includes('filter') || (select.id || '').includes('status')) {
+      const container = select.closest('.border-b') || select.closest('label') || select.parentElement;
+      container?.setAttribute('data-print-hide', '');
+    }
+  });
+
+  printRoot.querySelectorAll('table').forEach((table) => {
+    const rows = Array.from(table.querySelectorAll('tr'));
+    const actionColumnIndexes = new Set();
+
+    rows.forEach((row) => {
+      Array.from(row.children).forEach((cell, index) => {
+        if (cell.querySelector('button, form, [data-view-logbook-entry], [data-edit-logbook-entry], [data-open-logbook-delete], [data-view-pre-inspection-entry], [data-edit-pre-inspection-entry], [data-open-pre-inspection-delete], [data-view-post-inspection-entry], [data-edit-post-inspection-entry], [data-open-post-inspection-delete], [data-view-vehicle-entry], [data-edit-vehicle-entry], [data-delete-vehicle-entry], [data-view-driver-entry], [data-edit-driver-entry], [data-delete-driver-entry], [data-view-maintenance-entry], [data-edit-maintenance-entry], [data-delete-maintenance-entry], [data-open-provider-delete], [data-view-provider-entry], [data-edit-provider-entry]')) {
+          actionColumnIndexes.add(index);
+        }
+      });
+    });
+
+    if (actionColumnIndexes.size === 0) {
+      return;
+    }
+
+    rows.forEach((row) => {
+      Array.from(row.children).forEach((cell, index) => {
+        if (actionColumnIndexes.has(index)) {
+          cell.setAttribute('data-print-hide', '');
+        }
+      });
+    });
+  });
+}
+
 function initializePrintFooters() {
   document.querySelectorAll('[data-print-root]').forEach((printRoot) => {
+    ensurePrintHeader(printRoot);
+    ensurePrintCleanup(printRoot);
     ensurePrintFooter(printRoot);
   });
 }
@@ -609,7 +671,7 @@ function getVisibleDriverRows() {
 }
 
 function buildPrintBannerMarkup() {
-  return `<div class="app-print-banner"><img src="${PRINT_BANNER_URL}" alt="Busitema University print banner"></div>`;
+  return `<div class="app-print-banner"><img src="${PRINT_BANNER_URL}" alt="Busitema University print banner"></div><div class="print-page-header-brand">Busitema University Estates MIS</div><div class="print-page-header-unit">ESTATES UNIT</div>`;
 }
 
 function escapeHtml(value) {

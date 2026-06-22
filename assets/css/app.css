@@ -100,6 +100,9 @@ main>div>div.mb-7 h1,main>div>div.mb-6 h1{font-size:22px;line-height:30px;font-w
 .vehicle-usage-signoff{display:none}
 .vehicle-usage-print-memo{display:none}
 .vehicle-usage-driver-section{break-inside:avoid;page-break-inside:avoid}
+.print-page-header{display:none}
+.print-page-header-brand{margin:1rem 0 .35rem;text-align:center;color:#111827;font-family:"Source Sans Pro","Source Sans 3","Helvetica Neue",Helvetica,Arial,sans-serif;font-size:1.125rem;font-weight:600;line-height:1.625rem;letter-spacing:.02em}
+.print-page-header-unit{margin:0 0 1.75rem;text-align:center;color:#111827;font-family:"Source Sans Pro","Source Sans 3","Helvetica Neue",Helvetica,Arial,sans-serif;font-size:1.75rem;font-weight:700;line-height:2.25rem;letter-spacing:.02em}
 .vehicle-usage-print-brand{margin:1rem 0 .35rem;text-align:center;color:#111827;font-family:"Source Sans Pro",Helvetica Neue,Helvetica,Arial,sans-serif;font-size:1.1rem;font-weight:700;letter-spacing:.02em}
 .vehicle-usage-print-unit{margin:1.5rem 0 1.75rem;text-align:center;color:#111827;font-family:"Source Sans Pro",Helvetica Neue,Helvetica,Arial,sans-serif;font-size:2rem;font-weight:800;letter-spacing:.02em}
 .vehicle-usage-print-meta{display:grid;gap:1rem}
@@ -154,9 +157,8 @@ body.print-target-active main *{visibility:hidden!important}
 body.print-target-active [data-print-root].print-target-active,
 body.print-target-active [data-print-root].print-target-active *{visibility:visible!important}
 body.print-target-active [data-print-root].print-target-active{position:absolute;left:0;top:0;width:100%;margin:0!important;padding:0!important;border:none!important;background:#fff!important;box-shadow:none!important}
-body.print-target-active [data-print-root].print-target-active:not([data-print-root-custom-header]){padding-top:210px!important}
-body.print-target-active [data-print-root].print-target-active:not([data-print-root-custom-header]):before{content:"";position:absolute;left:0;top:0;width:100%;height:180px;background:url("../images/branding/print_banner.png") no-repeat top center/contain}
 body.print-target-active .pagination-controls,
+body.print-target-active [data-print-hide],
 body.print-target-active [data-print-root].print-target-active button,
 body.print-target-active [data-print-root].print-target-active form,
 body.print-target-active [data-open-logbook-modal],
@@ -198,6 +200,9 @@ body.print-target-active .vehicle-usage-signoff{display:none!important}
 body.print-target-active .vehicle-usage-signoff.vehicle-usage-signoff--print{display:grid!important}
 body.print-target-active .vehicle-usage-print-memo{display:block!important;margin-bottom:2rem}
 body.print-target-active .vehicle-usage-print-banner{display:block!important;width:100%;margin:0 0 1.5rem}
+body.print-target-active .print-page-header{display:block!important;margin-bottom:2rem}
+body.print-target-active .print-page-header .app-print-banner{margin-bottom:1.5rem}
+body.print-target-active .print-page-header .app-print-banner img{display:block!important;width:100%;margin:0 auto}
 body.print-target-active .vehicle-usage-print-table th{font-size:1rem!important}
 body.print-target-active .vehicle-usage-print-table td,
 body.print-target-active [data-vehicle-usage-driver-table] th,

@@ -156,7 +156,7 @@ function setModalText(modal, selector, value) {
 }
 
 function buildModulePrintBannerMarkup() {
-  return `<div class="app-print-banner"><img src="${MODULE_PRINT_BANNER_URL}" alt="Busitema University print banner"></div>`;
+  return `<div class="app-print-banner"><img src="${MODULE_PRINT_BANNER_URL}" alt="Busitema University print banner"></div><div class="print-page-header-brand">Busitema University Estates MIS</div><div class="print-page-header-unit">ESTATES UNIT</div>`;
 }
 
 function triggerPrintWhenReady(printWindow) {
@@ -223,7 +223,7 @@ function printDetailSheet(sheet, title) {
     .join('');
 
   printWindow.document.open();
-  printWindow.document.write(`<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><title>${title}</title>${styles}<style>body{background:#fff;padding:24px;}.app-print-banner{margin-bottom:24px;}.app-print-banner img{display:block;width:100%;max-width:1200px;margin:0 auto;}button{display:none !important;}</style></head><body>${buildModulePrintBannerMarkup()}${sheet.outerHTML}</body></html>`);
+  printWindow.document.write(`<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><title>${title}</title>${styles}<style>body{background:#fff;padding:24px;}.app-print-banner{margin-bottom:24px;}.app-print-banner img{display:block;width:100%;max-width:1200px;margin:0 auto;}.print-page-header-brand{margin:0 0 6px;text-align:center;color:#111827;font-family:"Source Sans Pro","Source Sans 3","Helvetica Neue",Helvetica,Arial,sans-serif;font-size:18px;font-weight:600;line-height:26px;}.print-page-header-unit{margin:0 0 28px;text-align:center;color:#111827;font-family:"Source Sans Pro","Source Sans 3","Helvetica Neue",Helvetica,Arial,sans-serif;font-size:28px;font-weight:700;line-height:36px;}button{display:none !important;}</style></head><body>${buildModulePrintBannerMarkup()}${sheet.outerHTML}</body></html>`);
   printWindow.document.close();
   triggerPrintWhenReady(printWindow);
 }

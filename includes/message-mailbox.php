@@ -189,9 +189,9 @@ $mailboxBackFromThreadQuery = $mailboxBackToFolderQuery;
 
             <div class="block">
                 <?php if ($mailboxView === 'compose'): ?>
-                    <div class="px-6 py-6">
-                        <div class="mx-6 mt-6 overflow-hidden rounded-[28px] border border-fleet-line bg-white shadow-[0_20px_48px_rgba(15,23,42,0.08)]">
-                            <div class="flex items-center justify-between gap-4 border-b border-fleet-line bg-[#f6f9ff] px-6 py-4">
+                    <div class="px-4 py-4 sm:px-6 sm:py-6 lg:px-8 lg:py-8">
+                        <div class="mx-auto w-full max-w-6xl overflow-hidden rounded-[28px] border border-fleet-line bg-white shadow-[0_20px_48px_rgba(15,23,42,0.08)]">
+                            <div class="flex items-center justify-between gap-4 border-b border-fleet-line bg-[#f6f9ff] px-5 py-5 sm:px-7 lg:px-8">
                                 <div>
                                     <p class="text-xs font-extrabold uppercase tracking-[0.2em] text-fleet-muted">Compose</p>
                                     <h2 class="mt-1 text-xl font-extrabold text-fleet-ink">
@@ -209,8 +209,8 @@ $mailboxBackFromThreadQuery = $mailboxBackToFolderQuery;
                                 <a href="<?= htmlspecialchars($mailboxPageUrl . $mailboxBackFromComposeQuery, ENT_QUOTES, 'UTF-8'); ?>" class="inline-flex h-10 items-center rounded-2xl border border-fleet-line bg-white px-4 text-sm font-semibold text-fleet-ink hover:bg-fleet-surface-muted">Back</a>
                             </div>
 
-                            <div class="max-h-[730px] overflow-y-auto px-6 py-6">
-                                <form action="<?= htmlspecialchars($mailboxActionUrl, ENT_QUOTES, 'UTF-8'); ?>" method="post" enctype="multipart/form-data" class="space-y-6" data-fleet-ajax="true">
+                            <div class="max-h-[730px] overflow-y-auto px-4 py-5 sm:px-6 sm:py-6 lg:px-8 lg:py-8">
+                                <form action="<?= htmlspecialchars($mailboxActionUrl, ENT_QUOTES, 'UTF-8'); ?>" method="post" enctype="multipart/form-data" class="mx-auto max-w-5xl space-y-7" data-fleet-ajax="true">
                                     <input type="hidden" name="folder" value="<?= htmlspecialchars($mailboxFolder, ENT_QUOTES, 'UTF-8'); ?>">
                                     <input type="hidden" name="search" value="<?= htmlspecialchars($mailboxSearch, ENT_QUOTES, 'UTF-8'); ?>">
                                     <input type="hidden" name="thread_id" value="<?= htmlspecialchars((string) ($mailboxCompose['thread_id'] ?? ''), ENT_QUOTES, 'UTF-8'); ?>">
@@ -218,11 +218,11 @@ $mailboxBackFromThreadQuery = $mailboxBackToFolderQuery;
                                     <input type="hidden" name="parent_message_id" value="<?= htmlspecialchars((string) ($mailboxCompose['parent_message_id'] ?? ''), ENT_QUOTES, 'UTF-8'); ?>">
                                     <div data-fleet-feedback-host></div>
 
-                                    <div class="rounded-2xl border border-fleet-line bg-[#f8fbff] p-4">
-                                        <div class="mb-4 flex flex-wrap items-center justify-between gap-3">
+                                    <div class="rounded-[26px] border border-fleet-line bg-[#f8fbff] px-4 py-5 sm:px-5 lg:px-6">
+                                        <div class="mb-5 flex flex-wrap items-center justify-between gap-3">
                                             <div>
                                                 <p class="text-sm font-bold text-fleet-ink">Recipients</p>
-                                                <p class="text-xs text-fleet-muted">Choose users allowed by your role.</p>
+                                                <p class="mt-1 text-xs text-fleet-muted">Choose users allowed by your role.</p>
                                             </div>
                                             <?php if (($mailboxRecipientGroups['drivers'] ?? []) !== []): ?>
                                                 <button type="button" data-select-recipient-group="drivers" class="inline-flex h-9 items-center rounded-xl bg-white px-3 text-xs font-semibold text-fleet-primary shadow-sm hover:bg-blue-50">
@@ -231,21 +231,21 @@ $mailboxBackFromThreadQuery = $mailboxBackToFolderQuery;
                                             <?php endif; ?>
                                         </div>
 
-                                        <div class="space-y-4">
+                                        <div class="space-y-5">
                                             <?php foreach ($mailboxRecipientGroups as $groupKey => $groupRecipients): ?>
                                                 <?php if ($groupRecipients === []): ?>
                                                     <?php continue; ?>
                                                 <?php endif; ?>
-                                                <section>
-                                                    <div class="mb-3 flex items-center justify-between gap-3">
-                                                        <p class="text-xs font-extrabold uppercase tracking-[0.2em] text-fleet-muted"><?= htmlspecialchars(str_replace('_', ' ', $groupKey), ENT_QUOTES, 'UTF-8'); ?></p>
-                                                        <span class="text-xs text-fleet-muted"><?= count($groupRecipients); ?> available</span>
+                                                <section class="p-1 sm:p-2">
+                                                    <div class="mb-4 flex items-center justify-between gap-3">
+                                                        <p class="text-sm font-extrabold uppercase tracking-[0.18em] text-fleet-ink"><?= htmlspecialchars(str_replace('_', ' ', $groupKey), ENT_QUOTES, 'UTF-8'); ?></p>
+                                                        <span class="text-xs font-semibold text-fleet-muted"><?= count($groupRecipients); ?> available</span>
                                                     </div>
                                                     <div class="grid gap-3">
                                                         <?php foreach ($groupRecipients as $recipient): ?>
                                                             <?php $isChecked = in_array((int) $recipient['id'], $mailboxCompose['recipient_ids'] ?? [], true); ?>
-                                                            <label class="flex items-start gap-3 rounded-2xl border border-fleet-line bg-white px-4 py-3 transition hover:border-fleet-primary">
-                                                                <input type="checkbox" name="recipient_ids[]" value="<?= (int) $recipient['id']; ?>" class="mt-1 h-4 w-4 rounded border-fleet-line text-fleet-primary focus:ring-fleet-primary" data-recipient-group="<?= htmlspecialchars($groupKey, ENT_QUOTES, 'UTF-8'); ?>" <?= $isChecked ? 'checked' : ''; ?>>
+                                                            <label class="flex items-start gap-4 rounded-2xl border border-fleet-line bg-white px-4 py-4 sm:px-5 transition hover:border-fleet-primary">
+                                                                <input type="checkbox" name="recipient_ids[]" value="<?= (int) $recipient['id']; ?>" class="mt-1.5 h-4 w-4 shrink-0 rounded border-fleet-line text-fleet-primary focus:ring-fleet-primary" data-recipient-group="<?= htmlspecialchars($groupKey, ENT_QUOTES, 'UTF-8'); ?>" <?= $isChecked ? 'checked' : ''; ?>>
                                                                 <span class="min-w-0">
                                                                     <span class="block text-sm font-semibold text-fleet-ink"><?= htmlspecialchars($recipient['name'], ENT_QUOTES, 'UTF-8'); ?></span>
                                                                     <span class="mt-1 block text-xs text-fleet-muted"><?= htmlspecialchars($recipient['email'], ENT_QUOTES, 'UTF-8'); ?> - <?= htmlspecialchars(str_replace('_', ' ', ucfirst($recipient['role'])), ENT_QUOTES, 'UTF-8'); ?></span>
@@ -258,12 +258,12 @@ $mailboxBackFromThreadQuery = $mailboxBackToFolderQuery;
                                         </div>
                                     </div>
 
-                                    <div>
+                                    <div class="rounded-2xl border border-fleet-line bg-white p-4 sm:p-5">
                                         <label class="mb-2 block text-sm font-semibold text-fleet-ink">Subject</label>
                                         <input type="text" name="subject" class="vehicle-form-control" value="<?= htmlspecialchars($mailboxCompose['subject'] ?? '', ENT_QUOTES, 'UTF-8'); ?>" placeholder="Message subject">
                                     </div>
 
-                                    <div>
+                                    <div class="rounded-2xl border border-fleet-line bg-white p-4 sm:p-5">
                                         <label class="mb-2 block text-sm font-semibold text-fleet-ink">Message</label>
                                         <textarea name="body" class="vehicle-form-control min-h-48 resize-y py-3" placeholder="Write your message..."><?= htmlspecialchars(($mailboxCompose['body'] ?? '') . ($mailboxCompose['quoted_body'] ?? ''), ENT_QUOTES, 'UTF-8'); ?></textarea>
                                     </div>
